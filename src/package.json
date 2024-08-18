@@ -1,0 +1,12 @@
+{
+  "name": "rds_surveyor",
+  "version": "2.0-alpha.1",
+  "description": "",
+  "devDependencies": {
+    "typescript": "4.9.5",
+    "jasmine": "^5.2.0"
+  },
+  "dependencies": {
+    "typescript": "4.9.5"
+  }
+}

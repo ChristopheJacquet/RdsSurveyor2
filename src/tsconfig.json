@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+      "composite": true,
+      "lib": [
+          "es2018",
+          "dom"
+      ]
+  },
+  "extends": "gts/tsconfig-google.json"
+}
