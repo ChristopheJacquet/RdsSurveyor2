@@ -17,6 +17,11 @@ export class StationImpl implements Station {
     return String.fromCodePoint(...this.ps);
   }
 
+  // TODO: Support RDS charset.
+  getRT(): string {
+    return String.fromCodePoint(...this.rt);
+  }
+
   constructor() {
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
