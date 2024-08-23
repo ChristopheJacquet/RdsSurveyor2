@@ -10,9 +10,11 @@ import sys
 grammar = r'''
 start: struct* bitstruct+
 
-struct: "struct" ID "{"	vardecl* "}"
+struct: "struct" ID "{"	vardecl* methoddecl* "}"
 
 vardecl: ID ":" vartype
+
+methoddecl: ID "(" vardecl ("," vardecl)* ")"
 
 vartype: simplevartype
 	| maptype
@@ -32,7 +34,7 @@ type: ID ("<" INT ">")?
 action: 
     | assignment
     | parse_statement
-    | function_call
+    | invocation
     | copy
 
 expr: lvalue
@@ -43,6 +45,8 @@ expr: lvalue
     | ESCAPED_STRING
 
 function_call: ID "(" expr ("," expr)* ")"
+
+invocation: ID "." ID "(" expr ("," expr)* ")"
 
 mul: expr "*" expr
 
@@ -317,7 +321,19 @@ def compile_action(st, arguments):
             
             (c_rule, v_rule) = compile_expr(rule);
             output_guarded_block(1, v_rule, [f'get_parse_function({c_rule})(block, ok{build_argument_list(arguments, with_types=False)});'])
-            
+        case lark.Tree(data='invocation', children=[
+            lark.Token(type='ID', value=obj),
+            lark.Token(type='ID', value=method),
+            *args]):
+
+            (c_args, v_args) = zip(*map(compile_expr, args))
+
+            v = set()
+            for v_a in v_args:
+                v |= v_a
+
+            output_guarded_block(1, v, [f'{obj}.{method}({", ".join(c_args)})'])
+
         case _:
             of.write(f'\t// Unhandled action: {action}\n')
 
@@ -389,6 +405,23 @@ def compile_struct(cc):
 
                 (type_str, undef) = compile_vartype(type_tree)
                 output_line(1, f'{field_name}{"?" if undef else ""}: {type_str};')
+            case v: print(f'WARNING: Unexpected vardecl: {v}')
+    for st in subtrees_of_type(cc, 'methoddecl'):
+        match st:
+            case lark.Tree(data='methoddecl', children=[
+                lark.Token(type='ID', value=method_name),
+                *args]):
+
+                ar = []
+                for a in args:
+                    match a:
+                        case lark.Tree(data='vardecl', children=[
+                            lark.Token(type='ID', value=arg_name),
+                            lark.Tree(data='vartype', children=[type_tree])]):
+
+                            (type_str, _) = compile_vartype(type_tree)
+                            ar.append(f'{arg_name}: {type_str}')
+                output_line(1, f'{method_name}({", ".join(ar)}): void;')
             case v: print(f'WARNING: Unexpected vardecl: {v}')
     output_line(0, '}')
     output_line(0, '')
