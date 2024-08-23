@@ -11,6 +11,7 @@ export interface Station {
 	rt: number[];
 	odas: Map<number, number>;
 	app_mapping: Map<number, string>;
+	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 }
 
 export function parse_group(block: Uint16Array, ok: boolean[], station: Station) {
@@ -260,6 +261,9 @@ export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Stati
 		: null;
 
 	// Actions.
+	if ((hour != null) && (minute != null) && (mjd != null) && (tz_offset != null) && (tz_sign != null)) {
+		station.setClockTime(mjd, hour, minute, tz_sign, tz_offset)
+	}
 }
 
 export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Station) {

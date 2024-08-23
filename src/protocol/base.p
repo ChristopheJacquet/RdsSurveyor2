@@ -21,6 +21,7 @@ struct Station {
     rt: str<64>
     odas: map<uint<5>, uint<16>>
     app_mapping: map<uint<5>, tag>
+    setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
 }
 
 bitstruct group(station: Station) {
@@ -147,6 +148,7 @@ bitstruct group_4A(station: Station) {
     tz_sign: bool
     tz_offset: uint<5>
 } action {
+    station.setClockTime(mjd, hour, minute, tz_sign, tz_offset)
 }
 
 # PTYN.

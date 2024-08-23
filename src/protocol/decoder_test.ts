@@ -63,8 +63,35 @@ describe('Radio Classique', () => {
         F221 2404 6965 206E
         F221 2405 3338 2050`, station);
 
-    it('should have expected RT', () => {
-      expect(station.getRT()).toBe("Mozart : Symphonie n38 Prague : 1er mvt                         ");
-    });
+  it('should have expected RT', () => {
+    expect(station.getRT()).toBe("Mozart : Symphonie n38 Prague : 1er mvt                         ");
+  });
+});
 
+// BBC sample from 2017 transmitting Clock Time.
+describe('BBC Clock Time', () => {
+  const station = new StationImpl();
+  send('C202 41E1 C565 1802', station);
+  it('should have expected CT', () => {
+    expect(station.datetime).toBe("17:32+60min 2017-10-08");
+  });
+});
+
+// Synthetic example with CT epoch before 1 March 1900.
+// The usual formulae do not apply. It is ignored.
+describe('Bad Clock Time', () => {
+  const station = new StationImpl();
+  send('1134 42C0 0000 0000', station);
+  it('should have expected CT', () => {
+    expect(station.datetime).toBe("");
+  });
+});
+
+// Synthetic example with CT on epoch origin.
+describe('Bad Clock Time', () => {
+  const station = new StationImpl();
+  send('FFFF 41E0 75CE 0000', station);
+  it('should have expected CT', () => {
+    expect(station.datetime).toBe("00:00+0min 1900-03-01");
+  });
 });
