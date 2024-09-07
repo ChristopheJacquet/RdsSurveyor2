@@ -58,7 +58,7 @@ export class StationImpl implements Station {
    */
   reset() {
     this.pi = -1;
-    this.pty = -1;
+    this.pty = undefined;
     this.ptyn.fill(0);
     this.tp = undefined;
     this.ta = undefined;
