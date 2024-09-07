@@ -1,0 +1,54 @@
+<div class="infogrid">
+  <div class="infogrid-row">
+    <div class="infogrid-cell">
+      <div class="infogrid-title">PI</div>
+      <div class="infogrid-value">{{ station.pi | hex:4 }}</div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">PS</div>
+      <div class="infogrid-value">{{ station.getPS() }}</div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Station name</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Traffic info</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+  </div>
+
+  <div class="infogrid-row">
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Dynamic PS</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Long PS</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+  </div>
+
+  <div class="infogrid-row">
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Time</div>
+      <div class="infogrid-value">{{ station.datetime }} </div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">PTY</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+    <div class="infogrid-cell">
+      <div class="infogrid-title">PTYN</div>
+      <div class="infogrid-value">Placeholder</div>
+    </div>
+  </div>
+
+  <div class="infogrid-row">
+    <div class="infogrid-cell">
+      <div class="infogrid-title">RT (current radiotext)</div>
+      <div class="infogrid-value">{{ station.getRT() }}</div>
+    </div>
+  </div>
+
+</div>

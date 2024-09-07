@@ -1,2 +1,13 @@
+# OS-specific
 .DS_Store
-/src/bazel-*
+
+# Compiled output
+/core/bazel-*
+/ui/dist
+
+# Node
+/ui/node_modules
+
+# Angular
+/ui/.angular/cache
+

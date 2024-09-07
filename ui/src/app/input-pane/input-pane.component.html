@@ -1,0 +1,8 @@
+<div
+  class="dropzone"
+  [class.dragging]="isDragging"
+  (click)="sendDemoGroups()"
+  (drop)="onDrop($event)"
+  (dragover)="onDragOver($event)">
+    Drop RDS data here.
+</div>
