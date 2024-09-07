@@ -21,6 +21,7 @@ struct Station {
     rt: str<64>
     odas: map<uint<5>, uint<16>>
     app_mapping: map<uint<5>, tag>
+    addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
 }
 
@@ -39,6 +40,7 @@ bitstruct group(station: Station) {
     station.pi = pi
     station.tp = tp
     station.pty = pty
+    station.addToGroupStats(type)
     parse payload lookup(station.app_mapping, type, "group_unknown")
 }
 

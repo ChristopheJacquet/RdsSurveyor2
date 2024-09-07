@@ -25,3 +25,24 @@
 .infogrid-title {
   padding-left: 3px;
 }
+
+.group-stats {
+  width: 100%;
+  table-layout: fixed;
+
+  th {
+    font-weight: normal;
+  }
+}
+
+.group-stats-number {
+  text-align: center;
+  border: 1px solid #444;
+  border-radius: 5px;
+  margin: 3px 2px;
+  background: #AAA;
+}
+
+.group-stats-any {
+  background: #8F8;
+}

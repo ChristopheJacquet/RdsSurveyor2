@@ -11,6 +11,7 @@ export interface Station {
 	rt: number[];
 	odas: Map<number, number>;
 	app_mapping: Map<number, string>;
+	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 }
 
@@ -42,6 +43,9 @@ export function parse_group(block: Uint16Array, ok: boolean[], station: Station)
 	}
 	if ((pty != null)) {
 		station.pty = pty;
+	}
+	if ((type != null)) {
+		station.addToGroupStats(type)
 	}
 	if ((type != null)) {
 		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, station);

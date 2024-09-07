@@ -10,8 +10,9 @@ export class StationImpl implements Station {
   lps: number[] = new Array<number>(16);
   rt: number[] = new Array<number>(64);
   odas: Map<number, number> = new Map<number, number>();
-  app_mapping: Map<number, string>;
+  app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
+  group_stats: number[] = new Array<number>(32);
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
@@ -44,13 +45,35 @@ export class StationImpl implements Station {
     return String.fromCodePoint(...this.rt);
   }
 
+  addToGroupStats(type: number): void {
+    this.group_stats[type]++;
+  }
+
   constructor() {
+    this.reset();
+  }
+
+  /**
+   * Reset station data. Used when tuning a different station.
+   */
+  reset() {
+    this.pi = -1;
+    this.pty = -1;
+    this.ptyn.fill(0);
+    this.tp = undefined;
+    this.ta = undefined;
+    this .ps.fill(0);
+    this.lps.fill(0);
+    this.rt.fill(0);
+    this.odas.clear();
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
       [0b00001, "group_0B"],
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
       [0b01000, "group_4A"]]);
+    this.datetime = "";
+    this.group_stats.fill(0);
   }
 }
 

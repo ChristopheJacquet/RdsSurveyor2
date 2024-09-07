@@ -51,4 +51,33 @@
     </div>
   </div>
 
+  <div class="infogrid-row">
+    <div class="infogrid-cell">
+      <div class="infogrid-title">Group statistics</div>
+      <div class="infogrid-title">
+        <table class="group-stats">
+          <tr>
+            <th></th>
+            <th *ngFor="let i of group_ids">{{ i }}</th>
+          </tr>
+          <tr>
+            <th>A</th>
+            <td *ngFor="let i of group_ids">
+              <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2] > 0">
+                {{ station.group_stats[i*2] }}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th>B</th>
+            <td *ngFor="let i of group_ids">
+              <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2+1] > 0">
+                {{ station.group_stats[i*2+1] }}
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
