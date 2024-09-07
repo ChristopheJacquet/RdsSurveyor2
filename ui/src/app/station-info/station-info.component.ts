@@ -81,4 +81,15 @@ export class StationInfoComponent {
 		"Weather",
 		"Emergency Test",
 		"Emergency");
+  
+  getTrafficString(): string {
+    const flags: string[] = [];
+    if (this.station.tp) {
+      flags.push("TP");
+    }
+    if (this.station.ta) {
+      flags.push("TA");
+    }
+    return flags.join(" + ");
+  }
 }
