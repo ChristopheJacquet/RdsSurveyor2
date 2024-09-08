@@ -314,7 +314,7 @@ def compile_action(st, arguments):
             (c_value, _) = compile_expr(value)             # TODO: Add check - c_value must be a parse field name.
             for i in range(int(c_seg_size)):
                 output_guarded_block(1, v_addr | v_seg_size | set([f'{c_value}__{i}']),
-                    [f'{c_target}[{c_addr}*{c_seg_size} + {i}] = {c_value}__{i};'])
+                    [f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});'])
         case lark.Tree(data='parse_statement', children=[
             lark.Token(),
             lark.Tree(data='expr') as rule]):
@@ -386,7 +386,7 @@ def compile_vartype(t):
         case lark.Tree(data='simplevartype', children=[lark.Token(type='ID', value='bool')]):
             return ('boolean', True)
         case lark.Tree(data='simplevartype', children=[lark.Token(type='ID', value='str'), _]):
-            return ('number[]', False)
+            return ('RdsString', False)
         case lark.Tree(data='simplevartype', children=[lark.Token(type='ID', value='tag')]):
             return ('string', True)
         case lark.Tree(data='maptype', children=[lark.Tree() as keytype, lark.Tree() as valuetype]):
@@ -428,6 +428,8 @@ def compile_struct(cc):
 
 def compile(t):
     output_line(0, '// Generated file. DO NOT EDIT.')
+    output_line(0, '')
+    output_line(0, 'import { RdsString } from "./rds_types";')
     output_line(0, '')
 
     for c in t.children:

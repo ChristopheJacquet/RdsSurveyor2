@@ -1,14 +1,16 @@
 // Generated file. DO NOT EDIT.
 
+import { RdsString } from "./rds_types";
+
 export interface Station {
 	pi?: number;
 	pty?: number;
-	ptyn: number[];
+	ptyn: RdsString;
 	tp?: boolean;
 	ta?: boolean;
-	ps: number[];
-	lps: number[];
-	rt: number[];
+	ps: RdsString;
+	lps: RdsString;
+	rt: RdsString;
 	odas: Map<number, number>;
 	app_mapping: Map<number, string>;
 	addToGroupStats(type: number): void;
@@ -106,10 +108,10 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 		station.ta = ta;
 	}
 	if ((addr != null) && (ps_seg__0 != null)) {
-		station.ps[addr*2 + 0] = ps_seg__0;
+		station.ps.setByte(addr*2 + 0, ps_seg__0);
 	}
 	if ((addr != null) && (ps_seg__1 != null)) {
-		station.ps[addr*2 + 1] = ps_seg__1;
+		station.ps.setByte(addr*2 + 1, ps_seg__1);
 	}
 }
 
@@ -145,10 +147,10 @@ export function parse_group_0B(block: Uint16Array, ok: boolean[], station: Stati
 		station.pi = pi;
 	}
 	if ((addr != null) && (ps_seg__0 != null)) {
-		station.ps[addr*2 + 0] = ps_seg__0;
+		station.ps.setByte(addr*2 + 0, ps_seg__0);
 	}
 	if ((addr != null) && (ps_seg__1 != null)) {
-		station.ps[addr*2 + 1] = ps_seg__1;
+		station.ps.setByte(addr*2 + 1, ps_seg__1);
 	}
 }
 
@@ -178,16 +180,16 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((addr != null) && (rt_seg__0 != null)) {
-		station.rt[addr*4 + 0] = rt_seg__0;
+		station.rt.setByte(addr*4 + 0, rt_seg__0);
 	}
 	if ((addr != null) && (rt_seg__1 != null)) {
-		station.rt[addr*4 + 1] = rt_seg__1;
+		station.rt.setByte(addr*4 + 1, rt_seg__1);
 	}
 	if ((addr != null) && (rt_seg__2 != null)) {
-		station.rt[addr*4 + 2] = rt_seg__2;
+		station.rt.setByte(addr*4 + 2, rt_seg__2);
 	}
 	if ((addr != null) && (rt_seg__3 != null)) {
-		station.rt[addr*4 + 3] = rt_seg__3;
+		station.rt.setByte(addr*4 + 3, rt_seg__3);
 	}
 }
 
@@ -215,10 +217,10 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((addr != null) && (rt_seg__0 != null)) {
-		station.rt[addr*2 + 0] = rt_seg__0;
+		station.rt.setByte(addr*2 + 0, rt_seg__0);
 	}
 	if ((addr != null) && (rt_seg__1 != null)) {
-		station.rt[addr*2 + 1] = rt_seg__1;
+		station.rt.setByte(addr*2 + 1, rt_seg__1);
 	}
 }
 
@@ -297,16 +299,16 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 
 	// Actions.
 	if ((addr != null) && (ptyn_seg__0 != null)) {
-		station.ptyn[addr*4 + 0] = ptyn_seg__0;
+		station.ptyn.setByte(addr*4 + 0, ptyn_seg__0);
 	}
 	if ((addr != null) && (ptyn_seg__1 != null)) {
-		station.ptyn[addr*4 + 1] = ptyn_seg__1;
+		station.ptyn.setByte(addr*4 + 1, ptyn_seg__1);
 	}
 	if ((addr != null) && (ptyn_seg__2 != null)) {
-		station.ptyn[addr*4 + 2] = ptyn_seg__2;
+		station.ptyn.setByte(addr*4 + 2, ptyn_seg__2);
 	}
 	if ((addr != null) && (ptyn_seg__3 != null)) {
-		station.ptyn[addr*4 + 3] = ptyn_seg__3;
+		station.ptyn.setByte(addr*4 + 3, ptyn_seg__3);
 	}
 }
 
@@ -337,16 +339,16 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 
 	// Actions.
 	if ((addr != null) && (lps_seg__0 != null)) {
-		station.lps[addr*4 + 0] = lps_seg__0;
+		station.lps.setByte(addr*4 + 0, lps_seg__0);
 	}
 	if ((addr != null) && (lps_seg__1 != null)) {
-		station.lps[addr*4 + 1] = lps_seg__1;
+		station.lps.setByte(addr*4 + 1, lps_seg__1);
 	}
 	if ((addr != null) && (lps_seg__2 != null)) {
-		station.lps[addr*4 + 2] = lps_seg__2;
+		station.lps.setByte(addr*4 + 2, lps_seg__2);
 	}
 	if ((addr != null) && (lps_seg__3 != null)) {
-		station.lps[addr*4 + 3] = lps_seg__3;
+		station.lps.setByte(addr*4 + 3, lps_seg__3);
 	}
 }
 
