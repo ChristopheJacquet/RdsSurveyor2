@@ -39,83 +39,82 @@ export class StationImpl implements Station {
     return this.ps.getLatestCompleteOrPartialText();
   }
 
-	getStationName(): string {
-		return this.ps.getMostFrequentOrPartialText();
-	}
+  getStationName(): string {
+    return this.ps.getMostFrequentOrPartialText();
+  }
 
-	/**
-	 * This method tries to reconstruct a message transmitted using (non-
-	 * standard) "dynamic PS".
-	 * 
-	 * <p>I have observed two main ways of transmitting "dynamic PS":</p>
-	 * <ul>
-	 *   <li>transmit successively full words, for instance: "YOU ARE ",
-	 *   "TUNED TO", "RADIO 99",</li>
-	 *   <li>scroll a message one letter at a time, for instance: "YOU ARE ",
-	 *   "OU ARE T", "U ARE TU", " ARE TUN", "ARE TUNE", "RE TUNED", 
-	 *   "E TUNED ", " TUNED T", "TUNED TO", "UNED TO ", "NED TO R", etc.</li>
-	 * </ul>
-	 * 
-	 * <p>
-	 * This methods identifies the type of transmission used, and tries to 
-	 * reconstruct the original message.
-	 * </p>
-	 * 
-	 * <p>
-	 * Note that the method should work even if the two types are mixed in a
-	 * given transmission. Note also that the method will work correctly only
-	 * if reception is good. If there are many missing blocks, it will not
-	 * make sense of the message. This is not a limitation of the method
-	 * itself, rather, it is caused by of the abusive use of PS to transmit
-	 * complex text, what PS is not designed for. 
-	 * </p>
-	 *  
-	 * @return the reconstructed message, limited to 80 characters in length
-	 */
-	getDynamicPSmessage(): string {
-		const msg = this.ps.getPastMessages(true);
-		
-		// Trivial case when there is no message.
-		if (msg.length == 0) return "";
-		
-		let res = "";
-		let prev: string|null = null;
-		for (let i=msg.length-1; i>=0 && res.length < 80; i--) {
-			const current = msg[i];
-			let done = false;
-			if (prev != null && prev.length == 8 && current.length == 8) {
-				// if the 7 rightmost characters of the current PS correspond
-				// to the 7 leftmost characters of the "previous" PS (going 
-				// backward in time), then the PS is scrolling one character
-				// at a time, so we just add *the* leftmost character at the
-				// start
-				if (prev.substring(0, 6) == current.substring(1, 7)) {
-					res = current.charAt(0) + res;
-					done = true;
-				} else if (prev.substring(0, 5) == current.substring(2, 7)) {
-					res = current.substring(0, 2) + res;
-					done = true;
-				}
-			} 
-			
-			if(! done) {
-				// otherwise, the PS is not scrolling, it's just displaying a
-				// succession of 8-character words/sentences
-				res = current.trim() + " " + res;
-			}
-			prev = current;
-		}
-		return res;
-	}
+  /**
+   * This method tries to reconstruct a message transmitted using (non-
+   * standard) "dynamic PS".
+   * 
+   * <p>I have observed two main ways of transmitting "dynamic PS":</p>
+   * <ul>
+   *   <li>transmit successively full words, for instance: "YOU ARE ",
+   *   "TUNED TO", "RADIO 99",</li>
+   *   <li>scroll a message one letter at a time, for instance: "YOU ARE ",
+   *   "OU ARE T", "U ARE TU", " ARE TUN", "ARE TUNE", "RE TUNED", 
+   *   "E TUNED ", " TUNED T", "TUNED TO", "UNED TO ", "NED TO R", etc.</li>
+   * </ul>
+   * 
+   * <p>
+   * This methods identifies the type of transmission used, and tries to 
+   * reconstruct the original message.
+   * </p>
+   * 
+   * <p>
+   * Note that the method should work even if the two types are mixed in a
+   * given transmission. Note also that the method will work correctly only
+   * if reception is good. If there are many missing blocks, it will not
+   * make sense of the message. This is not a limitation of the method
+   * itself, rather, it is caused by of the abusive use of PS to transmit
+   * complex text, what PS is not designed for. 
+   * </p>
+   *  
+   * @return the reconstructed message, limited to 80 characters in length
+   */
+  getDynamicPSmessage(): string {
+    const msg = this.ps.getPastMessages(true);
+    
+    // Trivial case when there is no message.
+    if (msg.length == 0) return "";
+    
+    let res = "";
+    let prev: string|null = null;
+    for (let i=msg.length-1; i>=0 && res.length < 80; i--) {
+      const current = msg[i];
+      let done = false;
+      if (prev != null && prev.length == 8 && current.length == 8) {
+        // if the 7 rightmost characters of the current PS correspond
+        // to the 7 leftmost characters of the "previous" PS (going 
+        // backward in time), then the PS is scrolling one character
+        // at a time, so we just add *the* leftmost character at the
+        // start
+        if (prev.substring(0, 6) == current.substring(1, 7)) {
+          res = current.charAt(0) + res;
+          done = true;
+        } else if (prev.substring(0, 5) == current.substring(2, 7)) {
+          res = current.substring(0, 2) + res;
+          done = true;
+        }
+      } 
+      
+      if(! done) {
+        // otherwise, the PS is not scrolling, it's just displaying a
+        // succession of 8-character words/sentences
+        res = current.trim() + " " + res;
+      }
+      prev = current;
+    }
+    return res;
+  }
 
   getRT(): string {
     return this.rt.getLatestCompleteOrPartialText();
   }
 
-	getPTYN(): string {
-		console.log(this.ptyn);
-		return this.ptyn.getLatestCompleteOrPartialText();
-	}
+  getPTYN(): string {
+    return this.ptyn.getLatestCompleteOrPartialText();
+  }
 
   addToGroupStats(type: number): void {
     this.group_stats[type]++;
@@ -144,7 +143,7 @@ export class StationImpl implements Station {
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
       [0b01000, "group_4A"],
-			[0b10100, "group_10A"]]);
+      [0b10100, "group_10A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
   }
@@ -155,140 +154,140 @@ function padNumber(num: number, width: number) {
 }
 
 export class RdsString {
-	currentText: number[];
-	currentFlags: number = 0;
-	messages = new Array<string>();
-	latest: number = -1;
-	empty: boolean = true;
-	currentTicks: number = 0;
-	tickHistory = new Map<string, number>();
-	currentIndex: number = 0;
+  currentText: number[];
+  currentFlags: number = 0;
+  messages = new Array<string>();
+  latest: number = -1;
+  empty: boolean = true;
+  currentTicks: number = 0;
+  tickHistory = new Map<string, number>();
+  currentIndex: number = 0;
 
-	constructor(size: number) {
-		this.currentText = new Array<number>(size);
-		this.reset();
-	}
-	
-	public setByte(position: number, c: number): void {
-		if (c != 0 && this.currentText[position] != 0 && c != this.currentText[position]) {
-			// This is a new text: save the previous message...
-			if (!this.empty) {
-				const message = this.toString();
-				this.messages.push(message);
-				this.currentIndex++;
-									
-				const prev = this.tickHistory.get(message);
-				this.tickHistory.set(message, this.currentTicks + (prev == null ? 0 : prev));
+  constructor(size: number) {
+    this.currentText = new Array<number>(size);
+    this.reset();
+  }
+  
+  public setByte(position: number, c: number): void {
+    if (c != 0 && this.currentText[position] != 0 && c != this.currentText[position]) {
+      // This is a new text: save the previous message...
+      if (!this.empty) {
+        const message = this.toString();
+        this.messages.push(message);
+        this.currentIndex++;
+                  
+        const prev = this.tickHistory.get(message);
+        this.tickHistory.set(message, this.currentTicks + (prev == null ? 0 : prev));
 
-				// ... And reset the message buffer.
-				this.reset();
-			}
-		}
-		
-		this.setByteInArray(this.currentText, position, c);
-	}
-	
-	public setFlag(abFlag: number): void {
-		this.currentFlags |= (1 << abFlag);   // Set a bit corresponding to the current flag.
-		this.latest = abFlag;		
-	}
-	
-	public reset(): void {
-		this.currentText.fill(0);
-		this.empty = true;
-		this.currentTicks = 0;
-	}
-	
+        // ... And reset the message buffer.
+        this.reset();
+      }
+    }
+    
+    this.setByteInArray(this.currentText, position, c);
+  }
+  
+  public setFlag(abFlag: number): void {
+    this.currentFlags |= (1 << abFlag);   // Set a bit corresponding to the current flag.
+    this.latest = abFlag;		
+  }
+  
+  public reset(): void {
+    this.currentText.fill(0);
+    this.empty = true;
+    this.currentTicks = 0;
+  }
+  
 
-	public toString(): string {
-		if(this.empty) return "";
-		
-		let res = "";
-		
-		for (let c of this.currentText) {
-			if (c == 0x0D) break;
-			if (c == 0) res += " ";
-			else res += RDS_CHARMAP[c];
-		}
-		
-		return res;
-	}
+  public toString(): string {
+    if(this.empty) return "";
+    
+    let res = "";
+    
+    for (let c of this.currentText) {
+      if (c == 0x0D) break;
+      if (c == 0) res += " ";
+      else res += RDS_CHARMAP[c];
+    }
+    
+    return res;
+  }
 
-	public getFlags(): number {
-		return this.latest;
-	}
-	
-	public getPastMessages(includingCurrent: boolean): Array<string> {
-		if (!includingCurrent || this.empty) {
-			return this.messages;
-		}
+  public getFlags(): number {
+    return this.latest;
+  }
+  
+  public getPastMessages(includingCurrent: boolean): Array<string> {
+    if (!includingCurrent || this.empty) {
+      return this.messages;
+    }
 
-		const l = [...this.messages];
-		l.push(this.toString());
-		return l;
-	}
+    const l = [...this.messages];
+    l.push(this.toString());
+    return l;
+  }
 
-	private setByteInArray(text: number[], position: number, c: number): void {
-		if (c != 0) {
-			text[position] = c;
-		}
-		this.currentTicks++;
-		this.empty = false;
-	}
+  private setByteInArray(text: number[], position: number, c: number): void {
+    if (c != 0) {
+      text[position] = c;
+    }
+    this.currentTicks++;
+    this.empty = false;
+  }
 
-	public isComplete(): boolean {
-		for (let c of this.currentText) {
-			if(c == 0) return false;
-		}
-		return true;
-	}
-	
-	public getMostFrequentText(): string {
-		let mft = this.isComplete() ? this.toString() : "";
-		let mftOcc = 0;
-		
-		this.tickHistory.forEach((value: number, key: string) => {
-			if(value > mftOcc) {
-				mftOcc = value;
-				mft = key;
-			}
-		});
-		
-		return mft;
-	}
-	
-	/**
-	 * If the "most frequent" text is defined, return it. Otherwise, return
-	 * the partial text being received.
-	 * 
-	 * @return the most frequent text if defined, the current text otherwise
-	 */
-	public getMostFrequentOrPartialText(): string {
-		let text = this.getMostFrequentText();
-		if(text.length == 0) text = this.toString();
-		if(text == null) text = "";
-		return text;
-	}
-	
-	public getLatestCompleteOrPartialText(): string {
-		if (this.isComplete()) {
-			return this.toString();
-		} else if (this.messages.length > 0) {
-			return this.messages[this.messages.length-1];
-		} else {
-			const t = this.toString();
-			if (t != null) return t; else return "";
-		}
+  public isComplete(): boolean {
+    for (let c of this.currentText) {
+      if(c == 0) return false;
+    }
+    return true;
+  }
+  
+  public getMostFrequentText(): string {
+    let mft = this.isComplete() ? this.toString() : "";
+    let mftOcc = 0;
+    
+    this.tickHistory.forEach((value: number, key: string) => {
+      if(value > mftOcc) {
+        mftOcc = value;
+        mft = key;
+      }
+    });
+    
+    return mft;
+  }
+  
+  /**
+   * If the "most frequent" text is defined, return it. Otherwise, return
+   * the partial text being received.
+   * 
+   * @return the most frequent text if defined, the current text otherwise
+   */
+  public getMostFrequentOrPartialText(): string {
+    let text = this.getMostFrequentText();
+    if(text.length == 0) text = this.toString();
+    if(text == null) text = "";
+    return text;
+  }
+  
+  public getLatestCompleteOrPartialText(): string {
+    if (this.isComplete()) {
+      return this.toString();
+    } else if (this.messages.length > 0) {
+      return this.messages[this.messages.length-1];
+    } else {
+      const t = this.toString();
+      if (t != null) return t; else return "";
+    }
 
-	}
-	
-	public getCurrentIndex(): number {
-		return this.currentIndex;
-	}
+  }
+  
+  public getCurrentIndex(): number {
+    return this.currentIndex;
+  }
 }
 
 const CTRLCHAR = '\u2423';
-	
+  
 const RDS_CHARMAP = new Array<string>(
   CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR,
   CTRLCHAR, CTRLCHAR, '\u240A', '\u240B', CTRLCHAR, '\u21B5', CTRLCHAR, CTRLCHAR,
