@@ -39,6 +39,75 @@ export class StationImpl implements Station {
     return this.ps.getLatestCompleteOrPartialText();
   }
 
+	getStationName(): string {
+		return this.ps.getMostFrequentOrPartialText();
+	}
+
+	/**
+	 * This method tries to reconstruct a message transmitted using (non-
+	 * standard) "dynamic PS".
+	 * 
+	 * <p>I have observed two main ways of transmitting "dynamic PS":</p>
+	 * <ul>
+	 *   <li>transmit successively full words, for instance: "YOU ARE ",
+	 *   "TUNED TO", "RADIO 99",</li>
+	 *   <li>scroll a message one letter at a time, for instance: "YOU ARE ",
+	 *   "OU ARE T", "U ARE TU", " ARE TUN", "ARE TUNE", "RE TUNED", 
+	 *   "E TUNED ", " TUNED T", "TUNED TO", "UNED TO ", "NED TO R", etc.</li>
+	 * </ul>
+	 * 
+	 * <p>
+	 * This methods identifies the type of transmission used, and tries to 
+	 * reconstruct the original message.
+	 * </p>
+	 * 
+	 * <p>
+	 * Note that the method should work even if the two types are mixed in a
+	 * given transmission. Note also that the method will work correctly only
+	 * if reception is good. If there are many missing blocks, it will not
+	 * make sense of the message. This is not a limitation of the method
+	 * itself, rather, it is caused by of the abusive use of PS to transmit
+	 * complex text, what PS is not designed for. 
+	 * </p>
+	 *  
+	 * @return the reconstructed message, limited to 80 characters in length
+	 */
+	getDynamicPSmessage(): string {
+		const msg = this.ps.getPastMessages(true);
+		
+		// Trivial case when there is no message.
+		if (msg.length == 0) return "";
+		
+		let res = "";
+		let prev: string|null = null;
+		for (let i=msg.length-1; i>=0 && res.length < 80; i--) {
+			const current = msg[i];
+			let done = false;
+			if (prev != null && prev.length == 8 && current.length == 8) {
+				// if the 7 rightmost characters of the current PS correspond
+				// to the 7 leftmost characters of the "previous" PS (going 
+				// backward in time), then the PS is scrolling one character
+				// at a time, so we just add *the* leftmost character at the
+				// start
+				if (prev.substring(0, 6) == current.substring(1, 7)) {
+					res = current.charAt(0) + res;
+					done = true;
+				} else if (prev.substring(0, 5) == current.substring(2, 7)) {
+					res = current.substring(0, 2) + res;
+					done = true;
+				}
+			} 
+			
+			if(! done) {
+				// otherwise, the PS is not scrolling, it's just displaying a
+				// succession of 8-character words/sentences
+				res = current.trim() + " " + res;
+			}
+			prev = current;
+		}
+		return res;
+	}
+
   getRT(): string {
     return this.rt.getLatestCompleteOrPartialText();
   }
