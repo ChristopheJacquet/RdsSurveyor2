@@ -112,6 +112,11 @@ export class StationImpl implements Station {
     return this.rt.getLatestCompleteOrPartialText();
   }
 
+	getPTYN(): string {
+		console.log(this.ptyn);
+		return this.ptyn.getLatestCompleteOrPartialText();
+	}
+
   addToGroupStats(type: number): void {
     this.group_stats[type]++;
   }
@@ -138,7 +143,8 @@ export class StationImpl implements Station {
       [0b00001, "group_0B"],
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
-      [0b01000, "group_4A"]]);
+      [0b01000, "group_4A"],
+			[0b10100, "group_10A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
   }

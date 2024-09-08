@@ -95,3 +95,13 @@ describe('Bad Clock Time', () => {
     expect(station.datetime).toBe("00:00+0min 1900-03-01");
   });
 });
+
+// Radio Mont-Blanc sample from 2024 transmitting PTYN.
+describe('Radio Mont-Blanc ', () => {
+  const station = new StationImpl();
+  send(`F847 A000 4D54 2042
+        F847 A001 4C41 4E43`, station);
+  it('should have expected PTYN', () => {
+    expect(station.getPTYN()).toBe("MT BLANC");
+  });
+});
