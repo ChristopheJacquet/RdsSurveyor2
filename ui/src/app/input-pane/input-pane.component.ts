@@ -18,10 +18,11 @@ export class InputPaneComponent {
 
   processTextualGroups(s: string) {
     for (let l of s.split('\n')) {
+      l = l.split('@')[0];
       const blocks = l.trim().split(' ');
       if (blocks.length != 4) {
         console.log("Unrecognized line: ", l);
-        return;
+        continue;
       }
       const bl: number[] = [];
       const ok: boolean[] = [];
