@@ -105,3 +105,16 @@ describe('Radio Mont-Blanc ', () => {
     expect(station.getPTYN()).toBe("MT BLANC");
   });
 });
+
+// Synthetic sample with Long PS containing valid UTF-8.
+describe('Long PS', () => {
+  const station = new StationImpl();
+  send(`F999 F400 7065 6163
+        F999 F401 6520 D0BC
+        F999 F402 D0B8 D180
+        F999 F403 20E5 B9B3
+        F999 F404 E592 8C00`, station);
+  it('should have expected Long PS', () => {
+    expect(station.getLPS()).toBe("peace мир 平和");
+  });
+});

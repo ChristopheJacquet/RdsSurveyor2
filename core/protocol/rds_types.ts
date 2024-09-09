@@ -3,12 +3,12 @@ import { Station } from "./base";
 export class StationImpl implements Station {
   pi?: number;
   pty?: number;
-  ptyn: RdsString = new RdsString(8);
+  ptyn: RdsString = new RdsStringInRdsEncoding(8);
   tp?: boolean;
   ta?: boolean;
-  ps: RdsString = new RdsString(8);
-  lps: RdsString = new RdsString(16);
-  rt: RdsString = new RdsString(64);
+  ps: RdsString = new RdsStringInRdsEncoding(8);
+  lps: RdsString = new RdsStringInUtf8(32);
+  rt: RdsString = new RdsStringInRdsEncoding(64);
   odas: Map<number, number> = new Map<number, number>();
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
@@ -108,6 +108,10 @@ export class StationImpl implements Station {
     return res;
   }
 
+  getLPS(): string {
+    return this.lps.getLatestCompleteOrPartialText();
+  }
+
   getRT(): string {
     return this.rt.getLatestCompleteOrPartialText();
   }
@@ -143,7 +147,8 @@ export class StationImpl implements Station {
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
       [0b01000, "group_4A"],
-      [0b10100, "group_10A"]]);
+      [0b10100, "group_10A"],
+      [0b11110, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
   }
@@ -153,8 +158,8 @@ function padNumber(num: number, width: number) {
   return num.toString().padStart(width, "0");
 }
 
-export class RdsString {
-  currentText: number[];
+export abstract class RdsString {
+  currentText: Uint8Array;
   currentFlags: number = 0;
   messages = new Array<string>();
   latest: number = -1;
@@ -164,7 +169,7 @@ export class RdsString {
   currentIndex: number = 0;
 
   constructor(size: number) {
-    this.currentText = new Array<number>(size);
+    this.currentText = new Uint8Array(size);
     this.reset();
   }
   
@@ -198,20 +203,7 @@ export class RdsString {
     this.currentTicks = 0;
   }
   
-
-  public toString(): string {
-    if(this.empty) return "";
-    
-    let res = "";
-    
-    for (let c of this.currentText) {
-      if (c == 0x0D) break;
-      if (c == 0) res += " ";
-      else res += RDS_CHARMAP[c];
-    }
-    
-    return res;
-  }
+  public abstract toString(): string;
 
   public getFlags(): number {
     return this.latest;
@@ -227,7 +219,7 @@ export class RdsString {
     return l;
   }
 
-  private setByteInArray(text: number[], position: number, c: number): void {
+  private setByteInArray(text: Uint8Array, position: number, c: number): void {
     if (c != 0) {
       text[position] = c;
     }
@@ -283,6 +275,37 @@ export class RdsString {
   
   public getCurrentIndex(): number {
     return this.currentIndex;
+  }
+}
+
+export class RdsStringInRdsEncoding extends RdsString {
+  public toString(): string {
+    if(this.empty) return "";
+    
+    let res = "";
+    
+    for (let c of this.currentText) {
+      if (c == 0x0D) break;
+      if (c == 0) res += " ";
+      else res += RDS_CHARMAP[c];
+    }
+
+    return res;
+  }
+}
+
+export class RdsStringInUtf8 extends RdsString {
+  public toString(): string {
+    let a = this.currentText;
+    // If there is a 0 byte, it marks the end of the string, so we need to cut
+    // it there.
+    const l = a.indexOf(0);
+    if (l >= 0) {
+      a = a.slice(0, l);
+    }
+
+    const utf8decoder = new TextDecoder("utf-8");
+    return utf8decoder.decode(a);
   }
 }
 
