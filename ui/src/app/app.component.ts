@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { GroupEvent, InputPaneComponent } from './input-pane/input-pane.component';
+import { GroupEvent, NewStationEvent, InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
 import { parse_group } from '../../../core/protocol/base';
 import { StationImpl } from '../../../core/protocol/rds_types';
@@ -17,8 +17,12 @@ export class AppComponent {
 
   station: StationImpl;
 
-  receiveGroup(evt: GroupEvent) {
-    parse_group(evt.blocks, evt.ok, this.station);
+  receiveGroup(evt: GroupEvent | NewStationEvent) {
+    if (evt instanceof GroupEvent) {
+      parse_group(evt.blocks, evt.ok, this.station);
+    } else if (evt instanceof NewStationEvent) {
+      this.station.reset();
+    }
   }
 
   constructor() {

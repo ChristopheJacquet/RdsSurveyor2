@@ -8,12 +8,59 @@ import { Component, EventEmitter, Output } from '@angular/core';
   styleUrl: './input-pane.component.scss'
 })
 export class InputPaneComponent {
-  @Output() groupReceived = new EventEmitter<GroupEvent>();
+  @Output() groupReceived = new EventEmitter<GroupEvent | NewStationEvent>();
   isDragging = false;
 
+  // For station change detection.
+  lastPi: number = -1;
+  toBeConfirmedPi: number = -1;
+  tuningState: TuningState = TuningState.INITIALIZING;
+  pendingGroupEvents = Array<GroupEvent>();
+
   emitGroup(blocks: Uint16Array, ok: boolean[]) {
+    // Station change detection.
+    const pi = blocks[0];
+    if (ok[0]) {
+      switch (this.tuningState) {
+        case TuningState.INITIALIZING:
+          this.lastPi = pi;
+          this.tuningState = TuningState.TUNED;
+          break;
+        case TuningState.TUNED:
+          if (pi != this.lastPi) {
+            this.tuningState = TuningState.CONFIRMING;
+            this.toBeConfirmedPi = pi;
+          }
+          break;
+        case TuningState.CONFIRMING:
+          if (pi == this.toBeConfirmedPi) {
+            // New station confirmed.
+            this.tuningState = TuningState.TUNED;
+            this.lastPi = pi;
+            this.groupReceived.emit(new NewStationEvent());
+            for (let evt of this.pendingGroupEvents) {
+              this.groupReceived.emit(evt);
+            }
+            this.pendingGroupEvents = [];
+          } else if (pi == this.lastPi) {
+            // Back to original PI. Flush pending groups.
+            this.tuningState = TuningState.TUNED;
+            this.pendingGroupEvents = [];
+          } else {
+            // Yet another PI. Remain in CONFIRMING state but flush pending groups.
+            this.toBeConfirmedPi = pi;
+            this.pendingGroupEvents = [];
+          }
+          break;
+      }
+    }
+
     const evt = new GroupEvent(blocks, ok);
-    this.groupReceived.emit(evt);
+    if (this.tuningState != TuningState.CONFIRMING) {
+      this.groupReceived.emit(evt);
+    } else {
+      this.pendingGroupEvents.push(evt);
+    }
   }
 
   processTextualGroups(s: string) {
@@ -88,4 +135,14 @@ export class GroupEvent {
     this.blocks = blocks;
     this.ok = ok;
   }
+}
+
+export class NewStationEvent {
+}
+
+// Tuning state used for station change detection.
+enum TuningState {
+  INITIALIZING,
+  TUNED,
+  CONFIRMING,
 }

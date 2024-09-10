@@ -201,6 +201,8 @@ export abstract class RdsString {
     this.currentText.fill(0);
     this.empty = true;
     this.currentTicks = 0;
+    this.messages = [];
+    this.tickHistory.clear();
   }
   
   public abstract toString(): string;
