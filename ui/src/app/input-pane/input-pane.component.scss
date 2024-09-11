@@ -1,8 +1,19 @@
 .dropzone {
   height: 100%;
   background-color: #EDF;
+  padding: 1em;
+  margin-right: 10px;
+  text-align: center;
+  // Vertical center text.
+  display: flex;
+  align-items: center;
+  cursor: default;
 }
 
 .dragging {
   background-color: #FFA;
+}
+
+input {
+  display: none;
 }

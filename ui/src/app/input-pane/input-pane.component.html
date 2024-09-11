@@ -1,8 +1,9 @@
 <div
   class="dropzone"
   [class.dragging]="isDragging"
-  (click)="sendDemoGroups()"
+  (click)="fileInput.click()"
   (drop)="onDrop($event)"
   (dragover)="onDragOver($event)">
-    Drop RDS data here.
+    Drop file here or<br>click for selection dialog.
+    <input #fileInput type="file" (change)="onFileSelect($event);">
 </div>

@@ -118,6 +118,10 @@ export class InputPaneComponent {
     }
   }
 
+  onFileSelect(event: any) {
+    this.handleFileDrop(event.target.files);
+  }
+
   sendDemoGroups() {
     this.processTextualGroups(
       `F201 0408 2037 2020
