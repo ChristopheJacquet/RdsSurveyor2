@@ -1,3 +1,10 @@
+<div class="playback-speed-container">
+  <mat-button-toggle-group #playbackSpeed name="playbackSpeed" value="fast"
+      (change)="setPlaybackSpeed($event)">
+    <mat-button-toggle value="fast">Fast</mat-button-toggle>
+    <mat-button-toggle value="realtime">Real time</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
 <div
   class="dropzone"
   [class.dragging]="isDragging"

@@ -1,9 +1,10 @@
 import { Component, EventEmitter, Output } from '@angular/core';
+import {MatButtonToggleModule} from '@angular/material/button-toggle'; 
 
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [],
+  imports: [MatButtonToggleModule],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
@@ -16,6 +17,7 @@ export class InputPaneComponent {
   toBeConfirmedPi: number = -1;
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
+  realtimePlayback: boolean = false;
 
   emitGroup(blocks: Uint16Array, ok: boolean[]) {
     // Station change detection.
@@ -63,7 +65,7 @@ export class InputPaneComponent {
     }
   }
 
-  processTextualGroups(s: string) {
+  async processTextualGroups(s: string) {
     for (let l of s.split('\n')) {
       l = l.split('@')[0];
       const blocks = l.trim().split(' ');
@@ -79,6 +81,9 @@ export class InputPaneComponent {
         ok.push(!Number.isNaN(val));
       }
       this.emitGroup(Uint16Array.from(bl), ok);
+      if (this.realtimePlayback) {
+        await sleep(87);   // Duration of a group (1000 ms / (1187.5/104)).
+      }
     }
   }
 
@@ -100,7 +105,7 @@ export class InputPaneComponent {
     event.stopPropagation();
   }
 
-  handleFileDrop(files: FileList) {
+  async handleFileDrop(files: FileList) {
     const reader = new FileReader();
     reader.addEventListener(
       "load",
@@ -120,6 +125,10 @@ export class InputPaneComponent {
 
   onFileSelect(event: any) {
     this.handleFileDrop(event.target.files);
+  }
+
+  setPlaybackSpeed(event: any) {
+    this.realtimePlayback = event.value == "realtime";
   }
 
   sendDemoGroups() {
@@ -149,4 +158,8 @@ enum TuningState {
   INITIALIZING,
   TUNED,
   CONFIRMING,
+}
+
+async function sleep(duration_msec: number) {
+  return new Promise(resolve => setTimeout(resolve, duration_msec));
 }
