@@ -81,3 +81,17 @@
     </div>
   </div>
 </div>
+
+<mat-tab-group>
+  <mat-tab label="Base">
+    Base
+  </mat-tab>
+  <mat-tab label="RT">
+    <mat-list role="list">
+      <mat-list-item role="listitem" *ngFor="let msg of station.rt.getPastMessages(true)">{{ msg }}</mat-list-item>
+    </mat-list>    
+  </mat-tab>
+  <mat-tab label="EON">
+    EON
+  </mat-tab>
+</mat-tab-group>

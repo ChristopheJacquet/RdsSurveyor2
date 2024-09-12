@@ -178,14 +178,14 @@ export abstract class RdsString {
       // This is a new text: save the previous message...
       if (!this.empty) {
         const message = this.toString();
-        this.messages.push(message);
+        this.messages.unshift(message);  // Newest messages on top.
         this.currentIndex++;
                   
         const prev = this.tickHistory.get(message);
         this.tickHistory.set(message, this.currentTicks + (prev == null ? 0 : prev));
 
         // ... And reset the message buffer.
-        this.reset();
+        this.currentText.fill(0);
       }
     }
     

@@ -1,12 +1,14 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {MatListModule} from '@angular/material/list'; 
+import {MatTabsModule} from '@angular/material/tabs'; 
 import { HexPipe } from '../hex.pipe';
 import { StationImpl } from '../../../../core/protocol/rds_types';
 
 @Component({
   selector: 'app-station-info',
   standalone: true,
-  imports: [CommonModule, HexPipe],
+  imports: [CommonModule, HexPipe, MatListModule, MatTabsModule],
   templateUrl: './station-info.component.html',
   styleUrl: './station-info.component.scss'
 })
