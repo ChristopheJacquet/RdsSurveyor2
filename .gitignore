@@ -7,6 +7,7 @@
 
 # Node
 /ui/node_modules
+/core/node_modules
 
 # Angular
 /ui/.angular/cache

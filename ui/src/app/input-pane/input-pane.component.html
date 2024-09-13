@@ -1,16 +1,28 @@
-<div class="playback-speed-container">
-  <mat-button-toggle-group #playbackSpeed name="playbackSpeed" value="fast"
-      (change)="setPlaybackSpeed($event)">
-    <mat-button-toggle value="fast">Fast</mat-button-toggle>
-    <mat-button-toggle value="realtime">Real time</mat-button-toggle>
-  </mat-button-toggle-group>
-</div>
-<div
-  class="dropzone"
-  [class.dragging]="isDragging"
-  (click)="fileInput.click()"
-  (drop)="onDrop($event)"
-  (dragover)="onDragOver($event)">
-    Drop file here or<br>click for selection dialog.
-    <input #fileInput type="file" (change)="onFileSelect($event);">
-</div>
+<mat-tab-group>
+  <mat-tab label="File playback">
+    <div class="playback-speed-container">
+      <mat-button-toggle-group #playbackSpeed name="playbackSpeed" value="fast"
+          (change)="setPlaybackSpeed($event)">
+        <mat-button-toggle value="fast">Fast</mat-button-toggle>
+        <mat-button-toggle value="realtime">Real time</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    <div
+      class="dropzone"
+      [class.dragging]="isDragging"
+      (click)="fileInput.click()"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)">
+        Drop file here or<br>click for selection dialog.
+        <input #fileInput type="file" (change)="onFileSelect($event);">
+    </div>
+  </mat-tab>
+  <mat-tab label="USB dongle">
+    <button mat-stroked-button (click)="connectSi470x()">Connect Si 470x</button>
+
+    <div>
+      <button mat-stroked-button (click)="seekDown()">Down</button>
+      <button mat-stroked-button (click)="seekUp()">Up</button>
+    </div>
+  </mat-tab>
+</mat-tab-group>

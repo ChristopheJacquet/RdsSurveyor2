@@ -1,14 +1,19 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import {MatButtonToggleModule} from '@angular/material/button-toggle'; 
+import {MatButtonModule} from '@angular/material/button';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatTabsModule} from '@angular/material/tabs';
+
+import { RdsReportEvent, RdsReportEventListener } from "../../../../core/drivers/input";
+import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [MatButtonToggleModule],
+  imports: [MatButtonModule, MatButtonToggleModule, MatTabsModule],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
-export class InputPaneComponent {
+export class InputPaneComponent implements RdsReportEventListener {
   @Output() groupReceived = new EventEmitter<GroupEvent | NewStationEvent>();
   isDragging = false;
 
@@ -18,6 +23,7 @@ export class InputPaneComponent {
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
   realtimePlayback: boolean = false;
+  dongle: Si470x | null = null;
 
   emitGroup(blocks: Uint16Array, ok: boolean[]) {
     // Station change detection.
@@ -137,6 +143,35 @@ export class InputPaneComponent {
       F201 0409 383B 494E
       F201 040A 3D45 5445
       F201 040F 474E 5220`);
+  }
+
+  async connectSi470x() {
+    if ("hid" in navigator) {
+      console.log("WebHID API is supported.");
+      const [device] = await navigator.hid.requestDevice({ filters: supportedDevices });
+      console.log("Device", device);
+  
+      this.dongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
+  
+      await this.dongle.init();
+      await this.dongle.tune(99900);
+    }
+  }
+
+  processRdsReportEvent(event: RdsReportEvent): void {
+    this.emitGroup(event.blocks, event.ok);
+  }
+
+  seekUp() {
+    if (this.dongle != null) {
+      this.dongle.seek(false, 1);
+    }
+  }
+  
+  seekDown() {
+    if (this.dongle != null) {
+      this.dongle.seek(false, 0);
+    }
   }
 }
 
