@@ -216,8 +216,7 @@ export abstract class RdsString {
       return this.messages;
     }
 
-    const l = [...this.messages];
-    l.push(this.toString());
+    const l = [this.toString(), ...this.messages];
     return l;
   }
 
