@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon'; 
@@ -15,7 +15,8 @@ import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
-export class InputPaneComponent implements RdsReportEventListener {
+export class InputPaneComponent implements AfterViewInit, RdsReportEventListener  {
+  @ViewChild('blerGraph') public blerGraph!: ElementRef;
   @Output() groupReceived = new EventEmitter<GroupEvent | NewStationEvent>();
   isDragging = false;
 
@@ -29,8 +30,26 @@ export class InputPaneComponent implements RdsReportEventListener {
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
+  blerGraphCx: CanvasRenderingContext2D | null = null;
+  blerGraphWidth: number = 0;
+  blerGraphHeight: number = 0;
+
+  public ngAfterViewInit() {
+    const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
+    this.blerGraphCx = blerGraphEl.getContext('2d');
+    this.blerGraphWidth = blerGraphEl.width;
+    this.blerGraphHeight = blerGraphEl.height;
+
+    if (this.blerGraphCx == null) {
+      return;
+    }
+    this.blerGraphCx.fillStyle = "black";
+    this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
+  }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
+    this.updateBlerGraph(ok);
+
     // Station change detection.
     const pi = blocks[0];
     if (ok[0]) {
@@ -77,6 +96,31 @@ export class InputPaneComponent implements RdsReportEventListener {
       this.groupReceived.emit(evt);
     } else {
       this.pendingGroupEvents.push(evt);
+    }
+  }
+
+  updateBlerGraph(ok: boolean[]) {
+    if (this.blerGraphCx == null) {
+      return;
+    }
+
+    // Scroll left.
+    this.blerGraphCx.drawImage(
+      this.blerGraphCx.canvas,
+      1, 0, this.blerGraphWidth-1, this.blerGraphHeight,
+      0, 0, this.blerGraphWidth-1, this.blerGraphHeight);
+    
+    // Draw line for new group.
+    const x = this.blerGraphWidth-1;
+    let prevY = 0;
+    for (let i = 0; i < 4; i++) {
+      this.blerGraphCx.strokeStyle = ok[i] ? "#8F8" : "#F88";
+      const y = (i+1)*this.blerGraphHeight/4;
+      this.blerGraphCx.beginPath();
+      this.blerGraphCx.moveTo(x, prevY);
+      this.blerGraphCx.lineTo(x, y);
+      this.blerGraphCx.stroke();
+      prevY = y;
     }
   }
 
