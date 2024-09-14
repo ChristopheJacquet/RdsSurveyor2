@@ -157,8 +157,16 @@ export class InputPaneComponent implements RdsReportEventListener {
   async connectSi470x() {
     if ("hid" in navigator) {
       console.log("WebHID API is supported.");
-      const [device] = await navigator.hid.requestDevice({ filters: supportedDevices });
-      console.log("Device", device);
+
+      const devices = await navigator.hid.getDevices();
+      let device: HIDDevice;
+      if (devices.length == 1) {
+        device = devices[0];
+        console.log("Re-using previously selected device", device);
+      } else {
+        [device] = await navigator.hid.requestDevice({ filters: supportedDevices });
+        console.log("Selected device", device);
+      }
   
       this.dongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
   
