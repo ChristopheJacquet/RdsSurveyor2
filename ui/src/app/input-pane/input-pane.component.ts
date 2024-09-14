@@ -1,6 +1,8 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatIconModule} from '@angular/material/icon'; 
 import {MatTabsModule} from '@angular/material/tabs';
 
 import { RdsReportEvent, RdsReportEventListener } from "../../../../core/drivers/input";
@@ -9,7 +11,7 @@ import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [MatButtonModule, MatButtonToggleModule, MatTabsModule],
+  imports: [DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
@@ -24,6 +26,7 @@ export class InputPaneComponent implements RdsReportEventListener {
   pendingGroupEvents = Array<GroupEvent>();
   realtimePlayback: boolean = false;
   dongle: Si470x | null = null;
+  frequency: number = -1;
 
   emitGroup(blocks: Uint16Array, ok: boolean[]) {
     // Station change detection.
@@ -160,6 +163,7 @@ export class InputPaneComponent implements RdsReportEventListener {
 
   processRdsReportEvent(event: RdsReportEvent): void {
     this.emitGroup(event.blocks, event.ok);
+    this.frequency = event.freq;
   }
 
   seekUp() {
@@ -173,6 +177,25 @@ export class InputPaneComponent implements RdsReportEventListener {
       this.dongle.seek(false, 0);
     }
   }
+
+  tuneBy(frequencyDiff: number) {
+    if (this.dongle != null) {
+      let newFreq = this.frequency + frequencyDiff;
+      if(newFreq > 108000) newFreq = 87500;
+      if(newFreq < 87500) newFreq = 108000;
+      this.dongle.tune(newFreq);
+      this.frequency = newFreq;
+    }
+  }
+
+  tuneUp() {
+    this.tuneBy(100);
+  }
+
+  tuneDown() {
+    this.tuneBy(-100);
+  }
+
 }
 
 export class GroupEvent {

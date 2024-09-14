@@ -22,3 +22,23 @@
 input {
   display: none;
 }
+
+.usb-connect-pane {
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.tuner-pane {
+  text-align: center;
+}
+
+.frequency {
+  margin: 0 10px;
+  padding: 3px;
+  background-color: #448;
+  color: #AEF;
+  display: inline-block;
+  vertical-align: top;
+  width: 10em;
+  height: 2em;
+}

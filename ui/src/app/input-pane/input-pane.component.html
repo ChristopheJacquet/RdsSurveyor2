@@ -18,11 +18,24 @@
     </div>
   </mat-tab>
   <mat-tab label="USB dongle">
-    <button mat-stroked-button (click)="connectSi470x()">Connect Si 470x</button>
+    <div class="usb-connect-pane">
+      <button mat-stroked-button [disabled]="dongle != null" (click)="connectSi470x()">Connect Si 470x</button>
+    </div>
 
-    <div>
-      <button mat-stroked-button (click)="seekDown()">Down</button>
-      <button mat-stroked-button (click)="seekUp()">Up</button>
+    <div class="tuner-pane">
+      <button mat-icon-button (click)="seekDown()">
+        <mat-icon>keyboard_double_arrow_left</mat-icon>
+      </button>
+      <button mat-icon-button (click)="tuneDown()">
+        <mat-icon>keyboard_arrow_left</mat-icon>
+      </button>
+      <span class="frequency">{{ frequency > 0 ? (frequency / 1000 | number:'1.1-1':'en-US') : "" }}</span>
+      <button mat-icon-button (click)="tuneUp()">
+        <mat-icon>keyboard_arrow_right</mat-icon>
+      </button>
+      <button mat-icon-button (click)="seekUp()">
+        <mat-icon>keyboard_double_arrow_right</mat-icon>
+      </button>
     </div>
   </mat-tab>
 </mat-tab-group>
