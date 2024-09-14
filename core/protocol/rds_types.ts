@@ -80,7 +80,7 @@ export class StationImpl implements Station {
     
     let res = "";
     let prev: string|null = null;
-    for (let i=msg.length-1; i>=0 && res.length < 80; i--) {
+    for (let i=0; i<msg.length && res.length < 80; i++) {
       const current = msg[i];
       let done = false;
       if (prev != null && prev.length == 8 && current.length == 8) {

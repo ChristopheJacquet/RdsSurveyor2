@@ -11,6 +11,11 @@
 
 .infogrid-cell {
   flex-grow: 1;
+  overflow: hidden;
+}
+
+.infogrid-cell-limited {
+  max-width: 60%;
 }
 
 .infogrid-value {
