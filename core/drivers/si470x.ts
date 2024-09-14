@@ -332,12 +332,9 @@ export class Si470x {
 
     if ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSR) == 0) {
       // Do nothing if no new RDS data is ready.
-      console.log(freq/1000);
       this.sendRdsEvent({
         sourceInfo: dongleInfo,
         freq: freq,
-        ok: [false, false, false, false],
-        blocks: new Uint16Array(4),
       });
       return;
     }
@@ -357,12 +354,6 @@ export class Si470x {
     ] : ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSE) == 0 ?
     [true, true, true, true] : [false, false, false, false]);
 
-    let str = "";
-    for (let i=0; i<4; i++) {
-      str += ok[i] ? block[i].toString(16).toUpperCase().padStart(4, "0") + " " : "---- ";
-    }
-
-    console.log(freq/1000, ": ", str);
     this.sendRdsEvent({
       sourceInfo: dongleInfo,
       freq: freq,

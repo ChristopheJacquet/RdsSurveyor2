@@ -4,7 +4,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": ["@types/w3c-web-hid"]
+    "types": [
+      "@types/w3c-web-hid",
+      "@types/wicg-file-system-access",
+    ]
   },
   "files": [
     "src/main.ts"

@@ -27,8 +27,10 @@ export class InputPaneComponent implements RdsReportEventListener {
   realtimePlayback: boolean = false;
   dongle: Si470x | null = null;
   frequency: number = -1;
+  logDirHandle: FileSystemDirectoryHandle | null = null;
+  logFileStream: FileSystemWritableFileStream | null = null;
 
-  emitGroup(blocks: Uint16Array, ok: boolean[]) {
+  async emitGroup(blocks: Uint16Array, ok: boolean[]) {
     // Station change detection.
     const pi = blocks[0];
     if (ok[0]) {
@@ -36,6 +38,7 @@ export class InputPaneComponent implements RdsReportEventListener {
         case TuningState.INITIALIZING:
           this.lastPi = pi;
           this.tuningState = TuningState.TUNED;
+          this.startNewLogFile(pi);
           break;
         case TuningState.TUNED:
           if (pi != this.lastPi) {
@@ -46,10 +49,12 @@ export class InputPaneComponent implements RdsReportEventListener {
         case TuningState.CONFIRMING:
           if (pi == this.toBeConfirmedPi) {
             // New station confirmed.
-            this.tuningState = TuningState.TUNED;
             this.lastPi = pi;
+            this.tuningState = TuningState.TUNED;
+            await this.startNewLogFile(pi);
             this.groupReceived.emit(new NewStationEvent());
             for (let evt of this.pendingGroupEvents) {
+              await this.logGroupEvent(evt);
               this.groupReceived.emit(evt);
             }
             this.pendingGroupEvents = [];
@@ -68,6 +73,7 @@ export class InputPaneComponent implements RdsReportEventListener {
 
     const evt = new GroupEvent(blocks, ok);
     if (this.tuningState != TuningState.CONFIRMING) {
+      await this.logGroupEvent(evt);
       this.groupReceived.emit(evt);
     } else {
       this.pendingGroupEvents.push(evt);
@@ -161,9 +167,11 @@ export class InputPaneComponent implements RdsReportEventListener {
     }
   }
 
-  processRdsReportEvent(event: RdsReportEvent): void {
-    this.emitGroup(event.blocks, event.ok);
+  async processRdsReportEvent(event: RdsReportEvent) {
     this.frequency = event.freq;
+    if (event.ok != undefined && event.blocks != undefined) {
+      this.emitGroup(event.blocks, event.ok);
+    }
   }
 
   seekUp() {
@@ -196,6 +204,40 @@ export class InputPaneComponent implements RdsReportEventListener {
     this.tuneBy(-100);
   }
 
+  async selectLogDir() {
+    if ('showDirectoryPicker' in self) {
+      this.logDirHandle = await window.showDirectoryPicker();
+      console.log(this.logDirHandle);
+    }
+  }
+
+  async startNewLogFile(pi: number) {
+    if (this.logDirHandle == null) {
+      return;
+    }
+
+    if (this.logFileStream != null) {
+      // Write out pending log data to the previous log file.
+      this.logFileStream.close();
+    }
+
+    const logFileHandle = await this.logDirHandle.getFileHandle(pi.toString(16).toUpperCase().padStart(4, '0') + ' ' + Date.now() + '.txt', { create: true });
+    this.logFileStream = await logFileHandle.createWritable();
+    await this.logFileStream.write('% Log file\n');
+  }
+
+  async logGroupEvent(evt: GroupEvent) {
+    if (this.logFileStream == null) {
+      return;
+    }
+
+    let str = "";
+    for (let i=0; i<4; i++) {
+      str += evt.ok[i] ? evt.blocks[i].toString(16).toUpperCase().padStart(4, "0") + " " : "---- ";
+    }
+
+    await this.logFileStream.write(str + "\n");
+  }
 }
 
 export class GroupEvent {
