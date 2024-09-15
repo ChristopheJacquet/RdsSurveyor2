@@ -1,4 +1,5 @@
 import { Station } from "./base";
+import { callsign } from "./rbds_callsigns";
 
 export class StationImpl implements Station {
   pi?: number;
@@ -41,6 +42,15 @@ export class StationImpl implements Station {
 
   getStationName(): string {
     return this.ps.getMostFrequentOrPartialText();
+  }
+
+  getCallsign(): string {
+    if (this.pi == undefined) {
+      return "????";
+    }
+
+    const cs = callsign(this.pi);
+    return cs == null ? "????" : cs;
   }
 
   /**

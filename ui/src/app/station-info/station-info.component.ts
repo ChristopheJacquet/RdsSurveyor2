@@ -111,6 +111,10 @@ export class StationInfoComponent {
 			this.rdsPtyLabels : this.rbdsPtyLabels)[this.station.pty]
 			+ " (" + this.station.pty + ")";
 	}
+
+	isRbds() {
+		return this.rdsVariant == RdsVariant.RBDS;
+	}
 }
 
 export enum RdsVariant {
