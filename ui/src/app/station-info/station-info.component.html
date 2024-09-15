@@ -1,3 +1,12 @@
+<div class="station-options">
+  <mat-button-toggle-group name="rdsVariant" value="rds"
+      (change)="setRdsVariant($event)">
+    <mat-button-toggle value="rds">RDS</mat-button-toggle>
+    <mat-button-toggle value="rbds">RBDS</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
+
+
 <div class="infogrid">
   <div class="infogrid-row">
     <div class="infogrid-cell">
@@ -36,7 +45,7 @@
     </div>
     <div class="infogrid-cell">
       <div class="infogrid-title">PTY</div>
-      <div class="infogrid-value">{{ station.pty != undefined ? rdsPtyLabels[station.pty] + " (" + station.pty + ")" : "" }} </div>
+      <div class="infogrid-value">{{ getPtyString() }} </div>
     </div>
     <div class="infogrid-cell">
       <div class="infogrid-title">PTYN</div>

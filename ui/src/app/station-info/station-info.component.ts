@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatListModule} from '@angular/material/list'; 
 import {MatTabsModule} from '@angular/material/tabs'; 
 import { HexPipe } from '../hex.pipe';
@@ -8,13 +9,18 @@ import { StationImpl } from '../../../../core/protocol/rds_types';
 @Component({
   selector: 'app-station-info',
   standalone: true,
-  imports: [CommonModule, HexPipe, MatListModule, MatTabsModule],
+  imports: [CommonModule, HexPipe, MatButtonToggleModule, MatListModule, MatTabsModule],
   templateUrl: './station-info.component.html',
   styleUrl: './station-info.component.scss'
 })
 export class StationInfoComponent {
   @Input() station!: StationImpl;
   group_ids = Array(16).fill(0).map((x,i)=>i);
+	rdsVariant: RdsVariant = RdsVariant.RDS;
+
+	setRdsVariant(event: any) {
+    this.rdsVariant = event.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+	}
 
 	rdsPtyLabels = new Array<string>(
 		"None/Undefined",
@@ -94,4 +100,20 @@ export class StationInfoComponent {
     }
     return flags.join(" + ");
   }
+
+	getPtyString(): string {
+		if (this.station.pty == undefined) {
+			return "";
+		}
+
+		// RDS and RBDS have diffent meanings for PTY values.
+		return (this.rdsVariant == RdsVariant.RDS ? 
+			this.rdsPtyLabels : this.rbdsPtyLabels)[this.station.pty]
+			+ " (" + this.station.pty + ")";
+	}
+}
+
+export enum RdsVariant {
+	RDS,
+	RBDS
 }
