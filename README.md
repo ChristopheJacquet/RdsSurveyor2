@@ -15,17 +15,22 @@ The program is currently under development and it is not (yet) usable. See below
 * Corresponding web UI in Angular / TypeScript.
 * One input source: playback of hex files (RDS Surveyor / RDS Spy format).
 
-### Milestone 2
+### Milestone 2 (Reached on 16 Sep 2024)
 
 * New input source: Si 407x USB dongles.
-* Logging.
+* Graphical block error rate display.
+* Logging to local files.
+* ODA support infrastructure.
+* RT+ ODA support.
+* Display of RT history (including RT+).
+* RDS/RBDS switch in the UI (interpretation of PTY, call letters decoding).
 
 ### Milestone 3
 
 * New input source: bitstream file.
 * Traffic info and EON support (notably groups 14A, 14B, 15B).
 * AF support.
-* Display of RT history (including RT+?).
+* DAB cross-reference (EN 301700) ODA support.
 
 ### Milestone 4
 
@@ -42,16 +47,12 @@ The program is currently under development and it is not (yet) usable. See below
 
 ### Milestone 7
 
-* ODA support.
-* Common ODAs: DAB cross-reference.
-
-### Milestone 8
-
 * TMC support.
 
 ### Additional tasks
 
-* Variant support (historical features, RBDS).
+* Display of groups breakdown, groups sequence.
+* Variant support for historical features.
 * Groups 1A, 1B support.
 * RP support.
 * Broadcaster-specific TDC/IH data support: CATRADIO.
