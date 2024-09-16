@@ -8,7 +8,9 @@ import sys
 
 # Define the grammar as a raw string.
 grammar = r'''
-start: struct* bitstruct+
+start: (import | struct | bitstruct)*
+
+import: "import" ID ID
 
 struct: "struct" ID "{"	vardecl* methoddecl* "}"
 
@@ -36,6 +38,7 @@ action:
     | parse_statement
     | invocation
     | copy
+    | put
 
 expr: lvalue
     | function_call
@@ -46,7 +49,7 @@ expr: lvalue
 
 function_call: ID "(" expr ("," expr)* ")"
 
-invocation: ID "." ID "(" expr ("," expr)* ")"
+invocation: lvalue "." ID "(" expr ("," expr)* ")"
 
 mul: expr "*" expr
 
@@ -65,6 +68,8 @@ field_access: lvalue "." ID
 assignment: lvalue "=" expr
 
 parse_statement: "parse" ID expr
+
+put : "put" lvalue expr expr
 
 // imports WORD from library
 %import common.WORD   
@@ -315,6 +320,16 @@ def compile_action(st, arguments):
             for i in range(int(c_seg_size)):
                 output_guarded_block(1, v_addr | v_seg_size | set([f'{c_value}__{i}']),
                     [f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});'])
+        case lark.Tree(data='put', children=[
+            lark.Tree(data='lvalue') as target,
+            lark.Tree(data='expr') as key,
+            lark.Tree(data='expr') as value]):
+
+            (c_target, _) = compile_lvalue(target)    # TODO: Add check - target must be a map.
+            (c_key, v_key) = compile_expr(key)
+            (c_value, v_value) = compile_expr(value)
+            output_guarded_block(1, v_key | v_value, [f'{c_target}.set({c_key}, {c_value});'])
+
         case lark.Tree(data='parse_statement', children=[
             lark.Token(),
             lark.Tree(data='expr') as rule]):
@@ -322,7 +337,7 @@ def compile_action(st, arguments):
             (c_rule, v_rule) = compile_expr(rule);
             output_guarded_block(1, v_rule, [f'get_parse_function({c_rule})(block, ok{build_argument_list(arguments, with_types=False)});'])
         case lark.Tree(data='invocation', children=[
-            lark.Token(type='ID', value=obj),
+            lark.Tree(data='lvalue') as obj,
             lark.Token(type='ID', value=method),
             *args]):
 
@@ -332,7 +347,10 @@ def compile_action(st, arguments):
             for v_a in v_args:
                 v |= v_a
 
-            output_guarded_block(1, v, [f'{obj}.{method}({", ".join(c_args)})'])
+            (c_obj, v_obj) = compile_lvalue(obj)
+            v |= v_obj
+
+            output_guarded_block(1, v, [f'{c_obj}.{method}({", ".join(c_args)});'])
 
         case _:
             of.write(f'\t// Unhandled action: {action}\n')
@@ -391,6 +409,10 @@ def compile_vartype(t):
             return ('string', True)
         case lark.Tree(data='maptype', children=[lark.Tree() as keytype, lark.Tree() as valuetype]):
             return (f'Map<{compile_vartype(keytype)[0]}, {compile_vartype(valuetype)[0]}>', False)
+        # Allow user-defined types to be used as-is in struct fields. In that
+        # case they cannot be undefined.
+        case lark.Tree(data='simplevartype', children=[lark.Token(type='ID', value=typename)]):
+            return (typename, False)
         case _:
             raise Exception(f'Unhandled vartype: {t}')
 
@@ -434,6 +456,11 @@ def compile(t):
 
     for c in t.children:
         match c:
+            case lark.Tree(data='import', children=[
+                lark.Token(type='ID', value=module_name),
+                lark.Token(type='ID', value=symbol_name)]):
+                output_line(0, f'import {{ {symbol_name} }} from "./{module_name}";')
+                output_line(0, '\n')
             case lark.Tree(data='struct', children=cc):
                 compile_struct(cc)
             case lark.Tree(data='bitstruct', children=cc):
@@ -459,7 +486,19 @@ outfile = sys.argv[1] + '.ts'
 
 f = open(infile, encoding="utf8")
 lines = f.readlines()
-p = l.parse("\n".join(lines))
+
+preprocessed_lines = []
+# Preprocessor.
+for li in lines:
+    if li.startswith('#include '):
+        included_file = li.split(' ')[1].strip()
+        incl_f = open(included_file, encoding='utf8')
+        incl_lines = incl_f.readlines()
+        preprocessed_lines.extend(incl_lines)
+    else:
+        preprocessed_lines.append(li)
+
+p = l.parse("\n".join(preprocessed_lines))
 #print(p)
 #print(p.pretty())
 

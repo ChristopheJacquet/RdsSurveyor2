@@ -1,4 +1,5 @@
-import { Station } from "./base";
+import { RtPlusApp, Station } from "./base";
+import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 
 export class StationImpl implements Station {
@@ -10,10 +11,16 @@ export class StationImpl implements Station {
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUtf8(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
-  odas: Map<number, number> = new Map<number, number>();
+  odas: Map<number, string> = new Map<number, string>([
+    [0x4BD7, "group_rtplus"],
+  ]);
+  oda_3A_mapping: Map<number, string> = new Map<number, string>();
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
+
+  // ODAs.
+  rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
@@ -150,17 +157,20 @@ export class StationImpl implements Station {
     this .ps.reset();
     this.lps.reset();
     this.rt.reset();
-    this.odas.clear();
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
       [0b00001, "group_0B"],
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
+      [0b00110, "group_3A"],
       [0b01000, "group_4A"],
       [0b10100, "group_10A"],
       [0b11110, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
+
+    // Reset ODAs.
+    this.rt_plus_app.reset();
   }
 }
 
@@ -318,6 +328,12 @@ export class RdsStringInUtf8 extends RdsString {
     const utf8decoder = new TextDecoder("utf-8");
     return utf8decoder.decode(a);
   }
+}
+
+export interface Oda {
+  getName(): string;
+  enabled: boolean;
+  reset(): void;
 }
 
 const CTRLCHAR = '\u2423';

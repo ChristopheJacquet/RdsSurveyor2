@@ -11,8 +11,10 @@ export interface Station {
 	ps: RdsString;
 	lps: RdsString;
 	rt: RdsString;
-	odas: Map<number, number>;
+	odas: Map<number, string>;
 	app_mapping: Map<number, string>;
+	oda_3A_mapping: Map<number, string>;
+	rt_plus_app: RtPlusApp;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 }
@@ -46,8 +48,8 @@ export function parse_group(block: Uint16Array, ok: boolean[], station: Station)
 	if ((pty != null)) {
 		station.pty = pty;
 	}
-	if ((type != null)) {
-		station.addToGroupStats(type)
+	if ((station != null) && (type != null)) {
+		station.addToGroupStats(type);
 	}
 	if ((type != null)) {
 		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, station);
@@ -230,16 +232,19 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], station: Stati
 	let app_group_type = (ok[1]) ?
 		((block[1] & 0b11111))
 		: null;
-	// Field app_data: uint<16> at +32, width 16.
-	let app_data = (ok[2]) ?
-		((block[2]))
-		: null;
+	// Field app_data: unparsed<16> at +32, width 16.
 	// Field aid: uint<16> at +48, width 16.
 	let aid = (ok[3]) ?
 		((block[3]))
 		: null;
 
 	// Actions.
+	if ((aid != null) && (app_group_type != null)) {
+		station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
+	}
+	if ((aid != null)) {
+		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, station);
+	}
 }
 
 export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Station) {
@@ -267,8 +272,8 @@ export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Stati
 		: null;
 
 	// Actions.
-	if ((hour != null) && (minute != null) && (mjd != null) && (tz_offset != null) && (tz_sign != null)) {
-		station.setClockTime(mjd, hour, minute, tz_sign, tz_offset)
+	if ((hour != null) && (minute != null) && (mjd != null) && (station != null) && (tz_offset != null) && (tz_sign != null)) {
+		station.setClockTime(mjd, hour, minute, tz_sign, tz_offset);
 	}
 }
 
@@ -352,6 +357,54 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 	}
 }
 
+export interface RtPlusApp {
+	setTag(content_type: number, start: number, length: number): void;
+}
+
+export function parse_group_rtplus(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field item_toggle: bool at +27, width 1.
+	let item_toggle = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field item_running: bool at +28, width 1.
+	let item_running = (ok[1]) ?
+		((block[1] & 0b1000) >> 3) == 1
+		: null;
+	// Field content_type_1: uint<6> at +29, width 6.
+	let content_type_1 = (ok[1] && ok[2]) ?
+		((block[1] & 0b111) << 3) | ((block[2] & 0b1110000000000000) >> 13)
+		: null;
+	// Field start_1: uint<6> at +35, width 6.
+	let start_1 = (ok[2]) ?
+		((block[2] & 0b1111110000000) >> 7)
+		: null;
+	// Field length_1: uint<6> at +41, width 6.
+	let length_1 = (ok[2]) ?
+		((block[2] & 0b1111110) >> 1)
+		: null;
+	// Field content_type_2: uint<6> at +47, width 6.
+	let content_type_2 = (ok[2] && ok[3]) ?
+		((block[2] & 0b1) << 5) | ((block[3] & 0b1111100000000000) >> 11)
+		: null;
+	// Field start_2: uint<6> at +53, width 6.
+	let start_2 = (ok[3]) ?
+		((block[3] & 0b11111100000) >> 5)
+		: null;
+	// Field length_2: uint<5> at +59, width 5.
+	let length_2 = (ok[3]) ?
+		((block[3] & 0b11111))
+		: null;
+
+	// Actions.
+	if ((content_type_1 != null) && (length_1 != null) && (start_1 != null) && (station != null)) {
+		station.rt_plus_app.setTag(content_type_1, start_1, length_1);
+	}
+	if ((content_type_2 != null) && (length_2 != null) && (start_2 != null) && (station != null)) {
+		station.rt_plus_app.setTag(content_type_2, start_2, length_2);
+	}
+}
+
 export function get_parse_function(rule: string) {
 	switch (rule) {
 		case "group": return parse_group;
@@ -364,6 +417,7 @@ export function get_parse_function(rule: string) {
 		case "group_4A": return parse_group_4A;
 		case "group_10A": return parse_group_10A;
 		case "group_15A": return parse_group_15A;
+		case "group_rtplus": return parse_group_rtplus;
 	}
 	throw new RangeError("Invalid rule: " + rule);
 }

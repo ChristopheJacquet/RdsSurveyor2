@@ -115,9 +115,29 @@ export class StationInfoComponent {
 	isRbds() {
 		return this.rdsVariant == RdsVariant.RBDS;
 	}
+
+	getRThistory(): Array<RtEntry> {
+		const res = Array<RtEntry>();
+		const messages = this.station.rt.getPastMessages(true);
+		for (let i=0; i<messages.length; i++) {
+			res.push(
+				new RtEntry(
+					messages[i],
+					this.station.rt_plus_app.enabled ?
+						this.station.rt_plus_app.getHistoryForIndex(i, messages[i]) :
+						null));
+		}
+		return res;
+	}
 }
 
 export enum RdsVariant {
 	RDS,
 	RBDS
+}
+
+class RtEntry {
+	constructor(
+		public rt: string,
+		public rtPlus: string | null) {};
 }

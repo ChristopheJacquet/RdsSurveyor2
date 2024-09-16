@@ -19,8 +19,11 @@ struct Station {
     ps: str<8>
     lps: str<32>
     rt: str<64>
-    odas: map<uint<5>, uint<16>>
+    odas: map<uint<16>, tag>
     app_mapping: map<uint<5>, tag>
+    oda_3A_mapping: map<uint<16>, tag>
+    rt_plus_app: RtPlusApp
+
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
 }
@@ -126,14 +129,14 @@ bitstruct group_3A(station: Station) {
     app_group_type: uint<5>
     
     # Block C.
-    app_data: uint<16>
-    ####app_data: lookup(oda_3a_group_types, aid, uint<16>)  # Forward reference to AID
-    # Syntax lookup(type_table, key, default type)
+    app_data: unparsed<16>
     
     # Block D.
     aid: uint<16>
 } action {
-    #station.odas[app_group_type] = aid
+    #station.reportODA(aid, app_group_type)
+    put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
+    parse app_data lookup(station.oda_3A_mapping, aid, "group_unknown")
 }
 
 # Clock time.
@@ -180,3 +183,5 @@ bitstruct group_15A(station: Station) {
 } action {
     copy station.lps, addr, 4, lps_seg
 }
+
+#include odas.p

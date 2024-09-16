@@ -101,7 +101,10 @@
   </mat-tab>
   <mat-tab label="RT">
     <mat-list role="list">
-      <mat-list-item role="listitem" *ngFor="let msg of station.rt.getPastMessages(true)">{{ msg }}</mat-list-item>
+      <mat-list-item role="listitem" *ngFor="let msg of getRThistory()">
+        <div>{{ msg.rt }}</div>
+        <div *ngIf="msg.rtPlus != null">{{ msg.rtPlus }}</div>
+      </mat-list-item>
     </mat-list>    
   </mat-tab>
   <mat-tab label="EON">
