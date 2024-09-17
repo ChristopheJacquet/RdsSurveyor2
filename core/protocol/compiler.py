@@ -39,6 +39,7 @@ action:
     | invocation
     | copy
     | put
+    | switch
 
 expr: lvalue
     | function_call
@@ -70,6 +71,10 @@ assignment: lvalue "=" expr
 parse_statement: "parse" ID expr
 
 put : "put" lvalue expr expr
+
+switch : "switch" expr "{" switch_case+ "}"
+
+switch_case : "case" INT ("," INT)* "{" action* "}"
 
 // imports WORD from library
 %import common.WORD   
@@ -351,6 +356,31 @@ def compile_action(st, arguments):
             v |= v_obj
 
             output_guarded_block(1, v, [f'{c_obj}.{method}({", ".join(c_args)});'])
+
+        case lark.Tree(data='switch', children=[
+            lark.Tree(data='expr') as expr,
+            *cases]):
+
+            (c_expr, v_expr) = compile_expr(expr)
+            # TODO: Add guard.
+            output_line(1, f'switch ({c_expr}) {{')
+
+            for c in cases:
+                match c:
+                    case lark.Tree(data='switch_case', children=cc):
+                        #values = [c for (c, _) in map(compile_expr, subtrees_of_type(cc, 'INT'))]
+                        values = []
+                        for c in cc:
+                            match c:
+                                case lark.Token(type='INT') as i:
+                                    values.append(i)
+                        for v in values:
+                            output_line(2, f'case {v}:')
+                        for a in subtrees_of_type(cc, 'action'):
+                            compile_action(a, arguments)
+                        output_line(2, 'break;')
+
+            output_line(1, '}')
 
         case _:
             of.write(f'\t// Unhandled action: {action}\n')

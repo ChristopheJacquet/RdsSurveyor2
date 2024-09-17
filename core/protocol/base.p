@@ -19,6 +19,10 @@ struct Station {
     ps: str<8>
     lps: str<32>
     rt: str<64>
+    di_dynamic_pty: bool
+    di_compressed: bool
+    di_artificial_head: bool
+    di_stereo: bool
     odas: map<uint<16>, tag>
     app_mapping: map<uint<5>, tag>
     oda_3A_mapping: map<uint<16>, tag>
@@ -72,6 +76,21 @@ bitstruct group_0A(station: Station) {
 } action {
     station.ta = ta
     copy station.ps, addr, 2, ps_seg
+
+    switch addr {
+        case 0 {
+            station.di_dynamic_pty = di
+        }
+        case 1 {
+            station.di_compressed = di
+        }
+        case 2 {
+            station.di_artificial_head = di
+        }
+        case 3 {
+            station.di_stereo = di
+        }
+    }
 }
 
 bitstruct group_0B(station: Station) {
