@@ -6,6 +6,8 @@ ts_project(
     name = "protocol",
     srcs = [
         "base.ts",
+        "radio_text_plus.ts",
+        "rbds_callsigns.ts",
         "rds_types.ts",
     ],
     transpiler = "tsc",
