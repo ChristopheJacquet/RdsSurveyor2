@@ -11,6 +11,7 @@ export interface Station {
 	ps: RdsString;
 	lps: RdsString;
 	rt: RdsString;
+	music?: boolean;
 	di_dynamic_pty?: boolean;
 	di_compressed?: boolean;
 	di_artificial_head?: boolean;
@@ -84,7 +85,10 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	let ta = (ok[1]) ?
 		((block[1] & 0b10000) >> 4) == 1
 		: null;
-	// Field _: bool at +28, width 1.
+	// Field music: bool at +28, width 1.
+	let music = (ok[1]) ?
+		((block[1] & 0b1000) >> 3) == 1
+		: null;
 	// Field di: bool at +29, width 1.
 	let di = (ok[1]) ?
 		((block[1] & 0b100) >> 2) == 1
@@ -112,6 +116,9 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	// Actions.
 	if ((ta != null)) {
 		station.ta = ta;
+	}
+	if ((music != null)) {
+		station.music = music;
 	}
 	if ((addr != null) && (ps_seg__0 != null)) {
 		station.ps.setByte(addr*2 + 0, ps_seg__0);

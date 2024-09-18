@@ -11,6 +11,11 @@ export class StationImpl implements Station {
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUtf8(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
+	music?: boolean;
+	di_dynamic_pty?: boolean;
+	di_compressed?: boolean;
+	di_artificial_head?: boolean;
+	di_stereo?: boolean;
   odas: Map<number, string> = new Map<number, string>([
     [0x4BD7, "group_rtplus"],
   ]);
@@ -157,6 +162,12 @@ export class StationImpl implements Station {
     this .ps.reset();
     this.lps.reset();
     this.rt.reset();
+    this.music = undefined;
+    this.di_dynamic_pty = undefined;
+    this.di_compressed = undefined;
+    this.di_artificial_head = undefined;
+    this.di_stereo = undefined;
+  
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
       [0b00001, "group_0B"],

@@ -48,7 +48,7 @@
       <div class="infogrid-value">{{ station.datetime }} </div>
     </div>
     <div class="infogrid-cell">
-      <div class="infogrid-title">PTY</div>
+      <div class="infogrid-title">PTY [{{ station.di_dynamic_pty == true ? "Dynamic" : "Static" }}]</div>
       <div class="infogrid-value">{{ getPtyString() }} </div>
     </div>
     <div class="infogrid-cell">
@@ -97,7 +97,33 @@
 
 <mat-tab-group>
   <mat-tab label="Base">
-    Base
+    <div class="infogrid">
+      <div class="infogrid-row">
+        <div class="infogrid-cell">
+          <div class="infogrid-title">Country</div>
+          <div class="infogrid-value">Placeholder </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">Language</div>
+          <div class="infogrid-value">Placeholder </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">PIN</div>
+          <div class="infogrid-value">Placeholder </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">Sound Information</div>
+          <div class="infogrid-value infogrid-chips">
+            <span *ngIf="station.music">Music</span>
+            <span *ngIf="station.music == false">Speech</span>
+            <span *ngIf="station.di_stereo">Stereo</span>
+            <span *ngIf="station.di_compressed">Compressed</span>
+            <span *ngIf="station.di_artificial_head">Artificial head</span>
+            &nbsp;
+          </div>
+        </div>
+      </div>
+    </div>
   </mat-tab>
   <mat-tab label="RT">
     <mat-list role="list">

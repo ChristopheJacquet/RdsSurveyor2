@@ -19,6 +19,7 @@ struct Station {
     ps: str<8>
     lps: str<32>
     rt: str<64>
+    music: bool
     di_dynamic_pty: bool
     di_compressed: bool
     di_artificial_head: bool
@@ -63,7 +64,7 @@ bitstruct group_0A(station: Station) {
 
     # Rest of Block B.
     ta: bool
-    _: bool
+    music: bool
     di: bool
     addr: uint<2>
     
@@ -75,6 +76,7 @@ bitstruct group_0A(station: Station) {
     ps_seg: byte<2>
 } action {
     station.ta = ta
+    station.music = music
     copy station.ps, addr, 2, ps_seg
 
     switch addr {
