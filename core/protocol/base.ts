@@ -119,27 +119,33 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	if ((addr != null) && (ps_seg__1 != null)) {
 		station.ps.setByte(addr*2 + 1, ps_seg__1);
 	}
-	switch (addr) {
-		case 0:
-	if ((di != null)) {
-		station.di_dynamic_pty = di;
-	}
-		break;
-		case 1:
-	if ((di != null)) {
-		station.di_compressed = di;
-	}
-		break;
-		case 2:
-	if ((di != null)) {
-		station.di_artificial_head = di;
-	}
-		break;
-		case 3:
-	if ((di != null)) {
-		station.di_stereo = di;
-	}
-		break;
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				if ((di != null)) {
+					station.di_dynamic_pty = di;
+				}
+				break;
+
+			case 1:
+				if ((di != null)) {
+					station.di_compressed = di;
+				}
+				break;
+
+			case 2:
+				if ((di != null)) {
+					station.di_artificial_head = di;
+				}
+				break;
+
+			case 3:
+				if ((di != null)) {
+					station.di_stereo = di;
+				}
+				break;
+
+		}
 	}
 }
 

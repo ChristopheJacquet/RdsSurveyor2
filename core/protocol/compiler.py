@@ -93,6 +93,43 @@ COMMENT: "#" /(.)+/ NEWLINE
 %import common.ESCAPED_STRING
 '''
 
+class CodeGenerator:
+    def __init__(self, of, indent=0, in_block=False):
+        self.of = of
+        self.indent = indent
+        self.in_block = in_block
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.in_block:
+            self.indent -= 1
+            self.line('}')
+
+    def line(self, instr=''):
+        if instr == '':
+            tabs = ''
+        else:
+            tabs = '\t' * self.indent
+        self.of.write(f'{tabs}{instr}\n')
+
+    def block(self, instr):
+        self.line(instr)
+        return CodeGenerator(of=self.of, indent=self.indent+1, in_block=True)
+
+    def non_block_indent(self):
+        # Special case used under "case" keywords inside "switch": indent
+        # without block. Otherwise, similar to block.
+        return CodeGenerator(of=self.of, indent=self.indent+1, in_block=False)
+
+    def guarded_block(self, guard_vars):
+        if len(guard_vars) > 0:
+            vars_test = ' && '.join(f'({v} != null)' for v in sorted(guard_vars))
+            return self.block(f'if ({vars_test}) {{')
+        else:
+            return self
+
 class Type:
     def conv(self, bit_expr):
         return bit_expr
@@ -203,11 +240,11 @@ def field_extent(pos, width):
     masks[first_block] &= 2**(16-first_bit)-1
     return (masks, shifts)
 
-def compile_field_parsing(st, pos):
+def compile_field_parsing(codegen, st, pos):
     cc = st.children
     field = pick_child_token(cc, 'ID')
     typ = parse_type(subtree_of_type(cc, 'type'))
-    of.write(f'\t// Field {field}: {typ} at +{pos}, width {typ.width}.\n')
+    codegen.line(f'// Field {field}: {typ} at +{pos}, width {typ.width}.')
     end_pos = pos + typ.width   # Need to store it here because we're going to touch pos.
     if typ.output and field != '_':
         for i in range(typ.num):
@@ -228,9 +265,10 @@ def compile_field_parsing(st, pos):
                     else:
                         mask = ''
                     ts_ops.append(f'((block[{b}]{mask}){shift})')
-            of.write(f'\tlet {field}{'__' + str(i) if typ.num>1 else ''} = ({" && ".join(ts_ok)}) ?\n')
-            of.write(f'\t\t{typ.conv(" | ".join(ts_ops))}\n')
-            of.write(f'\t\t: null;\n')
+            codegen.line(f'let {field}{'__' + str(i) if typ.num>1 else ''} = ({" && ".join(ts_ok)}) ?')
+            with codegen.non_block_indent() as cgn:
+                cgn.line(f'{typ.conv(" | ".join(ts_ops))}')
+                cgn.line(f': null;')
             pos += typ.elemwidth
     return end_pos
 
@@ -276,31 +314,13 @@ def compile_expr(st):
         case _:
             return (f'<<< Unhandled expr: {st} >>>', set())
 
-def output_line(indent, instr):
-    tabs = '\t' * indent
-    of.write(f'{tabs}{instr}\n')
-
-def output_guarded_block(indent, guard_vars, block):
-    if len(guard_vars) > 0:
-        vars_test = ' && '.join(f'({v} != null)' for v in sorted(guard_vars))
-        output_line(indent, f'if ({vars_test}) {{')
-        block_indent = indent+1
-        need_closing = True
-    else:
-        block_indent = indent
-        need_closing = False
-    for l in block:
-        output_line(block_indent, l)
-    if need_closing:
-        output_line(indent, '}')
-
-def compile_action(st, arguments):
+def compile_action(codegen, st, arguments):
     if len(st.children) == 0:
         return
     elif len(st.children) > 1:
         raise Exception('More than one action!')
     action = st.children[0]
-    #of.write(f'\t// {cc}\n')
+
     match action:
         case lark.Tree(data='assignment', children=[
             lark.Tree(data='lvalue') as lvalue,
@@ -311,7 +331,8 @@ def compile_action(st, arguments):
             variables = v_expr | v_lvalue
             for a in arguments:
                 variables.discard(a)
-            output_guarded_block(1, variables, [f'{e_lvalue} = {e};'])
+            with codegen.guarded_block(variables) as cgn:
+                cgn.line(f'{e_lvalue} = {e};')
         case lark.Tree(data='copy', children=[
             lark.Tree(data='lvalue') as target,
             lark.Tree(data='expr') as addr,
@@ -323,8 +344,8 @@ def compile_action(st, arguments):
             (c_seg_size, v_seg_size) = compile_expr(seg_size)    # TODO: Add check - seg_size must be an INT litteral.
             (c_value, _) = compile_expr(value)             # TODO: Add check - c_value must be a parse field name.
             for i in range(int(c_seg_size)):
-                output_guarded_block(1, v_addr | v_seg_size | set([f'{c_value}__{i}']),
-                    [f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});'])
+                with codegen.guarded_block(v_addr | v_seg_size | set([f'{c_value}__{i}'])) as cgn:
+                    cgn.line(f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});')
         case lark.Tree(data='put', children=[
             lark.Tree(data='lvalue') as target,
             lark.Tree(data='expr') as key,
@@ -333,14 +354,16 @@ def compile_action(st, arguments):
             (c_target, _) = compile_lvalue(target)    # TODO: Add check - target must be a map.
             (c_key, v_key) = compile_expr(key)
             (c_value, v_value) = compile_expr(value)
-            output_guarded_block(1, v_key | v_value, [f'{c_target}.set({c_key}, {c_value});'])
+            with codegen.guarded_block(v_key | v_value) as cgn:
+                cgn.line(f'{c_target}.set({c_key}, {c_value});')
 
         case lark.Tree(data='parse_statement', children=[
             lark.Token(),
             lark.Tree(data='expr') as rule]):
             
             (c_rule, v_rule) = compile_expr(rule);
-            output_guarded_block(1, v_rule, [f'get_parse_function({c_rule})(block, ok{build_argument_list(arguments, with_types=False)});'])
+            with codegen.guarded_block(v_rule) as cgn:
+                cgn.line(f'get_parse_function({c_rule})(block, ok{build_argument_list(arguments, with_types=False)});')
         case lark.Tree(data='invocation', children=[
             lark.Tree(data='lvalue') as obj,
             lark.Token(type='ID', value=method),
@@ -355,35 +378,36 @@ def compile_action(st, arguments):
             (c_obj, v_obj) = compile_lvalue(obj)
             v |= v_obj
 
-            output_guarded_block(1, v, [f'{c_obj}.{method}({", ".join(c_args)});'])
+            with codegen.guarded_block(v) as cgn:
+                cgn.line(f'{c_obj}.{method}({", ".join(c_args)});')
 
         case lark.Tree(data='switch', children=[
             lark.Tree(data='expr') as expr,
             *cases]):
 
             (c_expr, v_expr) = compile_expr(expr)
-            # TODO: Add guard.
-            output_line(1, f'switch ({c_expr}) {{')
 
-            for c in cases:
-                match c:
-                    case lark.Tree(data='switch_case', children=cc):
-                        #values = [c for (c, _) in map(compile_expr, subtrees_of_type(cc, 'INT'))]
-                        values = []
-                        for c in cc:
-                            match c:
-                                case lark.Token(type='INT') as i:
-                                    values.append(i)
-                        for v in values:
-                            output_line(2, f'case {v}:')
-                        for a in subtrees_of_type(cc, 'action'):
-                            compile_action(a, arguments)
-                        output_line(2, 'break;')
+            with codegen.guarded_block(v_expr) as cgn:
+                with cgn.block(f'switch ({c_expr}) {{') as cgn2:
 
-            output_line(1, '}')
+                    for c in cases:
+                        match c:
+                            case lark.Tree(data='switch_case', children=cc):
+                                values = []
+                                for c in cc:
+                                    match c:
+                                        case lark.Token(type='INT') as i:
+                                            values.append(i)
+                                for v in values:
+                                    cgn2.line(f'case {v}:')
+                                with cgn2.non_block_indent() as cgn3:
+                                    for a in subtrees_of_type(cc, 'action'):
+                                        compile_action(cgn3, a, arguments)
+                                    cgn3.line('break;')
+                                    cgn3.line()
 
         case _:
-            of.write(f'\t// Unhandled action: {action}\n')
+            codegen.line(f'// Unhandled action: {action}')
 
 rules = {}
 
@@ -392,10 +416,10 @@ def build_argument_list(arguments, with_types):
         return ', ' + ', '.join(n + (f': {t}' if with_types else '') for n, t in arguments.items())
     return ''
 
-def compile_bitstruct(cc):
-    id = pick_child_token(cc, 'ID')
-    ts_func = f'parse_{id}'
-    rules[id] = ts_func
+def compile_bitstruct(codegen, cc):
+    i = pick_child_token(cc, 'ID')
+    ts_func = f'parse_{i}'
+    rules[i] = ts_func
 
     # Build map of arguments.
     arguments = {}
@@ -409,22 +433,21 @@ def compile_bitstruct(cc):
                 
                 arguments[arg_name] = arg_type
     
-    output_line(0, f'export function {ts_func}(block: Uint16Array, ok: boolean[]{build_argument_list(arguments, with_types=True)}) {{')
+    with codegen.block(f'export function {ts_func}(block: Uint16Array, ok: boolean[]{build_argument_list(arguments, with_types=True)}) {{') as cgn:
 
-    pos = 0
-    for st in subtrees_of_type(cc, 'decl'):
-        pos = compile_field_parsing(st, pos)
-    
-    if pos != 64:
-        raise Exception(f'Inconsistent group length: {pos}.')
+        pos = 0
+        for st in subtrees_of_type(cc, 'decl'):
+            pos = compile_field_parsing(cgn, st, pos)
+        
+        if pos != 64:
+            raise Exception(f'Inconsistent group length: {pos}.')
 
-    output_line(0, '')
-    output_line(1, '// Actions.')
-    for st in subtrees_of_type(cc, 'action'):
-        compile_action(st, arguments)
-    
-    output_line(0, '}')
-    output_line(0, '')
+        cgn.line()
+        cgn.line('// Actions.')
+        for st in subtrees_of_type(cc, 'action'):
+            compile_action(cgn, st, arguments)
+        
+    cgn.line()
 
 def compile_vartype(t):
     """Returns a pair: a type-string and a boolean telling if the field can be undefined."""
@@ -446,68 +469,64 @@ def compile_vartype(t):
         case _:
             raise Exception(f'Unhandled vartype: {t}')
 
-def compile_struct(cc):
+def compile_struct(codegen, cc):
     struct_name = pick_child_token(cc, 'ID')
-    output_line(0, f'export interface {struct_name} {{')
-    for st in subtrees_of_type(cc, 'vardecl'):
-        match st:
-            case lark.Tree(data='vardecl', children=[
-                lark.Token(type='ID', value=field_name),
-                lark.Tree(data='vartype', children=[type_tree])]):
+    with codegen.block(f'export interface {struct_name} {{') as cgn:
+        for st in subtrees_of_type(cc, 'vardecl'):
+            match st:
+                case lark.Tree(data='vardecl', children=[
+                    lark.Token(type='ID', value=field_name),
+                    lark.Tree(data='vartype', children=[type_tree])]):
 
-                (type_str, undef) = compile_vartype(type_tree)
-                output_line(1, f'{field_name}{"?" if undef else ""}: {type_str};')
-            case v: print(f'WARNING: Unexpected vardecl: {v}')
-    for st in subtrees_of_type(cc, 'methoddecl'):
-        match st:
-            case lark.Tree(data='methoddecl', children=[
-                lark.Token(type='ID', value=method_name),
-                *args]):
+                    (type_str, undef) = compile_vartype(type_tree)
+                    cgn.line(f'{field_name}{"?" if undef else ""}: {type_str};')
+                case v: print(f'WARNING: Unexpected vardecl: {v}')
+        for st in subtrees_of_type(cc, 'methoddecl'):
+            match st:
+                case lark.Tree(data='methoddecl', children=[
+                    lark.Token(type='ID', value=method_name),
+                    *args]):
 
-                ar = []
-                for a in args:
-                    match a:
-                        case lark.Tree(data='vardecl', children=[
-                            lark.Token(type='ID', value=arg_name),
-                            lark.Tree(data='vartype', children=[type_tree])]):
+                    ar = []
+                    for a in args:
+                        match a:
+                            case lark.Tree(data='vardecl', children=[
+                                lark.Token(type='ID', value=arg_name),
+                                lark.Tree(data='vartype', children=[type_tree])]):
 
-                            (type_str, _) = compile_vartype(type_tree)
-                            ar.append(f'{arg_name}: {type_str}')
-                output_line(1, f'{method_name}({", ".join(ar)}): void;')
-            case v: print(f'WARNING: Unexpected vardecl: {v}')
-    output_line(0, '}')
-    output_line(0, '')
+                                (type_str, _) = compile_vartype(type_tree)
+                                ar.append(f'{arg_name}: {type_str}')
+                    cgn.line(f'{method_name}({", ".join(ar)}): void;')
+                case v: print(f'WARNING: Unexpected vardecl: {v}')
+    codegen.line()
 
-def compile(t):
-    output_line(0, '// Generated file. DO NOT EDIT.')
-    output_line(0, '')
-    output_line(0, 'import { RdsString } from "./rds_types";')
-    output_line(0, '')
+def compile(codegen, t):
+    codegen.line('// Generated file. DO NOT EDIT.')
+    codegen.line()
+    codegen.line('import { RdsString } from "./rds_types";')
+    codegen.line()
 
     for c in t.children:
         match c:
             case lark.Tree(data='import', children=[
                 lark.Token(type='ID', value=module_name),
                 lark.Token(type='ID', value=symbol_name)]):
-                output_line(0, f'import {{ {symbol_name} }} from "./{module_name}";')
-                output_line(0, '\n')
+                codegen.line(f'import {{ {symbol_name} }} from "./{module_name}";')
+                codegen.line('\n')
             case lark.Tree(data='struct', children=cc):
-                compile_struct(cc)
+                compile_struct(codegen, cc)
             case lark.Tree(data='bitstruct', children=cc):
-                compile_bitstruct(cc)
+                compile_bitstruct(codegen, cc)
             case lark.Tree(data=d, children=cc):
                 print(f'Unhandled {d}')
             case _:
                 print('z')
-    
-    output_line(0, 'export function get_parse_function(rule: string) {')
-    output_line(1, 'switch (rule) {')
-    for (rule_id, ts_func) in rules.items():
-        output_line(2, f'case "{rule_id}": return {ts_func};')
-    output_line(1, '}')
-    output_line(1, 'throw new RangeError("Invalid rule: " + rule);')
-    output_line(0, '}')
 
+    with codegen.block('export function get_parse_function(rule: string) {') as blk1:
+        with blk1.block('switch (rule) {') as blk2:
+            for (rule_id, ts_func) in rules.items():
+                blk2.line(f'case "{rule_id}": return {ts_func};')
+        blk2.line('throw new RangeError("Invalid rule: " + rule);')
 
 l = Lark(grammar)
 
@@ -533,5 +552,6 @@ p = l.parse("\n".join(preprocessed_lines))
 #print(p.pretty())
 
 of = open(outfile, encoding="utf8", mode="w")
+codegen = CodeGenerator(of=of)
 
-compile(p)
+compile(codegen, p)
