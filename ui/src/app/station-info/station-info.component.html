@@ -136,4 +136,14 @@
   <mat-tab label="EON">
     EON
   </mat-tab>
+  <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
+    <table>
+      <tr><th>Mode</th><th>Frequency</th><th>EId</th></tr>
+      <tr *ngFor="let e of station.dab_cross_ref_app.ensembleTable">
+        <td>{{ e.mode }}</td>
+        <td>{{ e.freqKhz }} kHz</td>
+        <td>{{ e.eid | hex:4 }}</td>
+      </tr>
+    </table>
+  </mat-tab>
 </mat-tab-group>

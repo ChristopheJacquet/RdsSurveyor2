@@ -28,6 +28,7 @@ struct Station {
     app_mapping: map<uint<5>, tag>
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
+    dab_cross_ref_app: DabCrossRefApp
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)

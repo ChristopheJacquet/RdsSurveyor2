@@ -20,6 +20,7 @@ export interface Station {
 	app_mapping: Map<number, string>;
 	oda_3A_mapping: Map<number, string>;
 	rt_plus_app: RtPlusApp;
+	dab_cross_ref_app: DabCrossRefApp;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 }
@@ -444,6 +445,90 @@ export function parse_group_rtplus(block: Uint16Array, ok: boolean[], station: S
 	}
 }
 
+export interface DabCrossRefApp {
+	addEnsemble(mode: number, frequency: number, eid: number): void;
+	addServiceEnsembleInfo(eid: number, sid: number): void;
+	addServiceLinkageInfo(linkageInfo: number, sid: number): void;
+}
+
+export function parse_group_dabxref(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field es: uint<1> at +27, width 1.
+	let es = (ok[1]) ?
+		((block[1] & 0b10000) >> 4)
+		: null;
+	// Field _: unparsed<36> at +28, width 36.
+
+	// Actions.
+	if ((es != null)) {
+		switch (es) {
+			case 0:
+				get_parse_function("group_dabxref_ensemble")(block, ok, station);
+				break;
+
+			case 1:
+				get_parse_function("group_dabxref_service")(block, ok, station);
+				break;
+
+		}
+	}
+}
+
+export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field _: unparsed<28> at +0, width 28.
+	// Field mode: uint<2> at +28, width 2.
+	let mode = (ok[1]) ?
+		((block[1] & 0b1100) >> 2)
+		: null;
+	// Field frequency: uint<18> at +30, width 18.
+	let frequency = (ok[1] && ok[2]) ?
+		((block[1] & 0b11) << 16) | ((block[2]))
+		: null;
+	// Field eid: uint<16> at +48, width 16.
+	let eid = (ok[3]) ?
+		((block[3]))
+		: null;
+
+	// Actions.
+	if ((eid != null) && (frequency != null) && (mode != null) && (station != null)) {
+		station.dab_cross_ref_app.addEnsemble(mode, frequency, eid);
+	}
+}
+
+export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field _: unparsed<28> at +0, width 28.
+	// Field variant: uint<4> at +28, width 4.
+	let variant = (ok[1]) ?
+		((block[1] & 0b1111))
+		: null;
+	// Field info: uint<16> at +32, width 16.
+	let info = (ok[2]) ?
+		((block[2]))
+		: null;
+	// Field sid: uint<16> at +48, width 16.
+	let sid = (ok[3]) ?
+		((block[3]))
+		: null;
+
+	// Actions.
+	if ((variant != null)) {
+		switch (variant) {
+			case 0:
+				if ((info != null) && (sid != null) && (station != null)) {
+					station.dab_cross_ref_app.addServiceEnsembleInfo(info, sid);
+				}
+				break;
+
+			case 1:
+				if ((info != null) && (sid != null) && (station != null)) {
+					station.dab_cross_ref_app.addServiceLinkageInfo(info, sid);
+				}
+				break;
+
+		}
+	}
+}
+
 export function get_parse_function(rule: string) {
 	switch (rule) {
 		case "group": return parse_group;
@@ -457,6 +542,9 @@ export function get_parse_function(rule: string) {
 		case "group_10A": return parse_group_10A;
 		case "group_15A": return parse_group_15A;
 		case "group_rtplus": return parse_group_rtplus;
+		case "group_dabxref": return parse_group_dabxref;
+		case "group_dabxref_ensemble": return parse_group_dabxref_ensemble;
+		case "group_dabxref_service": return parse_group_dabxref_service;
 	}
 	throw new RangeError("Invalid rule: " + rule);
 }

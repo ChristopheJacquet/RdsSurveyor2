@@ -1,4 +1,5 @@
 import { RtPlusApp, Station } from "./base";
+import { DabCrossRefAppImpl } from "./dab_cross_ref";
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 
@@ -17,6 +18,7 @@ export class StationImpl implements Station {
 	di_artificial_head?: boolean;
 	di_stereo?: boolean;
   odas: Map<number, string> = new Map<number, string>([
+    [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
   ]);
   oda_3A_mapping: Map<number, string> = new Map<number, string>();
@@ -26,6 +28,7 @@ export class StationImpl implements Station {
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
+  dab_cross_ref_app: DabCrossRefAppImpl = new DabCrossRefAppImpl();
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
