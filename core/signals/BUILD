@@ -7,6 +7,9 @@ ts_project(
     srcs = [
         "bitstream.ts",
     ],
+    deps = [
+        "//drivers:input",
+    ],
     transpiler = "tsc",
     declaration = True,  # Needed to be able to reference target in deps.
     source_map = True,

@@ -1,3 +1,5 @@
+import { RdsReportEventListener } from "../drivers/input";
+
 // Number of good blocks needed after initial block to confirm synchronization.
 const SYNC_THRESHOLD = 2;
 
@@ -47,8 +49,10 @@ export class BitStreamSynchronizer {
 	private bitTime = 0;
 	private negativePolarity = false;
 	private nbSyncAtOffset: number[][][][] = [];
+  private listener: RdsReportEventListener;
 	
-	public constructor() {
+	public constructor(listener: RdsReportEventListener) {
+    this.listener = listener;
 		this.eraseSyncArray();
 	}
 	
@@ -106,7 +110,6 @@ export class BitStreamSynchronizer {
               if (this.negativePolarity) this.group[i] = ~ this.group[i];
               
               console.log("Got synchronization on block " + String.fromCharCode(65 + i) + "! (" + (j==0 ? "positive" : "negative") + " logic)");
-              if (this.blockCount == 0) console.log();
               // TODO: Need to report status?
             }
             break;
@@ -142,7 +145,7 @@ export class BitStreamSynchronizer {
           // after a while without a correct block, decide we have lost synchronization
           if (this.nbUnsync > SYNC_LOSS_DURATION) {
             this.synced = false;
-            console.log(" Lost synchronization.");
+            console.log("Lost synchronization.");
             // TODO: Need to report status?
           }
           
@@ -156,8 +159,24 @@ export class BitStreamSynchronizer {
             this.blocksOk[1] ? theGroup[1].toString(16) : '----',
             this.blocksOk[2] ? theGroup[2].toString(16) : '----',
             this.blocksOk[3] ? theGroup[3].toString(16) : '----');
-          // TODO: Report group.
+          this.listener.processRdsReportEvent({
+            ok: [...this.blocksOk],
+            blocks: theGroup,
+            freq: 0,
+            sourceInfo: "BitStreamSynchronizer",
+          });
         }
+      }
+    }
+  }
+
+  public addBits(bytes: Uint8Array) {
+    for (let i = 0; i < bytes.length; i++) {
+      let byte = bytes[i];
+  
+      for (let j = 0; j < 8; j++) {
+        this.addBit((byte & 0x80) != 0);
+        byte <<= 1;
       }
     }
   }
