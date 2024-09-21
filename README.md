@@ -25,10 +25,9 @@ The program is currently under development and it is not (yet) usable. See below
 * Display of RT history (including RT+).
 * RDS/RBDS switch in the UI (interpretation of PTY, call letters decoding).
 
-### Milestone 3
+### Milestone 3 (Reached on 21 Sep 2024)
 
 * New input source: bitstream file.
-* Traffic info and EON support (notably groups 14A, 14B, 15B).
 * AF support.
 * DAB cross-reference (EN 301700) ODA support.
 
@@ -40,6 +39,7 @@ The program is currently under development and it is not (yet) usable. See below
 ### Milestone 5
 
 * New input source: I/Q signal (in WAV file).
+* Traffic info and EON support (notably groups 14A, 14B, 15B).
 
 ### Milestone 6
 
@@ -57,3 +57,4 @@ The program is currently under development and it is not (yet) usable. See below
 * RP support.
 * Broadcaster-specific TDC/IH data support: CATRADIO.
 * New input source: clock/data from sound card.
+* RDS2 upper streams and ODA support.
