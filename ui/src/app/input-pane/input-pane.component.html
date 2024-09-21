@@ -45,8 +45,14 @@
 </mat-tab-group>
 
 <div class="processingChain">
-  <div>Block error rate</div>
-  <canvas #blerGraph width="200" height="40">
-    Block error rate graph.
-  </canvas>
+  <div *ngIf="synchronizer != null">
+    <div>Bit stream</div>
+    <div>{{ synchronizer.synced ? "SYNCED" : "NOT SYNCED" }}</div>
+  </div>
+  <div>
+    <div>Block error rate</div>
+    <canvas #blerGraph width="200" height="40">
+      Block error rate graph.
+    </canvas>
+  </div>
 </div>

@@ -153,12 +153,14 @@ export class BitStreamSynchronizer {
           
           // Return group data.
           const theGroup = new Uint16Array(this.group);
+          /*
           console.log(
             'Read group:',
             this.blocksOk[0] ? theGroup[0].toString(16) : '----',
             this.blocksOk[1] ? theGroup[1].toString(16) : '----',
             this.blocksOk[2] ? theGroup[2].toString(16) : '----',
             this.blocksOk[3] ? theGroup[3].toString(16) : '----');
+          */
           this.listener.processRdsReportEvent({
             ok: [...this.blocksOk],
             blocks: theGroup,

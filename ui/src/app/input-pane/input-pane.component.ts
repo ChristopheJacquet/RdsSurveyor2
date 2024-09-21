@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon'; 
@@ -7,11 +8,12 @@ import {MatTabsModule} from '@angular/material/tabs';
 
 import { RdsReportEvent, RdsReportEventListener } from "../../../../core/drivers/input";
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
+import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule],
+  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
@@ -33,6 +35,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   blerGraphCx: CanvasRenderingContext2D | null = null;
   blerGraphWidth: number = 0;
   blerGraphHeight: number = 0;
+  synchronizer: BitStreamSynchronizer | null = null;
 
   public ngAfterViewInit() {
     const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
@@ -146,6 +149,22 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
+  async processBinaryGroups(data: Uint8Array) {
+    this.synchronizer = new BitStreamSynchronizer(this);
+    let remainingLength = data.length;
+    let pos = 0;
+    while (remainingLength > 0) {
+      const l = Math.min(remainingLength, 8);
+      const dataSlice = data.slice(pos, pos+l);
+      pos += 8;
+      remainingLength -= 8;
+      this.synchronizer.addBits(dataSlice);
+      if (this.realtimePlayback) {
+        await sleep(1000 / (1187.5/(8*8)));   // Duration of a slice of 8*8 bits.
+      }
+    }
+  }
+
   onDrop(e: any) {
     e.preventDefault();
     e.stopPropagation();
@@ -165,20 +184,21 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async handleFileDrop(files: FileList) {
-    const reader = new FileReader();
-    reader.addEventListener(
-      "load",
-      () => {
-        if (reader.result) {
-          const contents = reader.result.toString();
-          //console.log("contents", contents);
-          this.processTextualGroups(contents);
-        }
-      },
-      false);
     for (let f of Array.from(files)) {
-      //console.log(f);
-      reader.readAsText(f);
+      const header = await f.slice(0, 16).arrayBuffer();
+      switch (guessFileType(new Uint8Array(header))) {
+        case FileType.HEX_GROUPS: {
+          const text = await f.text();
+          this.processTextualGroups(text);
+          break;
+        }
+
+        case FileType.UNSYNCED_BINARY_RDS: {
+          const bytes = await f.arrayBuffer();
+          this.processBinaryGroups(new Uint8Array(bytes));
+          break;
+        }
+      }
     }
   }
 
@@ -314,4 +334,26 @@ enum TuningState {
 
 async function sleep(duration_msec: number) {
   return new Promise(resolve => setTimeout(resolve, duration_msec));
+}
+
+enum FileType {
+  UNSYNCED_BINARY_RDS,
+  HEX_GROUPS,
+}
+
+function guessFileType(header: Uint8Array): FileType {
+  let binary = false;
+  for (let i=0; i<header.length; i++) {
+    const b = header[i];
+    if (! ((b >= 32 && b<127) || b==10 || b==13)) {
+      binary = true;
+      break;
+    }
+  }
+
+  if (binary) {
+    return FileType.UNSYNCED_BINARY_RDS;
+  } else {
+    return FileType.HEX_GROUPS;
+  }
 }
