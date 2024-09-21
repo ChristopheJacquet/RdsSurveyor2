@@ -32,6 +32,7 @@ struct Station {
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
+    addAfPair(af1: uint<8>, af2: uint<8>)
 }
 
 bitstruct group(station: Station) {
@@ -78,6 +79,7 @@ bitstruct group_0A(station: Station) {
 } action {
     station.ta = ta
     station.music = music
+    station.addAfPair(af1, af2)
     copy station.ps, addr, 2, ps_seg
 
     switch addr {

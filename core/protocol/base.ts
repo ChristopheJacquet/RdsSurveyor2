@@ -23,6 +23,7 @@ export interface Station {
 	dab_cross_ref_app: DabCrossRefApp;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
+	addAfPair(af1: number, af2: number): void;
 }
 
 export function parse_group(block: Uint16Array, ok: boolean[], station: Station) {
@@ -120,6 +121,9 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((music != null)) {
 		station.music = music;
+	}
+	if ((af1 != null) && (af2 != null) && (station != null)) {
+		station.addAfPair(af1, af2);
 	}
 	if ((addr != null) && (ps_seg__0 != null)) {
 		station.ps.setByte(addr*2 + 0, ps_seg__0);

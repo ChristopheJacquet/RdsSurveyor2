@@ -124,6 +124,13 @@
         </div>
       </div>
     </div>
+    <div><!-- AFs -->
+      <div *ngFor="let e of station.afLists | keyvalue">
+        <strong>AF list, method {{ e.value.method }}:</strong>
+        {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
+        <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
+      </div>
+    </div>
   </mat-tab>
   <mat-tab label="RT">
     <mat-list role="list">
