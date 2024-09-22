@@ -109,7 +109,11 @@
         </div>
         <div class="infogrid-cell">
           <div class="infogrid-title">PIN</div>
-          <div class="infogrid-value">Placeholder </div>
+          <div class="infogrid-value">
+            <span *ngIf="station.pin_day != undefined && station.pin_hour != undefined && station.pin_minute != undefined">
+              D={{ station.pin_day }}, {{ station.pin_hour | number: '2.0-0' }}:{{ station.pin_minute | number: '2.0-0'}}
+            </span> 
+          </div>
         </div>
         <div class="infogrid-cell">
           <div class="infogrid-title">Sound Information</div>

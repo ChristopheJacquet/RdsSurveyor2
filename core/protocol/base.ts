@@ -21,6 +21,10 @@ export interface Station {
 	oda_3A_mapping: Map<number, string>;
 	rt_plus_app: RtPlusApp;
 	dab_cross_ref_app: DabCrossRefApp;
+	linkage_actuator?: boolean;
+	pin_day?: number;
+	pin_hour?: number;
+	pin_minute?: number;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
@@ -197,6 +201,46 @@ export function parse_group_0B(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((addr != null) && (ps_seg__1 != null)) {
 		station.ps.setByte(addr*2 + 1, ps_seg__1);
+	}
+}
+
+export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field _: unparsed<5> at +27, width 5.
+	// Field linkage_actuator: bool at +32, width 1.
+	let linkage_actuator = (ok[2]) ?
+		((block[2] & 0b1000000000000000) >> 15) == 1
+		: null;
+	// Field variant: uint<3> at +33, width 3.
+	let variant = (ok[2]) ?
+		((block[2] & 0b111000000000000) >> 12)
+		: null;
+	// Field payload: unparsed<12> at +36, width 12.
+	// Field pin_day: uint<5> at +48, width 5.
+	let pin_day = (ok[3]) ?
+		((block[3] & 0b1111100000000000) >> 11)
+		: null;
+	// Field pin_hour: uint<5> at +53, width 5.
+	let pin_hour = (ok[3]) ?
+		((block[3] & 0b11111000000) >> 6)
+		: null;
+	// Field pin_minute: uint<6> at +58, width 6.
+	let pin_minute = (ok[3]) ?
+		((block[3] & 0b111111))
+		: null;
+
+	// Actions.
+	if ((linkage_actuator != null)) {
+		station.linkage_actuator = linkage_actuator;
+	}
+	if ((pin_day != null)) {
+		station.pin_day = pin_day;
+	}
+	if ((pin_hour != null)) {
+		station.pin_hour = pin_hour;
+	}
+	if ((pin_minute != null)) {
+		station.pin_minute = pin_minute;
 	}
 }
 
@@ -539,6 +583,7 @@ export function get_parse_function(rule: string) {
 		case "group_unknown": return parse_group_unknown;
 		case "group_0A": return parse_group_0A;
 		case "group_0B": return parse_group_0B;
+		case "group_1A": return parse_group_1A;
 		case "group_2A": return parse_group_2A;
 		case "group_2B": return parse_group_2B;
 		case "group_3A": return parse_group_3A;

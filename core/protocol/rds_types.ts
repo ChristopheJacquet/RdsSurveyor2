@@ -27,6 +27,10 @@ export class StationImpl implements Station {
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
+	linkage_actuator?: boolean;
+	pin_day?: number;
+	pin_hour?: number;
+	pin_minute?: number;
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -174,10 +178,15 @@ export class StationImpl implements Station {
     this.di_stereo = undefined;
     this.afLists = new Map<number, AFList>();
     this.currentAfList = null;
+    this.linkage_actuator = undefined;
+    this.pin_day = undefined;
+    this.pin_hour = undefined;
+    this.pin_minute = undefined;
   
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
       [0b00001, "group_0B"],
+      [0b00010, "group_1A"],
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],
       [0b00110, "group_3A"],

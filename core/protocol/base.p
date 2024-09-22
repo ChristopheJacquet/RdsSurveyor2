@@ -29,6 +29,10 @@ struct Station {
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
     dab_cross_ref_app: DabCrossRefApp
+    linkage_actuator: bool
+    pin_day: uint<5>
+    pin_hour: uint<5>
+    pin_minute: uint<6>
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
@@ -115,6 +119,33 @@ bitstruct group_0B(station: Station) {
 } action {
     station.pi = pi
     copy station.ps, addr, 2, ps_seg
+}
+
+bitstruct group_1A(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    _: unparsed<5>
+
+    # Block C.
+    linkage_actuator: bool
+    variant: uint<3>
+    payload: unparsed<12>
+
+    # Block D.
+    pin_day: uint<5>
+    pin_hour: uint<5>
+    pin_minute: uint<6>
+} action {
+    station.linkage_actuator = linkage_actuator
+    station.pin_day = pin_day
+    station.pin_hour = pin_hour
+    station.pin_minute = pin_minute
+    #switch (variant) {
+    #    case 0 {
+    #        parse payload group_1A_ecc
+    #    }
+    #}
 }
 
 bitstruct group_2A(station: Station) {
