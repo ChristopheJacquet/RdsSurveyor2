@@ -128,6 +128,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async processTextualGroups(s: string) {
+    this.synchronizer = null;
     for (let l of s.split('\n')) {
       l = l.split('@')[0];
       const blocks = l.trim().split(' ');
@@ -232,6 +233,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
         console.log("Selected device", device);
       }
   
+      this.synchronizer = null;
       this.dongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
   
       await this.dongle.init();
