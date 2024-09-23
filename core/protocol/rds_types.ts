@@ -185,7 +185,7 @@ export class StationImpl implements Station {
   
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
-      [0b00001, "group_0B"],
+      [0b00001, "group_0B_0_common"],
       [0b00010, "group_1A"],
       [0b00100, "group_2A"],
       [0b00101, "group_2B"],

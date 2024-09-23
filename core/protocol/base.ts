@@ -87,6 +87,26 @@ export function parse_group_unknown(block: Uint16Array, ok: boolean[], station: 
 
 export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
+	// Field _: unparsed<5> at +27, width 5.
+	// Field af1: uint<8> at +32, width 8.
+	let af1 = (ok[2]) ?
+		((block[2] & 0b1111111100000000) >> 8)
+		: null;
+	// Field af2: uint<8> at +40, width 8.
+	let af2 = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	// Field _: unparsed<16> at +48, width 16.
+
+	// Actions.
+	if ((af1 != null) && (af2 != null) && (station != null)) {
+		station.addAfPair(af1, af2);
+	}
+	get_parse_function("group_0B_0_common")(block, ok, station);
+}
+
+export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
 		((block[1] & 0b10000) >> 4) == 1
@@ -103,14 +123,7 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	let addr = (ok[1]) ?
 		((block[1] & 0b11))
 		: null;
-	// Field af1: uint<8> at +32, width 8.
-	let af1 = (ok[2]) ?
-		((block[2] & 0b1111111100000000) >> 8)
-		: null;
-	// Field af2: uint<8> at +40, width 8.
-	let af2 = (ok[2]) ?
-		((block[2] & 0b11111111))
-		: null;
+	// Field _: uint<16> at +32, width 16.
 	// Field ps_seg: byte<2> at +48, width 16.
 	let ps_seg__0 = (ok[3]) ?
 		((block[3] & 0b1111111100000000) >> 8)
@@ -125,9 +138,6 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((music != null)) {
 		station.music = music;
-	}
-	if ((af1 != null) && (af2 != null) && (station != null)) {
-		station.addAfPair(af1, af2);
 	}
 	if ((addr != null) && (ps_seg__0 != null)) {
 		station.ps.setByte(addr*2 + 0, ps_seg__0);
@@ -162,45 +172,6 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 				break;
 
 		}
-	}
-}
-
-export function parse_group_0B(block: Uint16Array, ok: boolean[], station: Station) {
-	// Field group_common: unparsed<27> at +0, width 27.
-	// Field ta: bool at +27, width 1.
-	let ta = (ok[1]) ?
-		((block[1] & 0b10000) >> 4) == 1
-		: null;
-	// Field _: bool at +28, width 1.
-	// Field di: bool at +29, width 1.
-	let di = (ok[1]) ?
-		((block[1] & 0b100) >> 2) == 1
-		: null;
-	// Field addr: uint<2> at +30, width 2.
-	let addr = (ok[1]) ?
-		((block[1] & 0b11))
-		: null;
-	// Field pi: uint<16> at +32, width 16.
-	let pi = (ok[2]) ?
-		((block[2]))
-		: null;
-	// Field ps_seg: byte<2> at +48, width 16.
-	let ps_seg__0 = (ok[3]) ?
-		((block[3] & 0b1111111100000000) >> 8)
-		: null;
-	let ps_seg__1 = (ok[3]) ?
-		((block[3] & 0b11111111))
-		: null;
-
-	// Actions.
-	if ((pi != null)) {
-		station.pi = pi;
-	}
-	if ((addr != null) && (ps_seg__0 != null)) {
-		station.ps.setByte(addr*2 + 0, ps_seg__0);
-	}
-	if ((addr != null) && (ps_seg__1 != null)) {
-		station.ps.setByte(addr*2 + 1, ps_seg__1);
 	}
 }
 
@@ -582,7 +553,7 @@ export function get_parse_function(rule: string) {
 		case "group": return parse_group;
 		case "group_unknown": return parse_group_unknown;
 		case "group_0A": return parse_group_0A;
-		case "group_0B": return parse_group_0B;
+		case "group_0B_0_common": return parse_group_0B_0_common;
 		case "group_1A": return parse_group_1A;
 		case "group_2A": return parse_group_2A;
 		case "group_2B": return parse_group_2B;

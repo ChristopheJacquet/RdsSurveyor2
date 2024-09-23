@@ -69,21 +69,36 @@ bitstruct group_0A(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    ta: bool
-    music: bool
-    di: bool
-    addr: uint<2>
+    _: unparsed<5>
     
     # Block C.
     af1: uint<8>
     af2: uint<8>
     
     # Block D.
+    _: unparsed<16>
+} action {
+    station.addAfPair(af1, af2)
+    parse _ "group_0B_0_common"
+}
+
+bitstruct group_0B_0_common(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    ta: bool
+    music: bool
+    di: bool
+    addr: uint<2>
+    
+    # Block C.
+    _:  uint<16>
+    
+    # Block D.
     ps_seg: byte<2>
 } action {
     station.ta = ta
     station.music = music
-    station.addAfPair(af1, af2)
     copy station.ps, addr, 2, ps_seg
 
     switch addr {
@@ -100,25 +115,6 @@ bitstruct group_0A(station: Station) {
             station.di_stereo = di
         }
     }
-}
-
-bitstruct group_0B(station: Station) {
-    group_common: unparsed<27>
-
-    # Rest of Block B.
-    ta: bool
-    _: bool
-    di: bool
-    addr: uint<2>
-    
-    # Block C.
-    pi:  uint<16>
-    
-    # Block D.
-    ps_seg: byte<2>
-} action {
-    station.pi = pi
-    copy station.ps, addr, 2, ps_seg
 }
 
 bitstruct group_1A(station: Station) {
