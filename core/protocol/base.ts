@@ -25,6 +25,7 @@ export interface Station {
 	pin_day?: number;
 	pin_hour?: number;
 	pin_minute?: number;
+	ecc?: number;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
@@ -212,6 +213,31 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((pin_minute != null)) {
 		station.pin_minute = pin_minute;
+	}
+	if ((variant != null)) {
+		switch (variant) {
+			case 0:
+				get_parse_function("group_1A_ecc")(block, ok, station);
+				break;
+
+		}
+	}
+}
+
+export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field _: unparsed<32> at +0, width 32.
+	// Field linkage_actuator: unparsed<1> at +32, width 1.
+	// Field variant: unparsed<3> at +33, width 3.
+	// Field paging: unparsed<4> at +36, width 4.
+	// Field ecc: uint<8> at +40, width 8.
+	let ecc = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	// Field pin: unparsed<16> at +48, width 16.
+
+	// Actions.
+	if ((ecc != null)) {
+		station.ecc = ecc;
 	}
 }
 
@@ -555,6 +581,7 @@ export function get_parse_function(rule: string) {
 		case "group_0A": return parse_group_0A;
 		case "group_0B_0_common": return parse_group_0B_0_common;
 		case "group_1A": return parse_group_1A;
+		case "group_1A_ecc": return parse_group_1A_ecc;
 		case "group_2A": return parse_group_2A;
 		case "group_2B": return parse_group_2B;
 		case "group_3A": return parse_group_3A;

@@ -33,6 +33,7 @@ struct Station {
     pin_day: uint<5>
     pin_hour: uint<5>
     pin_minute: uint<6>
+    ecc: uint<8>
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
@@ -137,11 +138,22 @@ bitstruct group_1A(station: Station) {
     station.pin_day = pin_day
     station.pin_hour = pin_hour
     station.pin_minute = pin_minute
-    #switch (variant) {
-    #    case 0 {
-    #        parse payload group_1A_ecc
-    #    }
-    #}
+    switch variant {
+        case 0 {
+            parse _ "group_1A_ecc"
+        }
+    }
+}
+
+bitstruct group_1A_ecc(station: Station) {
+    _: unparsed<32>
+    linkage_actuator: unparsed<1>
+    variant: unparsed<3>
+    paging: unparsed<4>
+    ecc: uint<8>
+    pin: unparsed<16>
+} action {
+    station.ecc = ecc
 }
 
 bitstruct group_2A(station: Station) {

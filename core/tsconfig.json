@@ -2,7 +2,7 @@
   "compilerOptions": {
       "composite": true,
       "lib": [
-          "es2018",
+          "es2020",
           "dom"
       ]
   },

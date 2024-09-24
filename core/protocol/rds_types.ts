@@ -31,6 +31,7 @@ export class StationImpl implements Station {
 	pin_day?: number;
 	pin_hour?: number;
 	pin_minute?: number;
+  ecc?: number;
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -182,6 +183,7 @@ export class StationImpl implements Station {
     this.pin_day = undefined;
     this.pin_hour = undefined;
     this.pin_minute = undefined;
+    this.ecc = undefined;
   
     this.app_mapping = new Map<number, string>([
       [0b00000, "group_0A"],
@@ -223,6 +225,54 @@ export class StationImpl implements Station {
 			}
 		}
 	}
+
+  public getISOCountryCode(): string {
+    if (this.pi == undefined || this.ecc == undefined) {
+      return '';
+    }
+
+    const piCC = (this.pi & 0xF000) >> 12;
+
+    switch (this.ecc) {
+      case 0xE0: return ECC_E0[piCC];
+      case 0xE1: return ECC_E1[piCC];
+      case 0xE2: return ECC_E2[piCC];
+      case 0xE3: return ECC_E3[piCC];
+      case 0xE4: return ECC_E4[piCC];
+      case 0xD0: return ECC_D0[piCC];
+      case 0xD1: return ECC_D1[piCC];
+      case 0xD2: return ECC_D2[piCC];
+      case 0xD3: return ECC_D3[piCC];
+      case 0xA0: return ECC_A0[piCC];
+      case 0xA1: return ECC_A1[piCC];
+      case 0xA2: return ECC_A2[piCC];
+      case 0xA3: return ECC_A3[piCC];
+      case 0xA4: return ECC_A4[piCC];
+      case 0xA5: return ECC_A5[piCC];
+      case 0xA6: return ECC_A6[piCC];
+      case 0xF0: return ECC_F0[piCC];
+      case 0xF1: return ECC_F1[piCC];
+      case 0xF2: return ECC_F2[piCC];
+      case 0xF3: return ECC_F3[piCC];
+      case 0xF4: return ECC_F4[piCC];
+      default: return 'Invalid';
+    }
+  }
+  
+  public  getCountryName(): string {
+    const isoCC = this.getISOCountryCode();
+
+    if (isoCC == '') {
+      return '';
+    }
+
+    try {
+      const regionNamesInEnglish = new Intl.DisplayNames(['en'], { type: 'region' });
+      return regionNamesInEnglish.of(isoCC) || isoCC;
+    } catch {
+      return isoCC;
+    }
+  }
 }
 
 function padNumber(num: number, width: number) {
@@ -485,3 +535,25 @@ const RDS_CHARMAP = new Array<string>(
   '\u00E3',	'\u00E5', '\u00E6',	'\u0153', '\u0175',	'\u00FD', '\u00F5',	'\u00F8',
   '\u00FE',	'\u014B', '\u0155',	'\u0107', '\u015B',	'\u017A', '\u0167',	CTRLCHAR,
 );
+
+const ECC_E0 = ["  ", "DE", "DZ", "AD", "IL", "IT", "BE", "RU", "PS", "AL", "AT", "HU", "MT", "DE", "  ", "EG"];
+const ECC_E1 = ["  ", "GR", "CY", "SM", "CH", "JO", "FI", "LU", "BG", "DK", "GI", "IQ", "GB", "LY", "RO", "FR"];
+const ECC_E2 = ["  ", "MA", "CZ", "PL", "VA", "SK", "SY", "TN", "  ", "LI", "IS", "MC", "LT", "RS/YU", "ES", "NO"];
+const ECC_E3 = ["  ", "ME", "IE", "TR", "MK", "TJ", "  ", "  ", "NL", "LV", "LB", "AZ", "HR", "KZ", "SE", "BY"];
+const ECC_E4 = ["  ", "MD", "EE", "KG", "  ", "  ", "UA", "KS", "PT", "SI", "AM", "UZ", "GE", "  ", "TM", "BA"];
+const ECC_D0 = ["  ", "CM", "DZ/CF", "DJ", "MG", "ML", "AO", "GQ", "GA", "  ", "ZA", "BF", "CG", "TG", "BJ", "MW"];
+const ECC_D1 = ["  ", "NA", "LR", "GH", "MR", "CV/ST", "  ", "SN", "GM", "BI", "??", "BW", "KM", "TZ", "ET", "NG"];
+const ECC_D2 = ["  ", "SL", "ZW", "MZ", "UG", "SZ", "GN", "SO", "NE", "TD", "GW", "CD", "CI", "  ", "ZM", "ER"];
+const ECC_D3 = ["  ", "  ", "  ", "EH", "??", "RW", "LS", "  ", "SC", "  ", "MU", "  ", "SD", "  ", "  ", "  "];
+const ECC_A0 = ["  ", "US", "US", "US", "US", "US", "US", "US", "US", "US", "US", "US", "  ", "US", "US", "  "];
+const ECC_A1 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "CA", "CA", "CA", "CA", "GL"];
+const ECC_A2 = ["  ", "AI", "AG", "EC", "  ", "BB", "BZ", "KY", "CR", "CU", "AR", "BR", "BM", "AN", "GP", "BS"];
+const ECC_A3 = ["  ", "BO", "CO", "JM", "MQ", "GF", "PY", "NI", "  ", "PA", "DM", "DO", "CL", "GD", "  ", "GY"];
+const ECC_A4 = ["  ", "GT", "HN", "AW", "  ", "MS", "TT", "PE", "SR", "UY", "KN", "LC", "SV", "HT", "VE", "  "];
+const ECC_A5 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "MX", "VC", "MX", "MX", "MX/VG"];
+const ECC_A6 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "PM"];
+const ECC_F0 = ["  ", "AU", "AU", "AU", "AU", "AU", "AU", "AU", "AU", "SA", "AF", "MM", "CN", "KP", "BH", "MY"];
+const ECC_F1 = ["  ", "KI", "BT", "BD", "PK", "FJ", "OM", "NR", "IR", "NZ", "SB", "BN", "LK", "TW", "KR", "HK"];
+const ECC_F2 = ["  ", "KW", "QA", "KH", "WS", "IN", "MO", "VN", "PH", "JP", "SG", "MV", "ID", "AE", "NP", "VU"];
+const ECC_F3 = ["  ", "LA", "TH", "TO", "  ", "  ", "  ", "  ", "  ", "PG", "  ", "YE", "  ", "  ", "FM", "MN"];
+const ECC_F4 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "];
