@@ -186,15 +186,15 @@ export class StationImpl implements Station {
     this.ecc = undefined;
   
     this.app_mapping = new Map<number, string>([
-      [0b00000, "group_0A"],
-      [0b00001, "group_0B_0_common"],
-      [0b00010, "group_1A"],
-      [0b00100, "group_2A"],
-      [0b00101, "group_2B"],
-      [0b00110, "group_3A"],
-      [0b01000, "group_4A"],
-      [0b10100, "group_10A"],
-      [0b11110, "group_15A"]]);
+      [GROUP_0A, "group_0A"],
+      [GROUP_0B, "group_0B_0_common"],
+      [GROUP_1A, "group_1A"],
+      [GROUP_2A, "group_2A"],
+      [GROUP_2B, "group_2B"],
+      [GROUP_3A, "group_3A"],
+      [GROUP_4A, "group_4A"],
+      [GROUP_10A, "group_10A"],
+      [GROUP_15A, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
 
@@ -498,6 +498,40 @@ export interface Oda {
   enabled: boolean;
   reset(): void;
 }
+
+// Group type constants.
+const GROUP_0A = 0b00000;
+const GROUP_0B = 0b00001;
+const GROUP_1A = 0b00010;
+const GROUP_1B = 0b00011;
+const GROUP_2A = 0b00100;
+const GROUP_2B = 0b00101;
+const GROUP_3A = 0b00110;
+const GROUP_3B = 0b00111;
+const GROUP_4A = 0b01000;
+const GROUP_4B = 0b01001;
+const GROUP_5A = 0b01010;
+const GROUP_5B = 0b01011;
+const GROUP_6A = 0b01100;
+const GROUP_6B = 0b01101;
+const GROUP_7A = 0b01110;
+const GROUP_7B = 0b01111;
+const GROUP_8A = 0b10000;
+const GROUP_8B = 0b10001;
+const GROUP_9A = 0b10010;
+const GROUP_9B = 0b10011;
+const GROUP_10A = 0b10100;
+const GROUP_10B = 0b10101;
+const GROUP_11A = 0b10110;
+const GROUP_11B = 0b10111;
+const GROUP_12A = 0b11000;
+const GROUP_12B = 0b11001;
+const GROUP_13A = 0b11010;
+const GROUP_13B = 0b11011;
+const GROUP_14A = 0b11100;
+const GROUP_14B = 0b11101;
+const GROUP_15A = 0b11110;
+const GROUP_15B = 0b11111;
 
 const CTRLCHAR = '\u2423';
   
