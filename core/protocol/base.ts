@@ -26,6 +26,7 @@ export interface Station {
 	pin_hour?: number;
 	pin_minute?: number;
 	ecc?: number;
+	language_code?: number;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
@@ -187,7 +188,10 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 	let variant = (ok[2]) ?
 		((block[2] & 0b111000000000000) >> 12)
 		: null;
-	// Field payload: unparsed<12> at +36, width 12.
+	// Field payload: uint<12> at +36, width 12.
+	let payload = (ok[2]) ?
+		((block[2] & 0b111111111111))
+		: null;
 	// Field pin_day: uint<5> at +48, width 5.
 	let pin_day = (ok[3]) ?
 		((block[3] & 0b1111100000000000) >> 11)
@@ -218,6 +222,12 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 		switch (variant) {
 			case 0:
 				get_parse_function("group_1A_ecc")(block, ok, station);
+				break;
+
+			case 3:
+				if ((payload != null)) {
+					station.language_code = payload;
+				}
 				break;
 
 		}

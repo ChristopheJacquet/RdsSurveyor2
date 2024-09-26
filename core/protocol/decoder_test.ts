@@ -128,3 +128,12 @@ describe('BBC ECC', () => {
     expect(station.getCountryName()).toBe("United Kingdom");
   });
 });
+
+// Synthetic sample setting a language code.
+describe('1A group with a language code', () => {
+  const station = new StationImpl();
+  send(`FFFF 1120 300F E340`, station);
+  it('should set the language', () => {
+    expect(station.getLanguage()).toBe("French");
+  });
+});

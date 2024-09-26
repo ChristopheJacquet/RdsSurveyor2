@@ -32,6 +32,7 @@ export class StationImpl implements Station {
 	pin_hour?: number;
 	pin_minute?: number;
   ecc?: number;
+  language_code?: number;
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -184,6 +185,7 @@ export class StationImpl implements Station {
     this.pin_hour = undefined;
     this.pin_minute = undefined;
     this.ecc = undefined;
+    this.language_code = undefined;
   
     this.app_mapping = new Map<number, string>([
       [GROUP_0A, "group_0A"],
@@ -259,7 +261,7 @@ export class StationImpl implements Station {
     }
   }
   
-  public  getCountryName(): string {
+  public getCountryName(): string {
     const isoCC = this.getISOCountryCode();
 
     if (isoCC == '') {
@@ -272,6 +274,19 @@ export class StationImpl implements Station {
     } catch {
       return isoCC;
     }
+  }
+
+  public getLanguage(): string {
+    if (this.language_code == undefined) {
+      return '';
+    }
+
+    const code = this.language_code & 0x7F;
+    if (code < 0 || code > 127) {
+      return 'Invalid';
+    }
+
+    return LANGUAGE_CODES[code][0];
   }
 }
 
@@ -591,3 +606,134 @@ const ECC_F1 = ["  ", "KI", "BT", "BD", "PK", "FJ", "OM", "NR", "IR", "NZ", "SB"
 const ECC_F2 = ["  ", "KW", "QA", "KH", "WS", "IN", "MO", "VN", "PH", "JP", "SG", "MV", "ID", "AE", "NP", "VU"];
 const ECC_F3 = ["  ", "LA", "TH", "TO", "  ", "  ", "  ", "  ", "  ", "PG", "  ", "YE", "  ", "  ", "FM", "MN"];
 const ECC_F4 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "];
+
+const LANGUAGE_CODES: Array<Array<string>> = [
+  ["Unknown", "??"], // 0
+  ["Albanian", "sq"],
+  ["Breton", "br"],
+  ["Catalan", "ca"],
+  ["Croatian", "hr"],
+  ["Welsh", "cy"],
+  ["Czech", "cs"],
+  ["Danish", "da"],
+  ["German", "de"],
+  ["English", "en"],
+  ["Spanish", "es"], // 10
+  ["Esperanto", "eo"],
+  ["Estonian", "et"],
+  ["Basque", "eu"],
+  ["Faroese", "fo"],
+  ["French", "fr"],
+  ["Frisian","fy"],
+  ["Irish", "ga"],
+  ["Gaelic", "gd"],
+  ["Galician", "gl"],
+  ["Icelandic", "is"], // 20
+  ["Italian", "it"],
+  ["Lappish", "-lappish-"],
+  ["Latin", "la"],
+  ["Latvian", "lv"],
+  ["Luxembourgian", "lb"],
+  ["Lithuanian", "lt"],
+  ["Hungarian", "hu"],
+  ["Maltese", "mt"],
+  ["Dutch", "nl"],
+  ["Norwegian", "nn"], // 30
+  ["Occitan", "oc"],
+  ["Polish", "pl"],
+  ["Portuguese", "pt"],
+  ["Romanian", "ro"],
+  ["Romansh", "rm"],
+  ["Serbian", "sr"],
+  ["Slovak", "sk"],
+  ["Slovene", "sl"],
+  ["Finnish", "fi"],
+  ["Swedish", "sv"], // 40
+  ["Turkish", "tr"],
+  ["Flemish", "-flemish-"],
+  ["Walloon", "wa"],
+  ["<2C>", "2C"],
+  ["<2D>", "2D"],
+  ["<2E>", "2E"],
+  ["<2F>", "2F"],
+  ["<30>", "30"],
+  ["<31>", "31"],
+  ["<32>", "32"], // 50
+  ["<33>", "33"],
+  ["<34>", "34"],
+  ["<35>", "35"],
+  ["<36>", "36"],
+  ["<37>", "37"],
+  ["<38>", "38"],
+  ["<39>", "39"],
+  ["<3A>", "3A"],
+  ["<3B>", "3B"],
+  ["<3C>", "3C"], // 60
+  ["<3D>", "3D"],
+  ["<3E>", "3E"],
+  ["<3F>", "3F"],
+  ["Void", "-void-"],
+  ["<41>", "41"],
+  ["<42>", "42"],
+  ["<43>", "43"],
+  ["<44>", "44"],
+  ["Zulu", "zu"], 
+  ["Vietnamese", "vi"], // 70
+  ["Uzbek", "uz"],
+  ["Urdu", "ur"],
+  ["Ukrainian", "uk"],
+  ["Thai", "th"],
+  ["Telugu", "te"],
+  ["Tatar", "tt"],
+  ["Tamil", "ta"],
+  ["Tadzhik", "tg"],
+  ["Swahili", "sw"],
+  ["Sranan Tongo", "-sranan-tongo-"], // 80
+  ["Somali", "so"],
+  ["Sinhalese", "si"],
+  ["Shona", "sn"],
+  ["Serbo-Croat", "sh"],
+  ["Ruthenian", "-ruthenian-"],
+  ["Russian", "ru"],
+  ["Quechua", "qu"],
+  ["Pushtu", "ps"],
+  ["Punjabi", "pa"],
+  ["Persian", "fa"], // 90
+  ["Papamiento", "-papamiento-"],
+  ["Oriya", "or"],
+  ["Nepali", "ne"],
+  ["Ndebele", "nr"],
+  ["Marathi", "mr"],
+  ["Moldavian", "mo"],
+  ["Malaysian", "ms"],
+  ["Malagasay", "mg"],
+  ["Macedonian", "mk"],
+  ["Laotian", "lo"], // 100
+  ["Korean", "ko"],
+  ["Khmer", "km"],
+  ["Kazakh", "kk"],
+  ["Kannada", "kn"],
+  ["Japanese", "ja"],
+  ["Indonesian", "id"],
+  ["Hindi", "hi"],
+  ["Hebrew", "he"],
+  ["Hausa", "ha"],
+  ["Gurani", "gn"], // 110
+  ["Gujurati", "gu"],
+  ["Greek", "el"],
+  ["Georgian", "ka"],
+  ["Fulani", "ff"],
+  ["Dari", "fa"],
+  ["Churash", "cv"],
+  ["Chinese", "zh"],
+  ["Burmese", "my"],
+  ["Bulgarian", "bg"],
+  ["Bengali", "bn"], // 120
+  ["Belorussian", "be"],
+  ["Bambora", "bm"],
+  ["Azerbijani", "az"],
+  ["Assamese", "as"],
+  ["Armenian", "hy"],
+  ["Arabic", "ar"],
+  ["Amharic", "am"] // 127
+];
