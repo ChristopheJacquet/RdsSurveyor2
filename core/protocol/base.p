@@ -19,6 +19,7 @@ struct Station {
     ps: str<8>
     lps: str<32>
     rt: str<64>
+    rt_flag: uint<1>
     music: bool
     di_dynamic_pty: bool
     di_compressed: bool
@@ -165,20 +166,21 @@ bitstruct group_2A(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    flag_ab: bool
+    flag: uint<1>
     addr: uint<4>
     
     # Blocks C and D.
     rt_seg: byte<4>
 } action {
     copy station.rt, addr, 4, rt_seg
+    station.rt_flag = flag
 }
 
 bitstruct group_2B(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    flag_ab: bool
+    flag: uint<1>
     addr: uint<4>
 
     # Block C.
@@ -188,6 +190,7 @@ bitstruct group_2B(station: Station) {
     rt_seg: byte<2>
 } action {
     copy station.rt, addr, 2, rt_seg
+    station.rt_flag = flag
 }
 
 bitstruct group_3A(station: Station) {

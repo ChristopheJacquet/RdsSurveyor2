@@ -11,6 +11,7 @@ export interface Station {
 	ps: RdsString;
 	lps: RdsString;
 	rt: RdsString;
+	rt_flag?: number;
 	music?: boolean;
 	di_dynamic_pty?: boolean;
 	di_compressed?: boolean;
@@ -253,9 +254,9 @@ export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: S
 
 export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
-	// Field flag_ab: bool at +27, width 1.
-	let flag_ab = (ok[1]) ?
-		((block[1] & 0b10000) >> 4) == 1
+	// Field flag: uint<1> at +27, width 1.
+	let flag = (ok[1]) ?
+		((block[1] & 0b10000) >> 4)
 		: null;
 	// Field addr: uint<4> at +28, width 4.
 	let addr = (ok[1]) ?
@@ -288,13 +289,16 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 	if ((addr != null) && (rt_seg__3 != null)) {
 		station.rt.setByte(addr*4 + 3, rt_seg__3);
 	}
+	if ((flag != null)) {
+		station.rt_flag = flag;
+	}
 }
 
 export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
-	// Field flag_ab: bool at +27, width 1.
-	let flag_ab = (ok[1]) ?
-		((block[1] & 0b10000) >> 4) == 1
+	// Field flag: uint<1> at +27, width 1.
+	let flag = (ok[1]) ?
+		((block[1] & 0b10000) >> 4)
 		: null;
 	// Field addr: uint<4> at +28, width 4.
 	let addr = (ok[1]) ?
@@ -318,6 +322,9 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((addr != null) && (rt_seg__1 != null)) {
 		station.rt.setByte(addr*2 + 1, rt_seg__1);
+	}
+	if ((flag != null)) {
+		station.rt_flag = flag;
 	}
 }
 

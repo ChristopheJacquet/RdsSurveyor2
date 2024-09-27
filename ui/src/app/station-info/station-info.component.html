@@ -59,7 +59,9 @@
 
   <div class="infogrid-row">
     <div class="infogrid-cell">
-      <div class="infogrid-title">RT (current radiotext)</div>
+      <div class="infogrid-title">RT (current radiotext)
+        {{ station.rt_flag != undefined ? (station.rt_flag ? "[A]" : "[B]") : "" }}
+      </div>
       <div class="infogrid-value">{{ station.getRT() }} </div>
     </div>
   </div>

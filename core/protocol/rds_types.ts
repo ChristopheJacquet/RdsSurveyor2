@@ -12,6 +12,7 @@ export class StationImpl implements Station {
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUtf8(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
+  rt_flag?: number;
 	music?: boolean;
 	di_dynamic_pty?: boolean;
 	di_compressed?: boolean;
