@@ -132,14 +132,10 @@ bitstruct group_1A(station: Station) {
     payload: uint<12>
 
     # Block D.
-    pin_day: uint<5>
-    pin_hour: uint<5>
-    pin_minute: uint<6>
+    pin: unparsed<16>
 } action {
     station.linkage_actuator = linkage_actuator
-    station.pin_day = pin_day
-    station.pin_hour = pin_hour
-    station.pin_minute = pin_minute
+    parse _ "group_1B_1_common"
     switch variant {
         case 0 {
             parse _ "group_1A_ecc"
@@ -160,6 +156,25 @@ bitstruct group_1A_ecc(station: Station) {
     pin: unparsed<16>
 } action {
     station.ecc = ecc
+}
+
+bitstruct group_1B_1_common(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    _: unparsed<5>
+
+    # Block C.
+    _: unparsed<16>
+
+    # Block D.
+    pin_day: uint<5>
+    pin_hour: uint<5>
+    pin_minute: uint<6>
+} action {
+    station.pin_day = pin_day
+    station.pin_hour = pin_hour
+    station.pin_minute = pin_minute
 }
 
 bitstruct group_2A(station: Station) {

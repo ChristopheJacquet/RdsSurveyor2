@@ -192,6 +192,7 @@ export class StationImpl implements Station {
       [GROUP_0A, "group_0A"],
       [GROUP_0B, "group_0B_0_common"],
       [GROUP_1A, "group_1A"],
+      [GROUP_1B, "group_1B_1_common"],
       [GROUP_2A, "group_2A"],
       [GROUP_2B, "group_2B"],
       [GROUP_3A, "group_3A"],

@@ -193,32 +193,13 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 	let payload = (ok[2]) ?
 		((block[2] & 0b111111111111))
 		: null;
-	// Field pin_day: uint<5> at +48, width 5.
-	let pin_day = (ok[3]) ?
-		((block[3] & 0b1111100000000000) >> 11)
-		: null;
-	// Field pin_hour: uint<5> at +53, width 5.
-	let pin_hour = (ok[3]) ?
-		((block[3] & 0b11111000000) >> 6)
-		: null;
-	// Field pin_minute: uint<6> at +58, width 6.
-	let pin_minute = (ok[3]) ?
-		((block[3] & 0b111111))
-		: null;
+	// Field pin: unparsed<16> at +48, width 16.
 
 	// Actions.
 	if ((linkage_actuator != null)) {
 		station.linkage_actuator = linkage_actuator;
 	}
-	if ((pin_day != null)) {
-		station.pin_day = pin_day;
-	}
-	if ((pin_hour != null)) {
-		station.pin_hour = pin_hour;
-	}
-	if ((pin_minute != null)) {
-		station.pin_minute = pin_minute;
-	}
+	get_parse_function("group_1B_1_common")(block, ok, station);
 	if ((variant != null)) {
 		switch (variant) {
 			case 0:
@@ -249,6 +230,35 @@ export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: S
 	// Actions.
 	if ((ecc != null)) {
 		station.ecc = ecc;
+	}
+}
+
+export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field _: unparsed<5> at +27, width 5.
+	// Field _: unparsed<16> at +32, width 16.
+	// Field pin_day: uint<5> at +48, width 5.
+	let pin_day = (ok[3]) ?
+		((block[3] & 0b1111100000000000) >> 11)
+		: null;
+	// Field pin_hour: uint<5> at +53, width 5.
+	let pin_hour = (ok[3]) ?
+		((block[3] & 0b11111000000) >> 6)
+		: null;
+	// Field pin_minute: uint<6> at +58, width 6.
+	let pin_minute = (ok[3]) ?
+		((block[3] & 0b111111))
+		: null;
+
+	// Actions.
+	if ((pin_day != null)) {
+		station.pin_day = pin_day;
+	}
+	if ((pin_hour != null)) {
+		station.pin_hour = pin_hour;
+	}
+	if ((pin_minute != null)) {
+		station.pin_minute = pin_minute;
 	}
 }
 
@@ -599,6 +609,7 @@ export function get_parse_function(rule: string) {
 		case "group_0B_0_common": return parse_group_0B_0_common;
 		case "group_1A": return parse_group_1A;
 		case "group_1A_ecc": return parse_group_1A_ecc;
+		case "group_1B_1_common": return parse_group_1B_1_common;
 		case "group_2A": return parse_group_2A;
 		case "group_2B": return parse_group_2B;
 		case "group_3A": return parse_group_3A;
