@@ -24,6 +24,7 @@ export class StationImpl implements Station {
     [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
   ]);
+	transmitted_odas: Map<number, number> = new Map<number, number>();
   oda_3A_mapping: Map<number, string> = new Map<number, string>();
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
@@ -187,7 +188,8 @@ export class StationImpl implements Station {
     this.pin_minute = undefined;
     this.ecc = undefined;
     this.language_code = undefined;
-  
+    this.transmitted_odas.clear();
+
     this.app_mapping = new Map<number, string>([
       [GROUP_0A, "group_0A"],
       [GROUP_0B, "group_0B_0_common"],

@@ -26,6 +26,7 @@ struct Station {
     di_artificial_head: bool
     di_stereo: bool
     odas: map<uint<16>, tag>
+    transmitted_odas: map<uint<5>, uint<16>>
     app_mapping: map<uint<5>, tag>
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
@@ -220,7 +221,7 @@ bitstruct group_3A(station: Station) {
     # Block D.
     aid: uint<16>
 } action {
-    #station.reportODA(aid, app_group_type)
+    put station.transmitted_odas app_group_type aid
     put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
     parse app_data lookup(station.oda_3A_mapping, aid, "group_unknown")
 }

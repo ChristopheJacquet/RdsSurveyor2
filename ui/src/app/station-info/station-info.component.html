@@ -149,6 +149,16 @@
   <mat-tab label="EON">
     EON
   </mat-tab>
+  <mat-tab label="ODA">
+    <table>
+      <tr><th>Group</th><th>AID</th><th>ODA name</th></tr>
+      <tr *ngFor="let e of station.transmitted_odas | keyvalue">
+        <td>{{ formatGroupType(e.key) }}</td>
+        <td>{{ e.value | hex:4 }}</td>
+        <td>{{ getOdaName(e.value) }}</td>
+      </tr>
+    </table>    
+  </mat-tab>
   <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
     <table>
       <tr><th>Mode</th><th>Frequency</th><th>EId</th></tr>

@@ -18,6 +18,7 @@ export interface Station {
 	di_artificial_head?: boolean;
 	di_stereo?: boolean;
 	odas: Map<number, string>;
+	transmitted_odas: Map<number, number>;
 	app_mapping: Map<number, string>;
 	oda_3A_mapping: Map<number, string>;
 	rt_plus_app: RtPlusApp;
@@ -351,6 +352,9 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], station: Stati
 		: null;
 
 	// Actions.
+	if ((aid != null) && (app_group_type != null)) {
+		station.transmitted_odas.set(app_group_type, aid);
+	}
 	if ((aid != null) && (app_group_type != null)) {
 		station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
 	}
