@@ -206,6 +206,7 @@ export class StationImpl implements Station {
 
     // Reset ODAs.
     this.rt_plus_app.reset();
+    this.dab_cross_ref_app.reset();
   }
 
 	public addAfPair(a: number, b: number) {
