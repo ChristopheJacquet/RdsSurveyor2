@@ -19,12 +19,14 @@ struct Station {
     ps: str<8>
     lps: str<32>
     rt: str<64>
+    rt_flag: uint<1>
     music: bool
     di_dynamic_pty: bool
     di_compressed: bool
     di_artificial_head: bool
     di_stereo: bool
     odas: map<uint<16>, tag>
+    transmitted_odas: map<uint<5>, uint<16>>
     app_mapping: map<uint<5>, tag>
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
@@ -33,6 +35,8 @@ struct Station {
     pin_day: uint<5>
     pin_hour: uint<5>
     pin_minute: uint<6>
+    ecc: uint<8>
+    language_code: uint<12>
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
@@ -69,21 +73,36 @@ bitstruct group_0A(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    ta: bool
-    music: bool
-    di: bool
-    addr: uint<2>
+    _: unparsed<5>
     
     # Block C.
     af1: uint<8>
     af2: uint<8>
     
     # Block D.
+    _: unparsed<16>
+} action {
+    station.addAfPair(af1, af2)
+    parse _ "group_0B_0_common"
+}
+
+bitstruct group_0B_0_common(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    ta: bool
+    music: bool
+    di: bool
+    addr: uint<2>
+    
+    # Block C.
+    _:  uint<16>
+    
+    # Block D.
     ps_seg: byte<2>
 } action {
     station.ta = ta
     station.music = music
-    station.addAfPair(af1, af2)
     copy station.ps, addr, 2, ps_seg
 
     switch addr {
@@ -102,25 +121,6 @@ bitstruct group_0A(station: Station) {
     }
 }
 
-bitstruct group_0B(station: Station) {
-    group_common: unparsed<27>
-
-    # Rest of Block B.
-    ta: bool
-    _: bool
-    di: bool
-    addr: uint<2>
-    
-    # Block C.
-    pi:  uint<16>
-    
-    # Block D.
-    ps_seg: byte<2>
-} action {
-    station.pi = pi
-    copy station.ps, addr, 2, ps_seg
-}
-
 bitstruct group_1A(station: Station) {
     group_common: unparsed<27>
 
@@ -130,42 +130,73 @@ bitstruct group_1A(station: Station) {
     # Block C.
     linkage_actuator: bool
     variant: uint<3>
-    payload: unparsed<12>
+    payload: uint<12>
+
+    # Block D.
+    pin: unparsed<16>
+} action {
+    station.linkage_actuator = linkage_actuator
+    parse _ "group_1B_1_common"
+    switch variant {
+        case 0 {
+            parse _ "group_1A_ecc"
+        }
+
+        case 3 {
+            station.language_code = payload
+        }
+    }
+}
+
+bitstruct group_1A_ecc(station: Station) {
+    _: unparsed<32>
+    linkage_actuator: unparsed<1>
+    variant: unparsed<3>
+    paging: unparsed<4>
+    ecc: uint<8>
+    pin: unparsed<16>
+} action {
+    station.ecc = ecc
+}
+
+bitstruct group_1B_1_common(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    _: unparsed<5>
+
+    # Block C.
+    _: unparsed<16>
 
     # Block D.
     pin_day: uint<5>
     pin_hour: uint<5>
     pin_minute: uint<6>
 } action {
-    station.linkage_actuator = linkage_actuator
     station.pin_day = pin_day
     station.pin_hour = pin_hour
     station.pin_minute = pin_minute
-    #switch (variant) {
-    #    case 0 {
-    #        parse payload group_1A_ecc
-    #    }
-    #}
 }
 
 bitstruct group_2A(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    flag_ab: bool
+    flag: uint<1>
     addr: uint<4>
     
     # Blocks C and D.
     rt_seg: byte<4>
 } action {
     copy station.rt, addr, 4, rt_seg
+    station.rt_flag = flag
 }
 
 bitstruct group_2B(station: Station) {
     group_common: unparsed<27>
 
     # Rest of Block B.
-    flag_ab: bool
+    flag: uint<1>
     addr: uint<4>
 
     # Block C.
@@ -175,6 +206,7 @@ bitstruct group_2B(station: Station) {
     rt_seg: byte<2>
 } action {
     copy station.rt, addr, 2, rt_seg
+    station.rt_flag = flag
 }
 
 bitstruct group_3A(station: Station) {
@@ -189,7 +221,7 @@ bitstruct group_3A(station: Station) {
     # Block D.
     aid: uint<16>
 } action {
-    #station.reportODA(aid, app_group_type)
+    put station.transmitted_odas app_group_type aid
     put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
     parse app_data lookup(station.oda_3A_mapping, aid, "group_unknown")
 }

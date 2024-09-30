@@ -12,6 +12,7 @@ export class StationImpl implements Station {
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUtf8(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
+  rt_flag?: number;
 	music?: boolean;
 	di_dynamic_pty?: boolean;
 	di_compressed?: boolean;
@@ -23,6 +24,7 @@ export class StationImpl implements Station {
     [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
   ]);
+	transmitted_odas: Map<number, number> = new Map<number, number>();
   oda_3A_mapping: Map<number, string> = new Map<number, string>();
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
@@ -31,6 +33,8 @@ export class StationImpl implements Station {
 	pin_day?: number;
 	pin_hour?: number;
 	pin_minute?: number;
+  ecc?: number;
+  language_code?: number;
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -182,22 +186,27 @@ export class StationImpl implements Station {
     this.pin_day = undefined;
     this.pin_hour = undefined;
     this.pin_minute = undefined;
-  
+    this.ecc = undefined;
+    this.language_code = undefined;
+    this.transmitted_odas.clear();
+
     this.app_mapping = new Map<number, string>([
-      [0b00000, "group_0A"],
-      [0b00001, "group_0B"],
-      [0b00010, "group_1A"],
-      [0b00100, "group_2A"],
-      [0b00101, "group_2B"],
-      [0b00110, "group_3A"],
-      [0b01000, "group_4A"],
-      [0b10100, "group_10A"],
-      [0b11110, "group_15A"]]);
+      [GROUP_0A, "group_0A"],
+      [GROUP_0B, "group_0B_0_common"],
+      [GROUP_1A, "group_1A"],
+      [GROUP_1B, "group_1B_1_common"],
+      [GROUP_2A, "group_2A"],
+      [GROUP_2B, "group_2B"],
+      [GROUP_3A, "group_3A"],
+      [GROUP_4A, "group_4A"],
+      [GROUP_10A, "group_10A"],
+      [GROUP_15A, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
 
     // Reset ODAs.
     this.rt_plus_app.reset();
+    this.dab_cross_ref_app.reset();
   }
 
 	public addAfPair(a: number, b: number) {
@@ -223,6 +232,67 @@ export class StationImpl implements Station {
 			}
 		}
 	}
+
+  public getISOCountryCode(): string {
+    if (this.pi == undefined || this.ecc == undefined) {
+      return '';
+    }
+
+    const piCC = (this.pi & 0xF000) >> 12;
+
+    switch (this.ecc) {
+      case 0xE0: return ECC_E0[piCC];
+      case 0xE1: return ECC_E1[piCC];
+      case 0xE2: return ECC_E2[piCC];
+      case 0xE3: return ECC_E3[piCC];
+      case 0xE4: return ECC_E4[piCC];
+      case 0xD0: return ECC_D0[piCC];
+      case 0xD1: return ECC_D1[piCC];
+      case 0xD2: return ECC_D2[piCC];
+      case 0xD3: return ECC_D3[piCC];
+      case 0xA0: return ECC_A0[piCC];
+      case 0xA1: return ECC_A1[piCC];
+      case 0xA2: return ECC_A2[piCC];
+      case 0xA3: return ECC_A3[piCC];
+      case 0xA4: return ECC_A4[piCC];
+      case 0xA5: return ECC_A5[piCC];
+      case 0xA6: return ECC_A6[piCC];
+      case 0xF0: return ECC_F0[piCC];
+      case 0xF1: return ECC_F1[piCC];
+      case 0xF2: return ECC_F2[piCC];
+      case 0xF3: return ECC_F3[piCC];
+      case 0xF4: return ECC_F4[piCC];
+      default: return 'Invalid';
+    }
+  }
+  
+  public getCountryName(): string {
+    const isoCC = this.getISOCountryCode();
+
+    if (isoCC == '') {
+      return '';
+    }
+
+    try {
+      const regionNamesInEnglish = new Intl.DisplayNames(['en'], { type: 'region' });
+      return regionNamesInEnglish.of(isoCC) || isoCC;
+    } catch {
+      return isoCC;
+    }
+  }
+
+  public getLanguage(): string {
+    if (this.language_code == undefined) {
+      return '';
+    }
+
+    const code = this.language_code & 0x7F;
+    if (code < 0 || code > 127) {
+      return 'Invalid';
+    }
+
+    return LANGUAGE_CODES[code][0];
+  }
 }
 
 function padNumber(num: number, width: number) {
@@ -449,6 +519,40 @@ export interface Oda {
   reset(): void;
 }
 
+// Group type constants.
+const GROUP_0A = 0b00000;
+const GROUP_0B = 0b00001;
+const GROUP_1A = 0b00010;
+const GROUP_1B = 0b00011;
+const GROUP_2A = 0b00100;
+const GROUP_2B = 0b00101;
+const GROUP_3A = 0b00110;
+const GROUP_3B = 0b00111;
+const GROUP_4A = 0b01000;
+const GROUP_4B = 0b01001;
+const GROUP_5A = 0b01010;
+const GROUP_5B = 0b01011;
+const GROUP_6A = 0b01100;
+const GROUP_6B = 0b01101;
+const GROUP_7A = 0b01110;
+const GROUP_7B = 0b01111;
+const GROUP_8A = 0b10000;
+const GROUP_8B = 0b10001;
+const GROUP_9A = 0b10010;
+const GROUP_9B = 0b10011;
+const GROUP_10A = 0b10100;
+const GROUP_10B = 0b10101;
+const GROUP_11A = 0b10110;
+const GROUP_11B = 0b10111;
+const GROUP_12A = 0b11000;
+const GROUP_12B = 0b11001;
+const GROUP_13A = 0b11010;
+const GROUP_13B = 0b11011;
+const GROUP_14A = 0b11100;
+const GROUP_14B = 0b11101;
+const GROUP_15A = 0b11110;
+const GROUP_15B = 0b11111;
+
 const CTRLCHAR = '\u2423';
   
 const RDS_CHARMAP = new Array<string>(
@@ -485,3 +589,156 @@ const RDS_CHARMAP = new Array<string>(
   '\u00E3',	'\u00E5', '\u00E6',	'\u0153', '\u0175',	'\u00FD', '\u00F5',	'\u00F8',
   '\u00FE',	'\u014B', '\u0155',	'\u0107', '\u015B',	'\u017A', '\u0167',	CTRLCHAR,
 );
+
+const ECC_E0 = ["  ", "DE", "DZ", "AD", "IL", "IT", "BE", "RU", "PS", "AL", "AT", "HU", "MT", "DE", "  ", "EG"];
+const ECC_E1 = ["  ", "GR", "CY", "SM", "CH", "JO", "FI", "LU", "BG", "DK", "GI", "IQ", "GB", "LY", "RO", "FR"];
+const ECC_E2 = ["  ", "MA", "CZ", "PL", "VA", "SK", "SY", "TN", "  ", "LI", "IS", "MC", "LT", "RS/YU", "ES", "NO"];
+const ECC_E3 = ["  ", "ME", "IE", "TR", "MK", "TJ", "  ", "  ", "NL", "LV", "LB", "AZ", "HR", "KZ", "SE", "BY"];
+const ECC_E4 = ["  ", "MD", "EE", "KG", "  ", "  ", "UA", "KS", "PT", "SI", "AM", "UZ", "GE", "  ", "TM", "BA"];
+const ECC_D0 = ["  ", "CM", "DZ/CF", "DJ", "MG", "ML", "AO", "GQ", "GA", "  ", "ZA", "BF", "CG", "TG", "BJ", "MW"];
+const ECC_D1 = ["  ", "NA", "LR", "GH", "MR", "CV/ST", "  ", "SN", "GM", "BI", "??", "BW", "KM", "TZ", "ET", "NG"];
+const ECC_D2 = ["  ", "SL", "ZW", "MZ", "UG", "SZ", "GN", "SO", "NE", "TD", "GW", "CD", "CI", "  ", "ZM", "ER"];
+const ECC_D3 = ["  ", "  ", "  ", "EH", "??", "RW", "LS", "  ", "SC", "  ", "MU", "  ", "SD", "  ", "  ", "  "];
+const ECC_A0 = ["  ", "US", "US", "US", "US", "US", "US", "US", "US", "US", "US", "US", "  ", "US", "US", "  "];
+const ECC_A1 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "CA", "CA", "CA", "CA", "GL"];
+const ECC_A2 = ["  ", "AI", "AG", "EC", "  ", "BB", "BZ", "KY", "CR", "CU", "AR", "BR", "BM", "AN", "GP", "BS"];
+const ECC_A3 = ["  ", "BO", "CO", "JM", "MQ", "GF", "PY", "NI", "  ", "PA", "DM", "DO", "CL", "GD", "  ", "GY"];
+const ECC_A4 = ["  ", "GT", "HN", "AW", "  ", "MS", "TT", "PE", "SR", "UY", "KN", "LC", "SV", "HT", "VE", "  "];
+const ECC_A5 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "MX", "VC", "MX", "MX", "MX/VG"];
+const ECC_A6 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "PM"];
+const ECC_F0 = ["  ", "AU", "AU", "AU", "AU", "AU", "AU", "AU", "AU", "SA", "AF", "MM", "CN", "KP", "BH", "MY"];
+const ECC_F1 = ["  ", "KI", "BT", "BD", "PK", "FJ", "OM", "NR", "IR", "NZ", "SB", "BN", "LK", "TW", "KR", "HK"];
+const ECC_F2 = ["  ", "KW", "QA", "KH", "WS", "IN", "MO", "VN", "PH", "JP", "SG", "MV", "ID", "AE", "NP", "VU"];
+const ECC_F3 = ["  ", "LA", "TH", "TO", "  ", "  ", "  ", "  ", "  ", "PG", "  ", "YE", "  ", "  ", "FM", "MN"];
+const ECC_F4 = ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "];
+
+const LANGUAGE_CODES: Array<Array<string>> = [
+  ["Unknown", "??"], // 0
+  ["Albanian", "sq"],
+  ["Breton", "br"],
+  ["Catalan", "ca"],
+  ["Croatian", "hr"],
+  ["Welsh", "cy"],
+  ["Czech", "cs"],
+  ["Danish", "da"],
+  ["German", "de"],
+  ["English", "en"],
+  ["Spanish", "es"], // 10
+  ["Esperanto", "eo"],
+  ["Estonian", "et"],
+  ["Basque", "eu"],
+  ["Faroese", "fo"],
+  ["French", "fr"],
+  ["Frisian","fy"],
+  ["Irish", "ga"],
+  ["Gaelic", "gd"],
+  ["Galician", "gl"],
+  ["Icelandic", "is"], // 20
+  ["Italian", "it"],
+  ["Lappish", "-lappish-"],
+  ["Latin", "la"],
+  ["Latvian", "lv"],
+  ["Luxembourgian", "lb"],
+  ["Lithuanian", "lt"],
+  ["Hungarian", "hu"],
+  ["Maltese", "mt"],
+  ["Dutch", "nl"],
+  ["Norwegian", "nn"], // 30
+  ["Occitan", "oc"],
+  ["Polish", "pl"],
+  ["Portuguese", "pt"],
+  ["Romanian", "ro"],
+  ["Romansh", "rm"],
+  ["Serbian", "sr"],
+  ["Slovak", "sk"],
+  ["Slovene", "sl"],
+  ["Finnish", "fi"],
+  ["Swedish", "sv"], // 40
+  ["Turkish", "tr"],
+  ["Flemish", "-flemish-"],
+  ["Walloon", "wa"],
+  ["<2C>", "2C"],
+  ["<2D>", "2D"],
+  ["<2E>", "2E"],
+  ["<2F>", "2F"],
+  ["<30>", "30"],
+  ["<31>", "31"],
+  ["<32>", "32"], // 50
+  ["<33>", "33"],
+  ["<34>", "34"],
+  ["<35>", "35"],
+  ["<36>", "36"],
+  ["<37>", "37"],
+  ["<38>", "38"],
+  ["<39>", "39"],
+  ["<3A>", "3A"],
+  ["<3B>", "3B"],
+  ["<3C>", "3C"], // 60
+  ["<3D>", "3D"],
+  ["<3E>", "3E"],
+  ["<3F>", "3F"],
+  ["Void", "-void-"],
+  ["<41>", "41"],
+  ["<42>", "42"],
+  ["<43>", "43"],
+  ["<44>", "44"],
+  ["Zulu", "zu"], 
+  ["Vietnamese", "vi"], // 70
+  ["Uzbek", "uz"],
+  ["Urdu", "ur"],
+  ["Ukrainian", "uk"],
+  ["Thai", "th"],
+  ["Telugu", "te"],
+  ["Tatar", "tt"],
+  ["Tamil", "ta"],
+  ["Tadzhik", "tg"],
+  ["Swahili", "sw"],
+  ["Sranan Tongo", "-sranan-tongo-"], // 80
+  ["Somali", "so"],
+  ["Sinhalese", "si"],
+  ["Shona", "sn"],
+  ["Serbo-Croat", "sh"],
+  ["Ruthenian", "-ruthenian-"],
+  ["Russian", "ru"],
+  ["Quechua", "qu"],
+  ["Pushtu", "ps"],
+  ["Punjabi", "pa"],
+  ["Persian", "fa"], // 90
+  ["Papamiento", "-papamiento-"],
+  ["Oriya", "or"],
+  ["Nepali", "ne"],
+  ["Ndebele", "nr"],
+  ["Marathi", "mr"],
+  ["Moldavian", "mo"],
+  ["Malaysian", "ms"],
+  ["Malagasay", "mg"],
+  ["Macedonian", "mk"],
+  ["Laotian", "lo"], // 100
+  ["Korean", "ko"],
+  ["Khmer", "km"],
+  ["Kazakh", "kk"],
+  ["Kannada", "kn"],
+  ["Japanese", "ja"],
+  ["Indonesian", "id"],
+  ["Hindi", "hi"],
+  ["Hebrew", "he"],
+  ["Hausa", "ha"],
+  ["Gurani", "gn"], // 110
+  ["Gujurati", "gu"],
+  ["Greek", "el"],
+  ["Georgian", "ka"],
+  ["Fulani", "ff"],
+  ["Dari", "fa"],
+  ["Churash", "cv"],
+  ["Chinese", "zh"],
+  ["Burmese", "my"],
+  ["Bulgarian", "bg"],
+  ["Bengali", "bn"], // 120
+  ["Belorussian", "be"],
+  ["Bambora", "bm"],
+  ["Azerbijani", "az"],
+  ["Assamese", "as"],
+  ["Armenian", "hy"],
+  ["Arabic", "ar"],
+  ["Amharic", "am"] // 127
+];

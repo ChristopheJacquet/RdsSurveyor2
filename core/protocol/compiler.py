@@ -128,7 +128,8 @@ class CodeGenerator:
             vars_test = ' && '.join(f'({v} != null)' for v in sorted(guard_vars))
             return self.block(f'if ({vars_test}) {{')
         else:
-            return self
+            # Create a block, but without an indent and without a closing symbol.
+            return CodeGenerator(of=self.of, indent=self.indent, in_block=False)
 
 class Type:
     def conv(self, bit_expr):

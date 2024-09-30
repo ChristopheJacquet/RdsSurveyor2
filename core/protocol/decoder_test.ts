@@ -118,3 +118,22 @@ describe('Long PS', () => {
     expect(station.getLPS()).toBe("peace мир 平和");
   });
 });
+
+// BBC sample from 2019 using ECC in group 1A.
+describe('BBC ECC', () => {
+  const station = new StationImpl();
+  send(`C201 1120 80E1 E340`, station);
+  it('should have expected country', () => {
+    expect(station.ecc).toBe(0xE1);
+    expect(station.getCountryName()).toBe("United Kingdom");
+  });
+});
+
+// Synthetic sample setting a language code.
+describe('1A group with a language code', () => {
+  const station = new StationImpl();
+  send(`FFFF 1120 300F E340`, station);
+  it('should set the language', () => {
+    expect(station.getLanguage()).toBe("French");
+  });
+});

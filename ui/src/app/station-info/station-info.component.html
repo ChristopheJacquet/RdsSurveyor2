@@ -59,7 +59,9 @@
 
   <div class="infogrid-row">
     <div class="infogrid-cell">
-      <div class="infogrid-title">RT (current radiotext)</div>
+      <div class="infogrid-title">RT (current radiotext)
+        {{ station.rt_flag != undefined ? (station.rt_flag ? "[A]" : "[B]") : "" }}
+      </div>
       <div class="infogrid-value">{{ station.getRT() }} </div>
     </div>
   </div>
@@ -101,11 +103,11 @@
       <div class="infogrid-row">
         <div class="infogrid-cell">
           <div class="infogrid-title">Country</div>
-          <div class="infogrid-value">Placeholder </div>
+          <div class="infogrid-value">{{ station.getCountryName() }} </div>
         </div>
         <div class="infogrid-cell">
           <div class="infogrid-title">Language</div>
-          <div class="infogrid-value">Placeholder </div>
+          <div class="infogrid-value">{{ station.getLanguage() }} </div>
         </div>
         <div class="infogrid-cell">
           <div class="infogrid-title">PIN</div>
@@ -146,6 +148,16 @@
   </mat-tab>
   <mat-tab label="EON">
     EON
+  </mat-tab>
+  <mat-tab label="ODA">
+    <table>
+      <tr><th>Group</th><th>AID</th><th>ODA name</th></tr>
+      <tr *ngFor="let e of station.transmitted_odas | keyvalue">
+        <td>{{ formatGroupType(e.key) }}</td>
+        <td>{{ e.value | hex:4 }}</td>
+        <td>{{ getOdaName(e.value) }}</td>
+      </tr>
+    </table>    
   </mat-tab>
   <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
     <table>
