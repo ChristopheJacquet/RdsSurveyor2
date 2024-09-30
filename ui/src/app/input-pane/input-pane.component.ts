@@ -9,6 +9,7 @@ import {MatTabsModule} from '@angular/material/tabs';
 import { RdsReportEvent, RdsReportEventListener } from "../../../../core/drivers/input";
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
+import { Demodulator } from "../../../../core/signals/baseband";
 
 @Component({
   selector: 'app-input-pane',
@@ -165,6 +166,21 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
+  async processBasebandWav(buffer: ArrayBuffer) {
+    const context = new OfflineAudioContext(
+      1,        // Number of channels.
+      1000000,  // Length.
+      250000    // Sample rate.
+    );
+    
+    const basebandBuffer = await context.decodeAudioData(buffer);
+    const samples = basebandBuffer.getChannelData(0);
+    const demod = new Demodulator(this);
+    for (let i=0; i<samples.length; i++) {
+      demod.addSample(samples[i]);
+    }
+  }
+
   onDrop(e: any) {
     e.preventDefault();
     e.stopPropagation();
@@ -196,6 +212,12 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
         case FileType.UNSYNCED_BINARY_RDS: {
           const bytes = await f.arrayBuffer();
           this.processBinaryGroups(new Uint8Array(bytes));
+          break;
+        }
+
+        case FileType.BASEBAND_WAV: {
+          const buffer = await f.arrayBuffer();
+          this.processBasebandWav(buffer);
           break;
         }
       }
@@ -339,9 +361,26 @@ async function sleep(duration_msec: number) {
 enum FileType {
   UNSYNCED_BINARY_RDS,
   HEX_GROUPS,
+  BASEBAND_WAV,
 }
 
 function guessFileType(header: Uint8Array): FileType {
+  if (
+    header[0] == 0x52 &&   // R
+    header[1] == 0x49 &&   // I
+    header[2] == 0x46 &&   // F
+    header[3] == 0x46 &&   // F
+    header[8] == 0x57 &&   // W
+    header[9] == 0x41 &&   // A
+    header[10] == 0x56 &&  // V
+    header[11] == 0x45 &&  // E
+    header[12] == 0x66 &&  // f
+    header[13] == 0x6D &&  // m
+    header[14] == 0x74 &&  // t
+    header[15] == 0x20) {  // ' '
+      return FileType.BASEBAND_WAV;
+    }
+
   let binary = false;
   for (let i=0; i<header.length; i++) {
     const b = header[i];
