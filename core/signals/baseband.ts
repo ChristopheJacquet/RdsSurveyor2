@@ -31,8 +31,8 @@ export class Demodulator {
   prevBit: boolean = false;
   bitstreamSynchronizer: BitStreamSynchronizer;
 
-  constructor(listener: RdsReportEventListener) {
-    this.bitstreamSynchronizer = new BitStreamSynchronizer(listener);
+  constructor(bitstreamSynchronizer: BitStreamSynchronizer) {
+    this.bitstreamSynchronizer = bitstreamSynchronizer;
   }
 
   addSample(sample: number) {

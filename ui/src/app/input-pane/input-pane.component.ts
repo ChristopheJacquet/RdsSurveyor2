@@ -190,7 +190,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     
     const basebandBuffer = await context.decodeAudioData(buffer);
     const samples = basebandBuffer.getChannelData(0);
-    const demod = new Demodulator(this);
+
+    this.synchronizer = new BitStreamSynchronizer(this);
+    const demod = new Demodulator(this.synchronizer);
+
     for (let i=0; i<samples.length; i++) {
       demod.addSample(samples[i]);
       if (i % blockSize == 0) {
