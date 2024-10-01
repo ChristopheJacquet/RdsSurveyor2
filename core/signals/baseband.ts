@@ -143,8 +143,8 @@ class Buffer {
     let valueQ = 0;
     // Convolve the filter and the last samples.
     for (let i=0; i<this.length; i++) {
-      valueI += this.lastSamplesI[bufferIndex] * LP_FILTER_COEFFS[i];
-      valueQ += this.lastSamplesQ[bufferIndex] * LP_FILTER_COEFFS[i];
+      valueI += this.lastSamplesI[bufferIndex] * coeffs[i];
+      valueQ += this.lastSamplesQ[bufferIndex] * coeffs[i];
       bufferIndex++;
       // This could be written: bufferIndex = (bufferIndex + 1) % this.length;
       // But that is much slower than the following:
