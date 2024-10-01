@@ -129,7 +129,12 @@ class Buffer {
   public addSample(sampleI: number, sampleQ: number) {
     this.lastSamplesI[this.index] = sampleI;
     this.lastSamplesQ[this.index] = sampleQ;
-    this.index = (this.index + 1) % this.length;
+    // This could be written: this.index = (this.index + 1) % this.length;
+    // But that is much slower than the following:
+    this.index++;
+    if (this.index >= this.length) {
+      this.index = 0;
+    }
   }
 
   public applyFilter(coeffs: Float32Array): Array<number> {
@@ -140,7 +145,12 @@ class Buffer {
     for (let i=0; i<this.length; i++) {
       valueI += this.lastSamplesI[bufferIndex] * LP_FILTER_COEFFS[i];
       valueQ += this.lastSamplesQ[bufferIndex] * LP_FILTER_COEFFS[i];
-      bufferIndex = (bufferIndex + 1) % this.length;
+      bufferIndex++;
+      // This could be written: bufferIndex = (bufferIndex + 1) % this.length;
+      // But that is much slower than the following:
+      if (bufferIndex >= this.length) {
+        bufferIndex = 0;
+      }
     }
     return [valueI, valueQ];
   }
