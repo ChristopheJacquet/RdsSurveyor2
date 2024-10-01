@@ -168,17 +168,31 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async processBasebandWav(buffer: ArrayBuffer) {
+    const sampleRate = 250000;
+    // Blocksize is chosen so that blockSize samples represent a bit less than
+    // one group (so the UI is fluid). Since there are 11.4 groups per second,
+    // we want sampleRate / blockSize to be 11.4, or a bit more. In addition,
+    // we want blockSize to be a power of 2 (so that computing the modulo is
+    // cheap). Therefore, it's the greatest power of 2 such that
+    // sampleRate / blockSize >= 11.4.
+    const blockSize = 16384;
+    const delayBetweenBlocks = blockSize * 1000 / sampleRate;
+
     const context = new OfflineAudioContext(
       1,        // Number of channels.
       1000000,  // Length.
-      250000    // Sample rate.
+      sampleRate
     );
+    const timing = new Timing();
     
     const basebandBuffer = await context.decodeAudioData(buffer);
     const samples = basebandBuffer.getChannelData(0);
     const demod = new Demodulator(this);
     for (let i=0; i<samples.length; i++) {
       demod.addSample(samples[i]);
+      if (i % blockSize == 0) {
+        await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
+      }
     }
   }
 
@@ -358,6 +372,21 @@ enum TuningState {
 
 async function sleep(duration_msec: number) {
   return new Promise(resolve => setTimeout(resolve, duration_msec));
+}
+
+class Timing {
+  lastTimestamp = 0;
+
+  async enforceInterval(duration_msec: number) {
+    if (this.lastTimestamp == 0) {
+      this.lastTimestamp = Date.now();  // Milliseconds since epoch.
+      return;
+    }
+
+    const sleepDuration = this.lastTimestamp + duration_msec - Date.now();
+    await sleep(sleepDuration > 0 ? sleepDuration : 0);
+    this.lastTimestamp = Date.now();
+  }
 }
 
 enum FileType {
