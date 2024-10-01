@@ -130,6 +130,8 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   async processTextualGroups(s: string) {
     this.synchronizer = null;
+
+    const timing = new Timing();
     for (let l of s.split('\n')) {
       l = l.split('@')[0];
       const blocks = l.trim().split(' ');
@@ -145,9 +147,8 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
         ok.push(!Number.isNaN(val));
       }
       this.emitGroup(Uint16Array.from(bl), ok);
-      if (this.realtimePlayback) {
-        await sleep(87);   // Duration of a group (1000 ms / (1187.5/104)).
-      }
+      // Duration of a group (1000 ms / (1187.5/104)).
+      await timing.enforceInterval(this.realtimePlayback ? 87 : 0);
     }
   }
 
@@ -155,15 +156,17 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     this.synchronizer = new BitStreamSynchronizer(this);
     let remainingLength = data.length;
     let pos = 0;
+
+    const timing = new Timing();
     while (remainingLength > 0) {
       const l = Math.min(remainingLength, 8);
       const dataSlice = data.slice(pos, pos+l);
       pos += 8;
       remainingLength -= 8;
       this.synchronizer.addBits(dataSlice);
-      if (this.realtimePlayback) {
-        await sleep(1000 / (1187.5/(8*8)));   // Duration of a slice of 8*8 bits.
-      }
+
+      // Duration of a slice of 8*8 bits.
+      await timing.enforceInterval(this.realtimePlayback ? 1000 / (1187.5/(8*8)) : 0);
     }
   }
 
@@ -383,7 +386,16 @@ class Timing {
       return;
     }
 
-    const sleepDuration = this.lastTimestamp + duration_msec - Date.now();
+    // If we're not actually waiting (duration_msec = 0), then ensure we don't
+    // call sleep more than 10x per second (i.e. with intervals shorter than 100
+    // ms). The purpose is to be fast when we need to.
+    const timestamp = Date.now();
+
+    if (duration_msec == 0 && timestamp - this.lastTimestamp < 100) {
+      return;
+    }
+
+    const sleepDuration = this.lastTimestamp + duration_msec - timestamp;
     await sleep(sleepDuration > 0 ? sleepDuration : 0);
     this.lastTimestamp = Date.now();
   }
