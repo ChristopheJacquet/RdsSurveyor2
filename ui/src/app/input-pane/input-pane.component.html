@@ -45,6 +45,12 @@
 </mat-tab-group>
 
 <div class="processingChain">
+  <div [class.hidden]="demodulator == null">
+    <div>Constellation diagram</div>
+    <canvas #constellationDiagram width="100" height="100">
+      Constellation diagram.
+    </canvas>
+  </div>
   <div *ngIf="synchronizer != null">
     <div>Bit stream</div>
     <div>{{ synchronizer.synced ? "SYNCED" : "NOT SYNCED" }}</div>

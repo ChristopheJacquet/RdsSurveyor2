@@ -20,6 +20,7 @@ import { Demodulator } from "../../../../core/signals/baseband";
 })
 export class InputPaneComponent implements AfterViewInit, RdsReportEventListener  {
   @ViewChild('blerGraph') public blerGraph!: ElementRef;
+  @ViewChild('constellationDiagram') public constellationDiagram!: ElementRef;
   @Output() groupReceived = new EventEmitter<GroupEvent | NewStationEvent>();
   isDragging = false;
 
@@ -33,12 +34,19 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
+  synchronizer: BitStreamSynchronizer | null = null;
+  demodulator: Demodulator | null = null;
+
   blerGraphCx: CanvasRenderingContext2D | null = null;
   blerGraphWidth: number = 0;
   blerGraphHeight: number = 0;
-  synchronizer: BitStreamSynchronizer | null = null;
+
+  constellationDiagramCx: CanvasRenderingContext2D | null = null;
+  constellationDiagramWidth: number = 0;
+  constellationDiagramHeight: number = 0;
 
   public ngAfterViewInit() {
+    // Initialize block error rate graph.
     const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
     this.blerGraphCx = blerGraphEl.getContext('2d');
     this.blerGraphWidth = blerGraphEl.width;
@@ -49,6 +57,13 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
     this.blerGraphCx.fillStyle = "black";
     this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
+
+    // Initialize constellation diagram.
+    const diagramEl: HTMLCanvasElement = this.constellationDiagram.nativeElement;
+    this.constellationDiagramCx = diagramEl.getContext('2d');
+    this.constellationDiagramWidth = diagramEl.width;
+    this.constellationDiagramHeight = diagramEl.height;
+    return this.constellationDiagramCx;
   }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
@@ -128,7 +143,52 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
+  updateConstellationDiagram(symbolsI: number[], symbolsQ: number[]) {
+    if (this.constellationDiagramCx == null) {
+      return;
+    }
+
+    this.constellationDiagramCx.clearRect(
+      0, 0, this.constellationDiagramWidth, this.constellationDiagramHeight);
+    
+    const xC = this.constellationDiagramWidth / 2;
+    const yC = this.constellationDiagramHeight / 2;
+    
+    this.constellationDiagramCx.strokeStyle = "#000";
+
+    this.constellationDiagramCx.beginPath();
+    this.constellationDiagramCx.moveTo(xC, 0);
+    this.constellationDiagramCx.lineTo(xC, this.constellationDiagramHeight);
+    this.constellationDiagramCx.stroke();
+
+    this.constellationDiagramCx.beginPath();
+    this.constellationDiagramCx.moveTo(0, yC);
+    this.constellationDiagramCx.lineTo(this.constellationDiagramWidth, yC);
+    this.constellationDiagramCx.stroke();
+
+    let max = 0;
+    for (let i = 0; i < symbolsI.length; i++) {
+      max = Math.max(max, Math.abs(symbolsI[i]), Math.abs(symbolsQ[i]));
+    }
+
+    const scale = this.constellationDiagramWidth / 2 / max / 1.1;  // Add 10% margin.
+
+    this.constellationDiagramCx.fillStyle = "#004";
+    for (let i = 0; i < symbolsI.length; i++) {
+      this.constellationDiagramCx.beginPath();
+      this.constellationDiagramCx.arc(
+        xC + symbolsI[i] * scale,
+        yC + symbolsQ[i] * scale,
+        2,
+        0,
+        2 * Math.PI
+      );
+      this.constellationDiagramCx.fill();
+    }
+  }
+
   async processTextualGroups(s: string) {
+    this.demodulator = null;
     this.synchronizer = null;
 
     const timing = new Timing();
@@ -153,7 +213,9 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async processBinaryGroups(data: Uint8Array) {
+    this.demodulator = null;
     this.synchronizer = new BitStreamSynchronizer(this);
+
     let remainingLength = data.length;
     let pos = 0;
 
@@ -192,12 +254,13 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     const samples = basebandBuffer.getChannelData(0);
 
     this.synchronizer = new BitStreamSynchronizer(this);
-    const demod = new Demodulator(this.synchronizer);
+    this.demodulator = new Demodulator(this.synchronizer);
 
     for (let i=0; i<samples.length; i++) {
-      demod.addSample(samples[i]);
+      this.demodulator.addSample(samples[i]);
       if (i % blockSize == 0) {
         await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
+        this.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
       }
     }
   }

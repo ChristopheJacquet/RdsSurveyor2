@@ -18,8 +18,8 @@ export class Demodulator {
   outQ: number[] = [0, 0];              // Output "soft symboles", imaginary part.
   outRailI: number[] = [0, 0, 0];       // Past values, real part.
   outRailQ: number[] = [0, 0, 0];       // Past values, imaginary part.
-  syncOutI: number[] = [0, 0];
-  syncOutQ: number[] = [0, 0];
+  syncOutI: number[] = [];
+  syncOutQ: number[] = [];
 
   // Costas loop.
   costasPhase = 0;
@@ -97,6 +97,10 @@ export class Demodulator {
 
       this.syncOutI.push(costasOutI);
       this.syncOutQ.push(costasOutQ);
+      if (this.syncOutI.length > SYNC_OUT_LENGTH) {
+        this.syncOutI.shift();
+        this.syncOutQ.shift();
+      }
 
       /*** Differential decoding and output to bitstream synchronizer. ***/
       const bit = costasOutI > 0;
@@ -184,3 +188,6 @@ const LP_FILTER_COEFFS = new Float32Array([
   1.03356064e-03,  8.85850463e-04,  7.33747418e-04,  5.85559941e-04,
   4.46579244e-04,  3.19287123e-04,  2.03771919e-04,  9.83021736e-05,
   1.86764843e-19]);
+
+// Number of out symbols kept (for drawing the constellation diagram).
+const SYNC_OUT_LENGTH = 100;
