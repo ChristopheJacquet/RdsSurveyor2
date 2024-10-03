@@ -31,10 +31,12 @@ The program is currently under development and it is not (yet) usable. See below
 * AF support.
 * DAB cross-reference (EN 301700) ODA support.
 
-### Milestone 4
+### Milestone 4 (Reached on 3 Oct 2024)
 
 * New input source: MPX signal (in WAV file).
-* Audio out?
+* Constellation diagram display.
+* Groups 1A, 1B support.
+* Display the list of ODAs in use.
 
 ### Milestone 5
 
@@ -44,6 +46,7 @@ The program is currently under development and it is not (yet) usable. See below
 ### Milestone 6
 
 * New input source: RTL-SDR USB dongles.
+* Audio out?
 
 ### Milestone 7
 
@@ -53,7 +56,6 @@ The program is currently under development and it is not (yet) usable. See below
 
 * Display of groups breakdown, groups sequence.
 * Variant support for historical features.
-* Groups 1A, 1B support.
 * RP support.
 * Broadcaster-specific TDC/IH data support: CATRADIO.
 * New input source: clock/data from sound card.
