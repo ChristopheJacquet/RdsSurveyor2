@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { RdsReportEvent, RdsReportEventListener } from "./input";
+import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "./input";
 
 /**************************************************************************
  * Register Definitions
@@ -333,6 +333,7 @@ export class Si470x {
     if ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSR) == 0) {
       // Do nothing if no new RDS data is ready.
       this.sendRdsEvent({
+        type: RdsReportEventType.INFO_REPORT,
         sourceInfo: dongleInfo,
         freq: freq,
       });
@@ -355,6 +356,7 @@ export class Si470x {
     [true, true, true, true] : [false, false, false, false]);
 
     this.sendRdsEvent({
+      type: RdsReportEventType.GROUP,
       sourceInfo: dongleInfo,
       freq: freq,
       ok: ok,

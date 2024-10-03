@@ -1,4 +1,4 @@
-import { RdsReportEvent, RdsReportEventListener } from "../drivers/input";
+import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../drivers/input";
 import { BitStreamSynchronizer } from "./bitstream";
 
 class RdsListener implements RdsReportEventListener {
@@ -23,18 +23,21 @@ describe('Error-free bit stream', () => {
     expect(bss.synced).toBe(true);
     expect(spy).toHaveBeenCalledTimes(3);
     expect(spy).toHaveBeenCalledWith({
+      type: RdsReportEventType.GROUP,
       ok: [false, false, true, true],
       blocks: new Uint16Array([0x0000, 0x0000, 0xe5b4, 0x2020]),
       freq: 0,
       sourceInfo: "BitStreamSynchronizer",
     })
     expect(spy).toHaveBeenCalledWith({
+      type: RdsReportEventType.GROUP,
       ok: [true, true, true, true],
       blocks: new Uint16Array([0xf206, 0x1411, 0x0000, 0x0000]),
       freq: 0,
       sourceInfo: "BitStreamSynchronizer",
     })
     expect(spy).toHaveBeenCalledWith({
+      type: RdsReportEventType.GROUP,
       ok: [true, true, true, true],
       blocks: new Uint16Array([0xf206, 0xe410, 0x2020, 0xf201]),
       freq: 0,

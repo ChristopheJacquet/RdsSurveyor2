@@ -6,7 +6,7 @@ import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon'; 
 import {MatTabsModule} from '@angular/material/tabs';
 
-import { RdsReportEvent, RdsReportEventListener } from "../../../../core/drivers/input";
+import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../../../../core/drivers/input";
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator } from "../../../../core/signals/baseband";
@@ -55,7 +55,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     if (this.blerGraphCx == null) {
       return;
     }
-    this.blerGraphCx.fillStyle = "black";
+    this.blerGraphCx.fillStyle = "#aaa";
     this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
 
     // Initialize constellation diagram.
@@ -67,7 +67,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
-    this.updateBlerGraph(ok);
+    this.updateBlerGraph(true, ok);
 
     // Station change detection.
     const pi = blocks[0];
@@ -118,7 +118,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
-  updateBlerGraph(ok: boolean[]) {
+  updateBlerGraph(synced: boolean, ok: boolean[]) {
     if (this.blerGraphCx == null) {
       return;
     }
@@ -133,7 +133,8 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     const x = this.blerGraphWidth-1;
     let prevY = 0;
     for (let i = 0; i < 4; i++) {
-      this.blerGraphCx.strokeStyle = ok[i] ? "#8F8" : "#F88";
+      this.blerGraphCx.strokeStyle =
+        synced ? (ok[i] ? "#8F8" : "#F88") : "#aaa";
       const y = (i+1)*this.blerGraphHeight/4;
       this.blerGraphCx.beginPath();
       this.blerGraphCx.moveTo(x, prevY);
@@ -348,8 +349,12 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   async processRdsReportEvent(event: RdsReportEvent) {
     this.frequency = event.freq;
-    if (event.ok != undefined && event.blocks != undefined) {
+    if (event.type == RdsReportEventType.GROUP 
+      && event.ok != undefined && event.blocks != undefined) {
       this.emitGroup(event.blocks, event.ok);
+    }
+    if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
+      this.updateBlerGraph(false, []);
     }
   }
 

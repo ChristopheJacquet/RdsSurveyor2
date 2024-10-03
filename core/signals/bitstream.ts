@@ -1,4 +1,4 @@
-import { RdsReportEventListener } from "../drivers/input";
+import { RdsReportEventListener, RdsReportEventType } from "../drivers/input";
 
 // Number of good blocks needed after initial block to confirm synchronization.
 const SYNC_THRESHOLD = 2;
@@ -47,6 +47,7 @@ export class BitStreamSynchronizer {
 	private nbUnsync = 0;
 	private groupCount = 0;
 	private bitTime = 0;
+  private unreportedUnsyncedBits = 0;
 	private negativePolarity = false;
 	private nbSyncAtOffset: number[][][][] = [];
   private listener: RdsReportEventListener;
@@ -98,6 +99,7 @@ export class BitStreamSynchronizer {
             // Are we above threshold?
             if (this.nbSyncAtOffset[offset][pseudoBlock][j].length > SYNC_THRESHOLD) {
               this.synced = true;
+              this.unreportedUnsyncedBits = 0;
               this.eraseSyncArray();
 
               this.group[i] = (this.block >> 10) & 0xFFFF;
@@ -116,6 +118,17 @@ export class BitStreamSynchronizer {
 
           }
         }
+      }
+
+      // Report "group-equivalents" for the unsynced bits?
+      this.unreportedUnsyncedBits++;
+      if (this.unreportedUnsyncedBits >= 104) {
+        this.listener.processRdsReportEvent({
+          type: RdsReportEventType.UNSYNCED_GROUP_DURATION,
+          freq: 0,
+          sourceInfo: "BitStreamSynchronizer"
+        })
+        this.unreportedUnsyncedBits -= 104;
       }
     } else {   // If synced.
       if (this.bitCount == 26) {
@@ -162,6 +175,7 @@ export class BitStreamSynchronizer {
             this.blocksOk[3] ? theGroup[3].toString(16) : '----');
           */
           this.listener.processRdsReportEvent({
+            type: RdsReportEventType.GROUP,
             ok: [...this.blocksOk],
             blocks: theGroup,
             freq: 0,
