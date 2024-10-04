@@ -8,7 +8,6 @@ export class StationImpl implements Station {
   pty?: number;
   ptyn: RdsString = new RdsStringInRdsEncoding(8);
   tp?: boolean;
-  ta?: boolean;
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUtf8(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
@@ -39,6 +38,9 @@ export class StationImpl implements Station {
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
   dab_cross_ref_app: DabCrossRefAppImpl = new DabCrossRefAppImpl();
+
+  private ta_?: boolean;
+  public trafficEvents = new Array<TrafficEvent>();
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
@@ -171,7 +173,8 @@ export class StationImpl implements Station {
     this.pty = undefined;
     this.ptyn.reset();
     this.tp = undefined;
-    this.ta = undefined;
+    this.ta_ = undefined;
+    this.trafficEvents = [];
     this .ps.reset();
     this.lps.reset();
     this.rt.reset();
@@ -232,6 +235,18 @@ export class StationImpl implements Station {
 			}
 		}
 	}
+
+  public set ta(ta: boolean) {
+    if (this.ta_ != undefined && this.ta_ != ta) {
+      this.trafficEvents.push(
+        new TrafficEvent((ta ? "Start" : "End") + " of traffic announcement"));
+    }
+    this.ta_ = ta;
+  }
+
+  public get ta(): boolean {
+    return this.ta_ || false;
+  }
 
   public getISOCountryCode(): string {
     if (this.pi == undefined || this.ecc == undefined) {
@@ -517,6 +532,18 @@ export interface Oda {
   getName(): string;
   enabled: boolean;
   reset(): void;
+}
+
+export class TrafficEvent {
+  event: string;
+
+  constructor(event: string) {
+    this.event = event;
+  }
+
+  public toString() {
+    return this.event;
+  }
 }
 
 // Group type constants.
