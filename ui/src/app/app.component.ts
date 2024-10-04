@@ -20,6 +20,7 @@ export class AppComponent {
   receiveGroup(evt: GroupEvent | NewStationEvent) {
     if (evt instanceof GroupEvent) {
       parse_group(evt.blocks, evt.ok, this.station);
+      this.station.tickGroupDuration();
     } else if (evt instanceof NewStationEvent) {
       this.station.reset();
     }

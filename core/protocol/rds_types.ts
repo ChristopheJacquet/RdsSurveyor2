@@ -42,6 +42,8 @@ export class StationImpl implements Station {
   private ta_?: boolean;
   public trafficEvents = new Array<TrafficEvent>();
 
+  private date: Date | null = null;
+
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
       // The formulas below are valid from 1 March 1900 (MJD 15079).
@@ -56,6 +58,7 @@ export class StationImpl implements Station {
         `${padNumber(hour, 2)}:${padNumber(minute, 2)}` +
         (tz_sign ? '-' : '+') + `${tz_offset*30}min ` +
         `${padNumber(year, 4)}-${padNumber(month, 2)}-${padNumber(day, 2)}`;
+      this.date = new Date(year, month-1, day, hour, minute);
       //console.log("CT " + datetime);
     } else {
       // Ignore earlier dates.
@@ -161,6 +164,12 @@ export class StationImpl implements Station {
     this.group_stats[type]++;
   }
 
+  tickGroupDuration() {
+    if (this.date != null) {
+      this.date.setTime(this.date.getTime() + 1000/(1187.5/104));
+    }
+  }
+
   constructor() {
     this.reset();
   }
@@ -238,8 +247,9 @@ export class StationImpl implements Station {
 
   public set ta(ta: boolean) {
     if (this.ta_ != undefined && this.ta_ != ta) {
-      this.trafficEvents.push(
-        new TrafficEvent((ta ? "Start" : "End") + " of traffic announcement"));
+      this.trafficEvents.push(new TrafficEvent(
+        this.date != null ? new Date(this.date) : null,
+        (ta ? "Start" : "End") + " of traffic announcement"));
     }
     this.ta_ = ta;
   }
@@ -535,14 +545,19 @@ export interface Oda {
 }
 
 export class TrafficEvent {
+  date: Date | null;
   event: string;
 
-  constructor(event: string) {
+  constructor(date: Date | null, event: string) {
+    this.date = date;
     this.event = event;
   }
 
   public toString() {
-    return this.event;
+    return (this.date != null ? 
+      `${padNumber(this.date.getHours(), 2)}:${padNumber(this.date.getMinutes(), 2)}:`
+      + `${padNumber(this.date.getSeconds(), 2)}: ` : "")
+      + this.event;
   }
 }
 
