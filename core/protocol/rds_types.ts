@@ -34,6 +34,7 @@ export class StationImpl implements Station {
 	pin_minute?: number;
   ecc?: number;
   language_code?: number;
+  other_networks = new Map<number, Station>();
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -201,6 +202,7 @@ export class StationImpl implements Station {
     this.ecc = undefined;
     this.language_code = undefined;
     this.transmitted_odas.clear();
+    this.other_networks.clear();
 
     this.app_mapping = new Map<number, string>([
       [GROUP_0A, "group_0A"],
@@ -212,6 +214,7 @@ export class StationImpl implements Station {
       [GROUP_3A, "group_3A"],
       [GROUP_4A, "group_4A"],
       [GROUP_10A, "group_10A"],
+      [GROUP_14A, "group_14A"],
       [GROUP_15A, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+from dataclasses import dataclass
+import sys
 import lark
 from lark import Lark
-import sys
 
 # Edit at https://www.lark-parser.org/ide/.
 
@@ -93,6 +94,16 @@ COMMENT: "#" /(.)+/ NEWLINE
 %import common.ESCAPED_STRING
 '''
 
+@dataclass(frozen=True)
+class MapElementGuard:
+    """Guard for describing the existence of a Map element."""
+    map: str
+    element: str
+    var: str
+
+# Global "elt" variable counter
+elt_counter = 0
+
 class CodeGenerator:
     def __init__(self, of, indent=0, in_block=False):
         self.of = of
@@ -123,9 +134,25 @@ class CodeGenerator:
         # without block. Otherwise, similar to block.
         return CodeGenerator(of=self.of, indent=self.indent+1, in_block=False)
 
-    def guarded_block(self, guard_vars):
+    def guarded_block(self, guards):
+        guard_vars = set({})
+
+        for guard in guards:
+            if isinstance(guard, str):
+                guard_vars.add((guard, 'null'))
+            match guard:
+                case MapElementGuard(map=m, element=e, var=v):
+                    self.line(f'let {v} = {m}.get({e});')
+                    with self.block(f'if ({v} == undefined) {{') as b:
+                        # TODO: This is a hackish shortcut that works only as
+                        # long a the only struct is Station. Replace with actual
+                        # type resolution.
+                        b.line(f'{v} = new StationImpl();')
+                        b.line(f'{m}.set({e}, {v});')
+                    #guard_vars.add((f'{m}.get({e})', 'undefined'))
+
         if len(guard_vars) > 0:
-            vars_test = ' && '.join(f'({v} != null)' for v in sorted(guard_vars))
+            vars_test = ' && '.join(f'({v} != {bad})' for v, bad in sorted(guard_vars))
             return self.block(f'if ({vars_test}) {{')
         else:
             # Create a block, but without an indent and without a closing symbol.
@@ -274,6 +301,7 @@ def compile_field_parsing(codegen, st, pos):
     return end_pos
 
 def compile_lvalue(st):
+    global elt_counter
     match st:
         case lark.Tree(data='lvalue', children=[lark.Token(type='ID', value=v)]):
             return (v, set([v]))
@@ -289,7 +317,11 @@ def compile_lvalue(st):
                     lark.Tree(data='expr') as index])]):
             (c_object, vars_object) = compile_lvalue(object)
             (c_index, vars_index) = compile_expr(index)
-            return (f'{c_object}[{c_index}]', vars_object | vars_index)
+            elt_var = f'elt{elt_counter}'
+            elt_counter += 1
+            return (
+                elt_var, 
+                vars_object | vars_index | set({MapElementGuard(map=c_object, element=c_index, var=elt_var)}))
         case _:
             return (f'<<< Unhandled lvalue: {st} >>>', set())
 
@@ -340,13 +372,14 @@ def compile_action(codegen, st, arguments):
             lark.Tree(data='expr') as seg_size,
             lark.Tree(data='expr') as value]):
             
-            (c_target, _) = compile_lvalue(target)
+            (c_target, v_target) = compile_lvalue(target)
             (c_addr, v_addr) = compile_expr(addr)
             (c_seg_size, v_seg_size) = compile_expr(seg_size)    # TODO: Add check - seg_size must be an INT litteral.
             (c_value, _) = compile_expr(value)             # TODO: Add check - c_value must be a parse field name.
-            for i in range(int(c_seg_size)):
-                with codegen.guarded_block(v_addr | v_seg_size | set([f'{c_value}__{i}'])) as cgn:
-                    cgn.line(f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});')
+            with codegen.guarded_block(v_target):
+                for i in range(int(c_seg_size)):
+                    with codegen.guarded_block(v_addr | v_seg_size | set([f'{c_value}__{i}'])) as cgn:
+                        cgn.line(f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});')
         case lark.Tree(data='put', children=[
             lark.Tree(data='lvalue') as target,
             lark.Tree(data='expr') as key,
@@ -504,7 +537,7 @@ def compile_struct(codegen, cc):
 def compile(codegen, t):
     codegen.line('// Generated file. DO NOT EDIT.')
     codegen.line()
-    codegen.line('import { RdsString } from "./rds_types";')
+    codegen.line('import { RdsString, StationImpl } from "./rds_types";')
     codegen.line()
 
     for c in t.children:

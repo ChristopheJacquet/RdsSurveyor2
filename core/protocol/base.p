@@ -37,6 +37,7 @@ struct Station {
     pin_minute: uint<6>
     ecc: uint<8>
     language_code: uint<12>
+    other_networks: map<uint<16>, Station>
 
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
@@ -271,4 +272,5 @@ bitstruct group_15A(station: Station) {
     copy station.lps, addr, 4, lps_seg
 }
 
+#include eon.p
 #include odas.p
