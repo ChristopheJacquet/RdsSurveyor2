@@ -145,12 +145,12 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 		station.music = music;
 	}
 	if ((station != null)) {
-	if ((addr != null) && (ps_seg__0 != null)) {
-		station.ps.setByte(addr*2 + 0, ps_seg__0);
-	}
-	if ((addr != null) && (ps_seg__1 != null)) {
-		station.ps.setByte(addr*2 + 1, ps_seg__1);
-	}
+		if ((addr != null) && (ps_seg__0 != null)) {
+			station.ps.setByte(addr*2 + 0, ps_seg__0);
+		}
+		if ((addr != null) && (ps_seg__1 != null)) {
+			station.ps.setByte(addr*2 + 1, ps_seg__1);
+		}
 	}
 	if ((addr != null)) {
 		switch (addr) {
@@ -292,18 +292,18 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((station != null)) {
-	if ((addr != null) && (rt_seg__0 != null)) {
-		station.rt.setByte(addr*4 + 0, rt_seg__0);
-	}
-	if ((addr != null) && (rt_seg__1 != null)) {
-		station.rt.setByte(addr*4 + 1, rt_seg__1);
-	}
-	if ((addr != null) && (rt_seg__2 != null)) {
-		station.rt.setByte(addr*4 + 2, rt_seg__2);
-	}
-	if ((addr != null) && (rt_seg__3 != null)) {
-		station.rt.setByte(addr*4 + 3, rt_seg__3);
-	}
+		if ((addr != null) && (rt_seg__0 != null)) {
+			station.rt.setByte(addr*4 + 0, rt_seg__0);
+		}
+		if ((addr != null) && (rt_seg__1 != null)) {
+			station.rt.setByte(addr*4 + 1, rt_seg__1);
+		}
+		if ((addr != null) && (rt_seg__2 != null)) {
+			station.rt.setByte(addr*4 + 2, rt_seg__2);
+		}
+		if ((addr != null) && (rt_seg__3 != null)) {
+			station.rt.setByte(addr*4 + 3, rt_seg__3);
+		}
 	}
 	if ((flag != null)) {
 		station.rt_flag = flag;
@@ -334,12 +334,12 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((station != null)) {
-	if ((addr != null) && (rt_seg__0 != null)) {
-		station.rt.setByte(addr*2 + 0, rt_seg__0);
-	}
-	if ((addr != null) && (rt_seg__1 != null)) {
-		station.rt.setByte(addr*2 + 1, rt_seg__1);
-	}
+		if ((addr != null) && (rt_seg__0 != null)) {
+			station.rt.setByte(addr*2 + 0, rt_seg__0);
+		}
+		if ((addr != null) && (rt_seg__1 != null)) {
+			station.rt.setByte(addr*2 + 1, rt_seg__1);
+		}
 	}
 	if ((flag != null)) {
 		station.rt_flag = flag;
@@ -427,18 +427,18 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 
 	// Actions.
 	if ((station != null)) {
-	if ((addr != null) && (ptyn_seg__0 != null)) {
-		station.ptyn.setByte(addr*4 + 0, ptyn_seg__0);
-	}
-	if ((addr != null) && (ptyn_seg__1 != null)) {
-		station.ptyn.setByte(addr*4 + 1, ptyn_seg__1);
-	}
-	if ((addr != null) && (ptyn_seg__2 != null)) {
-		station.ptyn.setByte(addr*4 + 2, ptyn_seg__2);
-	}
-	if ((addr != null) && (ptyn_seg__3 != null)) {
-		station.ptyn.setByte(addr*4 + 3, ptyn_seg__3);
-	}
+		if ((addr != null) && (ptyn_seg__0 != null)) {
+			station.ptyn.setByte(addr*4 + 0, ptyn_seg__0);
+		}
+		if ((addr != null) && (ptyn_seg__1 != null)) {
+			station.ptyn.setByte(addr*4 + 1, ptyn_seg__1);
+		}
+		if ((addr != null) && (ptyn_seg__2 != null)) {
+			station.ptyn.setByte(addr*4 + 2, ptyn_seg__2);
+		}
+		if ((addr != null) && (ptyn_seg__3 != null)) {
+			station.ptyn.setByte(addr*4 + 3, ptyn_seg__3);
+		}
 	}
 }
 
@@ -469,18 +469,18 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 
 	// Actions.
 	if ((station != null)) {
-	if ((addr != null) && (lps_seg__0 != null)) {
-		station.lps.setByte(addr*4 + 0, lps_seg__0);
-	}
-	if ((addr != null) && (lps_seg__1 != null)) {
-		station.lps.setByte(addr*4 + 1, lps_seg__1);
-	}
-	if ((addr != null) && (lps_seg__2 != null)) {
-		station.lps.setByte(addr*4 + 2, lps_seg__2);
-	}
-	if ((addr != null) && (lps_seg__3 != null)) {
-		station.lps.setByte(addr*4 + 3, lps_seg__3);
-	}
+		if ((addr != null) && (lps_seg__0 != null)) {
+			station.lps.setByte(addr*4 + 0, lps_seg__0);
+		}
+		if ((addr != null) && (lps_seg__1 != null)) {
+			station.lps.setByte(addr*4 + 1, lps_seg__1);
+		}
+		if ((addr != null) && (lps_seg__2 != null)) {
+			station.lps.setByte(addr*4 + 2, lps_seg__2);
+		}
+		if ((addr != null) && (lps_seg__3 != null)) {
+			station.lps.setByte(addr*4 + 3, lps_seg__3);
+		}
 	}
 }
 
@@ -580,12 +580,12 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], station: S
 		station.other_networks.set(pi_on, elt2);
 	}
 	if ((pi_on != null) && (station != null)) {
-	if ((addr != null) && (ps_seg__0 != null)) {
-		elt2.ps.setByte(addr*2 + 0, ps_seg__0);
-	}
-	if ((addr != null) && (ps_seg__1 != null)) {
-		elt2.ps.setByte(addr*2 + 1, ps_seg__1);
-	}
+		if ((addr != null) && (ps_seg__0 != null)) {
+			elt2.ps.setByte(addr*2 + 0, ps_seg__0);
+		}
+		if ((addr != null) && (ps_seg__1 != null)) {
+			elt2.ps.setByte(addr*2 + 1, ps_seg__1);
+		}
 	}
 }
 

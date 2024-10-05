@@ -376,9 +376,9 @@ def compile_action(codegen, st, arguments):
             (c_addr, v_addr) = compile_expr(addr)
             (c_seg_size, v_seg_size) = compile_expr(seg_size)    # TODO: Add check - seg_size must be an INT litteral.
             (c_value, _) = compile_expr(value)             # TODO: Add check - c_value must be a parse field name.
-            with codegen.guarded_block(v_target):
+            with codegen.guarded_block(v_target) as gb:
                 for i in range(int(c_seg_size)):
-                    with codegen.guarded_block(v_addr | v_seg_size | set([f'{c_value}__{i}'])) as cgn:
+                    with gb.guarded_block(v_addr | v_seg_size | set([f'{c_value}__{i}'])) as cgn:
                         cgn.line(f'{c_target}.setByte({c_addr}*{c_seg_size} + {i}, {c_value}__{i});')
         case lark.Tree(data='put', children=[
             lark.Tree(data='lvalue') as target,
