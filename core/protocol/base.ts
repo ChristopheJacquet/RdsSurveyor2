@@ -29,7 +29,7 @@ export interface Station {
 	pin_minute?: number;
 	ecc?: number;
 	language_code?: number;
-	other_networks: Map<number, Station>;
+	other_networks: Map<number, StationImpl>;
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
@@ -501,7 +501,7 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Stat
 		: null;
 
 	// Actions.
-	let elt0: Station | undefined;
+	let elt0: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt0 = station.other_networks.get(pi_on);
 		if (elt0 == undefined) {
@@ -512,7 +512,7 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Stat
 	if ((elt0 != undefined) && (tp_on != null)) {
 		elt0.tp = tp_on;
 	}
-	let elt1: Station | undefined;
+	let elt1: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt1 = station.other_networks.get(pi_on);
 		if (elt1 == undefined) {
@@ -580,7 +580,7 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], station: S
 		: null;
 
 	// Actions.
-	let elt2: Station | undefined;
+	let elt2: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt2 = station.other_networks.get(pi_on);
 		if (elt2 == undefined) {
@@ -614,7 +614,7 @@ export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], station:
 		: null;
 
 	// Actions.
-	let elt3: Station | undefined;
+	let elt3: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt3 = station.other_networks.get(pi_on);
 		if (elt3 == undefined) {
@@ -643,7 +643,7 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], sta
 		: null;
 
 	// Actions.
-	let elt4: Station | undefined;
+	let elt4: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt4 = station.other_networks.get(pi_on);
 		if (elt4 == undefined) {
@@ -673,7 +673,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], statio
 		: null;
 
 	// Actions.
-	let elt5: Station | undefined;
+	let elt5: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt5 = station.other_networks.get(pi_on);
 		if (elt5 == undefined) {
@@ -684,7 +684,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], statio
 	if ((elt5 != undefined) && (pty_on != null)) {
 		elt5.pty = pty_on;
 	}
-	let elt6: Station | undefined;
+	let elt6: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt6 = station.other_networks.get(pi_on);
 		if (elt6 == undefined) {
@@ -717,7 +717,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: 
 		: null;
 
 	// Actions.
-	let elt7: Station | undefined;
+	let elt7: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt7 = station.other_networks.get(pi_on);
 		if (elt7 == undefined) {
@@ -728,7 +728,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: 
 	if ((elt7 != undefined) && (pin_day_on != null)) {
 		elt7.pin_day = pin_day_on;
 	}
-	let elt8: Station | undefined;
+	let elt8: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt8 = station.other_networks.get(pi_on);
 		if (elt8 == undefined) {
@@ -739,7 +739,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: 
 	if ((elt8 != undefined) && (pin_hour_on != null)) {
 		elt8.pin_hour = pin_hour_on;
 	}
-	let elt9: Station | undefined;
+	let elt9: StationImpl | undefined;
 	if ((pi_on != null)) {
 		elt9 = station.other_networks.get(pi_on);
 		if (elt9 == undefined) {

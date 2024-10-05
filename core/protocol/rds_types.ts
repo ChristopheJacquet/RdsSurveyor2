@@ -34,7 +34,7 @@ export class StationImpl implements Station {
 	pin_minute?: number;
   ecc?: number;
   language_code?: number;
-  other_networks = new Map<number, Station>();
+  other_networks = new Map<number, StationImpl>();
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);

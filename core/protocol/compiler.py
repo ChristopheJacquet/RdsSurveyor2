@@ -146,7 +146,7 @@ class CodeGenerator:
                     # TODO (here and below): This is a hackish shortcut that
                     # works only as long as the only struct is Station.
                     # Replace with proper type resolution.
-                    self.line(f'let {v}: Station | undefined;')
+                    self.line(f'let {v}: StationImpl | undefined;')
                     with self.guarded_block(eg) as new_elt_block:
                         new_elt_block.line(f'{v} = {m}.get({e});')
                         with new_elt_block.block(f'if ({v} == undefined) {{') as b:

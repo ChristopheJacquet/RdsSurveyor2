@@ -90,26 +90,26 @@ export class StationInfoComponent {
 		"Emergency Test",
 		"Emergency");
   
-  getTrafficString(): string {
+  getTrafficString(station: StationImpl): string {
     const flags: string[] = [];
-    if (this.station.tp) {
+    if (station.tp) {
       flags.push("TP");
     }
-    if (this.station.ta) {
+    if (station.ta) {
       flags.push("TA");
     }
     return flags.join(" + ");
   }
 
-	getPtyString(): string {
-		if (this.station.pty == undefined) {
+	getPtyString(station: StationImpl): string {
+		if (station.pty == undefined) {
 			return "";
 		}
 
 		// RDS and RBDS have diffent meanings for PTY values.
 		return (this.rdsVariant == RdsVariant.RDS ? 
-			this.rdsPtyLabels : this.rbdsPtyLabels)[this.station.pty]
-			+ " (" + this.station.pty + ")";
+			this.rdsPtyLabels : this.rbdsPtyLabels)[station.pty]
+			+ " (" + station.pty + ")";
 	}
 
 	isRbds() {

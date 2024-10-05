@@ -27,7 +27,7 @@
     </div>
     <div class="infogrid-cell">
       <div class="infogrid-title">Traffic info</div>
-      <div class="infogrid-value">{{ getTrafficString() }} </div>
+      <div class="infogrid-value">{{ getTrafficString(station) }} </div>
     </div>
   </div>
 
@@ -49,7 +49,7 @@
     </div>
     <div class="infogrid-cell">
       <div class="infogrid-title">PTY [{{ station.di_dynamic_pty == true ? "Dynamic" : "Static" }}]</div>
-      <div class="infogrid-value">{{ getPtyString() }} </div>
+      <div class="infogrid-value">{{ getPtyString(station) }} </div>
     </div>
     <div class="infogrid-cell">
       <div class="infogrid-title">PTYN</div>
@@ -147,6 +147,25 @@
     </mat-list>    
   </mat-tab>
   <mat-tab label="EON &amp; Traffic">
+    <div>
+      <table>
+        <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th></tr>
+        <tr *ngFor="let s of station.other_networks | keyvalue">
+          <td>{{ s.key | hex:4 }}</td>
+          <td>{{ s.value.getPS() }}</td>
+          <td>{{ getPtyString(s.value) }}</td>
+          <td>{{ getTrafficString(s.value) }}</td>
+          <td>
+            <!-- AFs -->
+            <span *ngFor="let e of s.value.afLists | keyvalue">
+              <strong>AF list, method {{ e.value.method }}:</strong>
+              {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
+              <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
+            </span>
+          </td>
+        </tr>
+      </table>
+    </div>
     <div>
       <div *ngFor="let e of station.trafficEvents">
         {{ e }}
