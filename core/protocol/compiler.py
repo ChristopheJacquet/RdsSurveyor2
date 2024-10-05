@@ -99,6 +99,7 @@ class MapElementGuard:
     """Guard for describing the existence of a Map element."""
     map: str
     element: str
+    element_guard: set
     var: str
 
 # Global "elt" variable counter
@@ -141,15 +142,17 @@ class CodeGenerator:
             if isinstance(guard, str):
                 guard_vars.add((guard, 'null'))
             match guard:
-                case MapElementGuard(map=m, element=e, var=v):
-                    self.line(f'let {v} = {m}.get({e});')
-                    with self.block(f'if ({v} == undefined) {{') as b:
-                        # TODO: This is a hackish shortcut that works only as
-                        # long a the only struct is Station. Replace with actual
-                        # type resolution.
-                        b.line(f'{v} = new StationImpl();')
-                        b.line(f'{m}.set({e}, {v});')
-                    #guard_vars.add((f'{m}.get({e})', 'undefined'))
+                case MapElementGuard(map=m, element=e, element_guard=eg, var=v):
+                    # TODO (here and below): This is a hackish shortcut that
+                    # works only as long as the only struct is Station.
+                    # Replace with proper type resolution.
+                    self.line(f'let {v}: Station | undefined;')
+                    with self.guarded_block(eg) as new_elt_block:
+                        new_elt_block.line(f'{v} = {m}.get({e});')
+                        with new_elt_block.block(f'if ({v} == undefined) {{') as b:
+                            b.line(f'{v} = new StationImpl();')
+                            b.line(f'{m}.set({e}, {v});')
+                    guard_vars.add((v, 'undefined'))
 
         if len(guard_vars) > 0:
             vars_test = ' && '.join(f'({v} != {bad})' for v, bad in sorted(guard_vars))
@@ -321,7 +324,12 @@ def compile_lvalue(st):
             elt_counter += 1
             return (
                 elt_var, 
-                vars_object | vars_index | set({MapElementGuard(map=c_object, element=c_index, var=elt_var)}))
+                vars_object | set(
+                    {MapElementGuard(
+                        map=c_object,
+                        element=c_index,
+                        element_guard=frozenset(vars_index),
+                        var=elt_var)}))
         case _:
             return (f'<<< Unhandled lvalue: {st} >>>', set())
 
