@@ -111,3 +111,21 @@ bitstruct group_14A_pin(station: Station) {
     station.other_networks[pi_on].pin_hour = pin_hour_on
     station.other_networks[pi_on].pin_minute = pin_minute_on
 }
+
+bitstruct group_14B(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    tp_on: bool
+    ta_on: bool
+    _: unparsed<3>
+
+    # Block C.
+    pi: unparsed<16>
+
+    # Block D.
+    pi_on: uint<16>
+} action {
+    station.other_networks[pi_on].ta = ta_on
+    station.reportOtherNetworkSwitch(pi_on, ta_on)
+}

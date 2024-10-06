@@ -33,6 +33,7 @@ export interface Station {
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
+	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
 }
 
 export function parse_group(block: Uint16Array, ok: boolean[], station: Station) {
@@ -752,6 +753,40 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: 
 	}
 }
 
+export function parse_group_14B(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field tp_on: bool at +27, width 1.
+	let tp_on = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field ta_on: bool at +28, width 1.
+	let ta_on = (ok[1]) ?
+		((block[1] & 0b1000) >> 3) == 1
+		: null;
+	// Field _: unparsed<3> at +29, width 3.
+	// Field pi: unparsed<16> at +32, width 16.
+	// Field pi_on: uint<16> at +48, width 16.
+	let pi_on = (ok[3]) ?
+		((block[3]))
+		: null;
+
+	// Actions.
+	let elt10: StationImpl | undefined;
+	if ((pi_on != null)) {
+		elt10 = station.other_networks.get(pi_on);
+		if (elt10 == undefined) {
+			elt10 = new StationImpl();
+			station.other_networks.set(pi_on, elt10);
+		}
+	}
+	if ((elt10 != undefined) && (ta_on != null)) {
+		elt10.ta = ta_on;
+	}
+	if ((pi_on != null) && (station != null) && (ta_on != null)) {
+		station.reportOtherNetworkSwitch(pi_on, ta_on);
+	}
+}
+
 export interface RtPlusApp {
 	setTag(content_type: number, start: number, length: number): void;
 }
@@ -905,6 +940,7 @@ export function get_parse_function(rule: string) {
 		case "group_14A_mapped_af": return parse_group_14A_mapped_af;
 		case "group_14A_pty_ta": return parse_group_14A_pty_ta;
 		case "group_14A_pin": return parse_group_14A_pin;
+		case "group_14B": return parse_group_14B;
 		case "group_rtplus": return parse_group_rtplus;
 		case "group_dabxref": return parse_group_dabxref;
 		case "group_dabxref_ensemble": return parse_group_dabxref_ensemble;

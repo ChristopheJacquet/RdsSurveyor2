@@ -215,6 +215,7 @@ export class StationImpl implements Station {
       [GROUP_4A, "group_4A"],
       [GROUP_10A, "group_10A"],
       [GROUP_14A, "group_14A"],
+      [GROUP_14B, "group_14B"],
       [GROUP_15A, "group_15A"]]);
     this.datetime = "";
     this.group_stats.fill(0);
@@ -250,9 +251,9 @@ export class StationImpl implements Station {
 
   public set ta(ta: boolean) {
     if (this.ta_ != undefined && this.ta_ != ta) {
-      this.trafficEvents.push(new TrafficEvent(
+      this.trafficEvents.push(new TrafficAnnouncement(
         this.date != null ? new Date(this.date) : null,
-        (ta ? "Start" : "End") + " of traffic announcement"));
+        ta ? TrafficEventType.START : TrafficEventType.END));
     }
     this.ta_ = ta;
   }
@@ -321,6 +322,30 @@ export class StationImpl implements Station {
 
     return LANGUAGE_CODES[code][0];
   }
+
+  reportOtherNetworkSwitch(pi: number, ta: boolean): void {
+    const on = this.other_networks.get(pi);
+    if (on == undefined) {
+      return;
+    }
+    const event = new OtherNetworkSwitch(
+      this.date != null ? new Date(this.date) : null,
+      ta ? TrafficEventType.START : TrafficEventType.END,
+      on
+    )
+
+    // Deduplicate series of similar events.
+    if (this.trafficEvents.length > 0) {
+      const prevEvent = this.trafficEvents[this.trafficEvents.length-1];
+      if (prevEvent instanceof OtherNetworkSwitch && 
+        prevEvent.otherNetwork == on && prevEvent.eventType == event.eventType) {
+          return;
+        }
+    }
+
+    this.trafficEvents.push(event);
+  }
+
 }
 
 function padNumber(num: number, width: number) {
@@ -547,20 +572,58 @@ export interface Oda {
   reset(): void;
 }
 
-export class TrafficEvent {
-  date: Date | null;
-  event: string;
+enum TrafficEventType {
+  START,
+  END,
+}
 
-  constructor(date: Date | null, event: string) {
+export abstract class TrafficEvent {
+  date: Date | null;
+  eventType: TrafficEventType;
+
+  constructor(date: Date | null, eventType: TrafficEventType) {
     this.date = date;
-    this.event = event;
+    this.eventType = eventType;
   }
 
   public toString() {
     return (this.date != null ? 
       `${padNumber(this.date.getHours(), 2)}:${padNumber(this.date.getMinutes(), 2)}:`
       + `${padNumber(this.date.getSeconds(), 2)}: ` : "")
-      + this.event;
+      + this.formatEvent();
+  }
+
+  protected abstract formatEvent(): string;
+}
+
+class TrafficAnnouncement extends TrafficEvent {
+  constructor(date: Date | null, eventType: TrafficEventType) {
+    super(date, eventType);
+  }
+
+  protected formatEvent(): string {
+      return (this.eventType == TrafficEventType.START ? "Start" : "End")
+        + " of traffic announcement.";
+  }
+}
+
+class OtherNetworkSwitch extends TrafficEvent {
+  otherNetwork: StationImpl;
+
+  constructor(date: Date | null, eventType: TrafficEventType, otherNetwork: StationImpl) {
+    super(date, eventType);
+    this.otherNetwork = otherNetwork;
+  }
+
+  protected formatEvent(): string {
+      const msg = this.eventType == TrafficEventType.START ?
+        "Switch now to Other Network" : "Switch back from Other Network";
+      
+      const pi = this.otherNetwork.pi == undefined ?
+        '----' : this.otherNetwork.pi.toString(16).toUpperCase().padStart(4, '0');
+
+
+      return `${msg}: PI=${pi} (${this.otherNetwork.getPS()}).`;
   }
 }
 

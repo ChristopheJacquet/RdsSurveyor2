@@ -42,6 +42,7 @@ struct Station {
     addToGroupStats(type: uint<5>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
     addAfPair(af1: uint<8>, af2: uint<8>)
+    reportOtherNetworkSwitch(pi: uint<16>, ta: boolean)
 }
 
 bitstruct group(station: Station) {
