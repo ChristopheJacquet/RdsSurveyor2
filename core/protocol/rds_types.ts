@@ -19,6 +19,7 @@ export class StationImpl implements Station {
 	di_stereo?: boolean;
   afLists = new Map<number, AFList>();
   currentAfList: AFList | null = null;
+  mappedAFs = new Map<number, Set<number>>();
   odas: Map<number, string> = new Map<number, string>([
     [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
@@ -248,6 +249,31 @@ export class StationImpl implements Station {
 			}
 		}
 	}
+
+  /**
+   * @brief Adds a mapped frequency.
+   * 
+   * @param channel The tuned (current) frequency, represented as a channel number
+   * @param mappedChannel The mapped (other) frequency, represented as a channel number
+   * 
+   * @return A textual representation of the mapping
+   */
+  public addMappedAF(channel: number, mappedChannel: number) {
+    const freq = channelToFrequency(channel);
+    const mappedFreq = channelToFrequency(mappedChannel);
+    
+    // Get the set of AFs mapped to the frequency "freq".
+    let listOfMappedFreqs = this.mappedAFs.get(freq);
+
+    // If no such set, create it.
+    if(listOfMappedFreqs == undefined) {
+      listOfMappedFreqs = new Set<number>();
+      this.mappedAFs.set(freq, listOfMappedFreqs);
+    }
+    
+    // Add the new mapped frequency.
+    listOfMappedFreqs.add(mappedFreq);
+  }
 
   public set ta(ta: boolean) {
     if (this.ta_ != undefined && this.ta_ != ta) {

@@ -33,6 +33,7 @@ export interface Station {
 	addToGroupStats(type: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
+	addMappedAF(channel: number, mapped_channel: number): void;
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
 }
 
@@ -630,12 +631,12 @@ export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], station:
 
 export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
-	// Field af1: uint<8> at +32, width 8.
-	let af1 = (ok[2]) ?
+	// Field channel: uint<8> at +32, width 8.
+	let channel = (ok[2]) ?
 		((block[2] & 0b1111111100000000) >> 8)
 		: null;
-	// Field af2: uint<8> at +40, width 8.
-	let af2 = (ok[2]) ?
+	// Field mapped_channel: uint<8> at +40, width 8.
+	let mapped_channel = (ok[2]) ?
 		((block[2] & 0b11111111))
 		: null;
 	// Field pi_on: uint<16> at +48, width 16.
@@ -652,8 +653,8 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], sta
 			station.other_networks.set(pi_on, elt4);
 		}
 	}
-	if ((af1 != null) && (af2 != null) && (elt4 != undefined) && (station != null)) {
-		elt4.addAfPair(af1, af2);
+	if ((channel != null) && (elt4 != undefined) && (mapped_channel != null) && (station != null)) {
+		elt4.addMappedAF(channel, mapped_channel);
 	}
 }
 

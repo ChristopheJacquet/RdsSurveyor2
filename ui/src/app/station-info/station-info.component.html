@@ -158,9 +158,16 @@
           <td>
             <!-- AFs -->
             <span *ngFor="let e of s.value.afLists | keyvalue">
-              <strong>AF list, method {{ e.value.method }}:</strong>
-              {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
+              <strong>AF list:</strong>
+              {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
               <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
+            </span>
+            <span *ngIf="s.value.mappedAFs.size > 0">
+              <strong>Mapped AFs:</strong>
+              <span *ngFor="let m of s.value.mappedAFs | keyvalue">
+                [{{ m.key/10 | number: '1.1-1' }} →
+                <span *ngFor="let af of m.value">{{ af/10 | number: '1.1-1' }}  </span>]
+              </span>
             </span>
           </td>
         </tr>

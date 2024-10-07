@@ -72,13 +72,13 @@ bitstruct group_14A_mapped_af(station: Station) {
     common: unparsed<32>
 
     # Block C.
-    af1: uint<8>
-    af2: uint<8>
+    channel: uint<8>
+    mapped_channel: uint<8>
 
     # Block D.
     pi_on: uint<16>
 } action {
-    station.other_networks[pi_on].addAfPair(af1, af2)
+    station.other_networks[pi_on].addMappedAF(channel, mapped_channel)
 }
 
 bitstruct group_14A_pty_ta(station: Station) {
