@@ -112,7 +112,7 @@
         <div class="infogrid-cell">
           <div class="infogrid-title">PIN</div>
           <div class="infogrid-value">
-            <span *ngIf="station.pin_day != undefined && station.pin_hour != undefined && station.pin_minute != undefined">
+            <span *ngIf="station.pin_day != undefined && station.pin_day && station.pin_hour != undefined && station.pin_minute != undefined">
               D={{ station.pin_day }}, {{ station.pin_hour | number: '2.0-0' }}:{{ station.pin_minute | number: '2.0-0'}}
             </span> 
           </div>
@@ -149,7 +149,7 @@
   <mat-tab label="EON &amp; Traffic">
     <div>
       <table>
-        <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th></tr>
+        <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th><th>PIN</th></tr>
         <tr *ngFor="let s of station.other_networks | keyvalue">
           <td>{{ s.key | hex:4 }}</td>
           <td>{{ s.value.getPS() }}</td>
@@ -168,6 +168,11 @@
                 [{{ m.key/10 | number: '1.1-1' }} →
                 <span *ngFor="let af of m.value">{{ af/10 | number: '1.1-1' }}  </span>]
               </span>
+            </span>
+          </td>
+          <td>
+            <span *ngIf="s.value.pin_day != undefined && s.value.pin_day != 0 && s.value.pin_hour != undefined && s.value.pin_minute != undefined">
+              D={{ s.value.pin_day }}, {{ s.value.pin_hour | number: '2.0-0' }}:{{ s.value.pin_minute | number: '2.0-0'}}
             </span>
           </td>
         </tr>
