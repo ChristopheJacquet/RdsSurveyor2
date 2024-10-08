@@ -151,30 +151,34 @@
       <table>
         <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th><th>PIN</th></tr>
         <tr *ngFor="let s of station.other_networks | keyvalue">
-          <td>{{ s.key | hex:4 }}</td>
-          <td>{{ s.value.getPS() }}</td>
-          <td>{{ getPtyString(s.value) }}</td>
-          <td>{{ getTrafficString(s.value) }}</td>
-          <td>
-            <!-- AFs -->
-            <span *ngFor="let e of s.value.afLists | keyvalue">
-              <strong>AF list:</strong>
-              {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
-              <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
-            </span>
-            <span *ngIf="s.value.mappedAFs.size > 0">
-              <strong>Mapped AFs:</strong>
-              <span *ngFor="let m of s.value.mappedAFs | keyvalue">
-                [{{ m.key/10 | number: '1.1-1' }} →
-                <span *ngFor="let af of m.value">{{ af/10 | number: '1.1-1' }}  </span>]
+          <ng-container *ngIf="s.key != station.pi">
+            <!-- The current station might have an EON entry for transmitting linkage information.
+                 Do not display this. -->
+            <td>{{ s.key | hex:4 }}</td>
+            <td>{{ s.value.getPS() }}</td>
+            <td>{{ getPtyString(s.value) }}</td>
+            <td>{{ getTrafficString(s.value) }}</td>
+            <td>
+              <!-- AFs -->
+              <span *ngFor="let e of s.value.afLists | keyvalue">
+                <strong>AF list:</strong>
+                {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
+                <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
               </span>
-            </span>
-          </td>
-          <td>
-            <span *ngIf="s.value.pin_day != undefined && s.value.pin_day != 0 && s.value.pin_hour != undefined && s.value.pin_minute != undefined">
-              D={{ s.value.pin_day }}, {{ s.value.pin_hour | number: '2.0-0' }}:{{ s.value.pin_minute | number: '2.0-0'}}
-            </span>
-          </td>
+              <span *ngIf="s.value.mappedAFs.size > 0">
+                <strong>Mapped AFs:</strong>
+                <span *ngFor="let m of s.value.mappedAFs | keyvalue">
+                  [{{ m.key/10 | number: '1.1-1' }} →
+                  <span *ngFor="let af of m.value">{{ af/10 | number: '1.1-1' }}  </span>]
+                </span>
+              </span>
+            </td>
+            <td>
+              <span *ngIf="s.value.pin_day != undefined && s.value.pin_day != 0 && s.value.pin_hour != undefined && s.value.pin_minute != undefined">
+                D={{ s.value.pin_day }}, {{ s.value.pin_hour | number: '2.0-0' }}:{{ s.value.pin_minute | number: '2.0-0'}}
+              </span>
+            </td>
+          </ng-container>
         </tr>
       </table>
     </div>
