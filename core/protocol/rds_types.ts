@@ -421,10 +421,13 @@ export abstract class RdsString {
   
   public reset(): void {
     this.currentText.fill(0);
+    this.currentFlags = 0;
+    this.messages = [];
+    this.latest = -1;
     this.empty = true;
     this.currentTicks = 0;
-    this.messages = [];
     this.tickHistory.clear();
+    this.currentIndex = 0;
   }
   
   public abstract toString(): string;
