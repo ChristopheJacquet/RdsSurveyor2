@@ -195,6 +195,7 @@ export class StationImpl implements Station {
     this.di_artificial_head = undefined;
     this.di_stereo = undefined;
     this.afLists = new Map<number, AFList>();
+    this.mappedAFs.clear();
     this.currentAfList = null;
     this.linkage_actuator = undefined;
     this.pin_day = undefined;
