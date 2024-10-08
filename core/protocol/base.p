@@ -274,5 +274,39 @@ bitstruct group_15A(station: Station) {
     copy station.lps, addr, 4, lps_seg
 }
 
+bitstruct group_15B(station: Station) {
+    group_common: unparsed<27>
+
+    # Rest of Block B.
+    ta: bool
+    music: bool
+    di: bool
+    addr: uint<2>
+    
+    # Block C.
+    pi:  uint<16>
+    
+    # Block D.
+    repeat: unparsed<16>
+} action {
+    station.ta = ta
+    station.music = music
+
+    switch addr {
+        case 0 {
+            station.di_dynamic_pty = di
+        }
+        case 1 {
+            station.di_compressed = di
+        }
+        case 2 {
+            station.di_artificial_head = di
+        }
+        case 3 {
+            station.di_stereo = di
+        }
+    }
+}
+
 #include eon.p
 #include odas.p

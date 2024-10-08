@@ -486,6 +486,67 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 	}
 }
 
+export function parse_group_15B(block: Uint16Array, ok: boolean[], station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field ta: bool at +27, width 1.
+	let ta = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field music: bool at +28, width 1.
+	let music = (ok[1]) ?
+		((block[1] & 0b1000) >> 3) == 1
+		: null;
+	// Field di: bool at +29, width 1.
+	let di = (ok[1]) ?
+		((block[1] & 0b100) >> 2) == 1
+		: null;
+	// Field addr: uint<2> at +30, width 2.
+	let addr = (ok[1]) ?
+		((block[1] & 0b11))
+		: null;
+	// Field pi: uint<16> at +32, width 16.
+	let pi = (ok[2]) ?
+		((block[2]))
+		: null;
+	// Field repeat: unparsed<16> at +48, width 16.
+
+	// Actions.
+	if ((ta != null)) {
+		station.ta = ta;
+	}
+	if ((music != null)) {
+		station.music = music;
+	}
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				if ((di != null)) {
+					station.di_dynamic_pty = di;
+				}
+				break;
+
+			case 1:
+				if ((di != null)) {
+					station.di_compressed = di;
+				}
+				break;
+
+			case 2:
+				if ((di != null)) {
+					station.di_artificial_head = di;
+				}
+				break;
+
+			case 3:
+				if ((di != null)) {
+					station.di_stereo = di;
+				}
+				break;
+
+		}
+	}
+}
+
 export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
@@ -935,6 +996,7 @@ export function get_parse_function(rule: string) {
 		case "group_4A": return parse_group_4A;
 		case "group_10A": return parse_group_10A;
 		case "group_15A": return parse_group_15A;
+		case "group_15B": return parse_group_15B;
 		case "group_14A": return parse_group_14A;
 		case "group_14A_ps": return parse_group_14A_ps;
 		case "group_14A_af_a": return parse_group_14A_af_a;

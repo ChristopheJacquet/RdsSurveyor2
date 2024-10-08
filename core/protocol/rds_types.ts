@@ -217,7 +217,8 @@ export class StationImpl implements Station {
       [GROUP_10A, "group_10A"],
       [GROUP_14A, "group_14A"],
       [GROUP_14B, "group_14B"],
-      [GROUP_15A, "group_15A"]]);
+      [GROUP_15A, "group_15A"],
+      [GROUP_15B, "group_15B"]]);
     this.datetime = "";
     this.group_stats.fill(0);
 
