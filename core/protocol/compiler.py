@@ -26,7 +26,7 @@ simplevartype: ID ("<" INT ">")?
 
 maptype: "map" "<" simplevartype "," simplevartype ">"
 
-bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")?
+bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")? ("log" "{" logelement* "}")?
 
 arg: ID ":" type
 
@@ -76,6 +76,8 @@ put : "put" lvalue expr expr
 switch : "switch" expr "{" switch_case+ "}"
 
 switch_case : "case" INT ("," INT)* "{" action* "}"
+
+logelement: ESCAPED_STRING
 
 // imports WORD from library
 %import common.WORD   
