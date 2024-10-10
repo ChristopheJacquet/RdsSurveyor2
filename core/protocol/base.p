@@ -195,7 +195,7 @@ bitstruct group_1B_1_common(station: Station) {
     station.pin_hour = pin_hour
     station.pin_minute = pin_minute
 } log {
-    "PIN=(D={pin_day}, {pin_hour:02u}:{pin_minute:02u})"
+    "PIN=(D={pin_day:u}, {pin_hour:02u}:{pin_minute:02u})"
 }
 
 bitstruct group_2A(station: Station) {
@@ -212,7 +212,7 @@ bitstruct group_2A(station: Station) {
     station.rt_flag = flag
 } log {
     "RT flag={flag:letter}"
-    "RT set @{addr} \"{rt_seg:rdstext}\""
+    "RT set @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_2B(station: Station) {
@@ -232,7 +232,7 @@ bitstruct group_2B(station: Station) {
     station.rt_flag = flag
 } log {
     "RT flag={flag:letter}"
-    "RT set @{addr} \"{rt_seg:rdstext}\""
+    "RT set @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_3A(station: Station) {
@@ -344,7 +344,7 @@ bitstruct group_15B(station: Station) {
     }
 } log {
     "TA={ta:u}"
-    "PI={pi}"
+    "PI={pi:u}"
 }
 
 #include eon.p

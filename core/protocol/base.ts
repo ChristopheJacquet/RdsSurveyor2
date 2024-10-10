@@ -72,6 +72,18 @@ export function parse_group(block: Uint16Array, ok: boolean[], station: Station)
 	if ((type != null)) {
 		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, station);
 	}
+	if ((pi != null)) {
+		console.log(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
+	if ((type != null)) {
+		console.log(`Group ${(type>>1).toString() + ((type & 1) == 0 ? 'A' : 'B')}`);
+	}
+	if ((tp != null)) {
+		console.log(`TP=${tp}`);
+	}
+	if ((pty != null)) {
+		console.log(`PTY=${pty}`);
+	}
 }
 
 export function parse_group_unknown(block: Uint16Array, ok: boolean[], station: Station) {
@@ -110,6 +122,9 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 		station.addAfPair(af1, af2);
 	}
 	get_parse_function("group_0B_0_common")(block, ok, station);
+	if ((af1 != null) && (af2 != null)) {
+		console.log(`AFs ${af1}, ${af2}`);
+	}
 }
 
 export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], station: Station) {
@@ -138,6 +153,7 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 	let ps_seg__1 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
+	const ps_seg = [ps_seg__0, ps_seg__1];
 
 	// Actions.
 	if ((ta != null)) {
@@ -182,6 +198,12 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 
 		}
 	}
+	if ((ta != null)) {
+		console.log(`TA=${ta}`);
+	}
+	if ((addr != null) && (ps_seg != null)) {
+		console.log(`PS seg @${addr} "${ps_seg}"`);
+	}
 }
 
 export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Station) {
@@ -220,6 +242,12 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 
 		}
 	}
+	if ((linkage_actuator != null)) {
+		console.log(`LA=${linkage_actuator}`);
+	}
+	if ((variant != null)) {
+		console.log(`v=${variant}`);
+	}
 }
 
 export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: Station) {
@@ -236,6 +264,9 @@ export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: S
 	// Actions.
 	if ((ecc != null)) {
 		station.ecc = ecc;
+	}
+	if ((ecc != null)) {
+		console.log(`ECC=${ecc.toString(16).toUpperCase().padStart(2, '0')}`);
 	}
 }
 
@@ -266,6 +297,9 @@ export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], stati
 	if ((pin_minute != null)) {
 		station.pin_minute = pin_minute;
 	}
+	if ((pin_day != null) && (pin_hour != null) && (pin_minute != null)) {
+		console.log(`PIN=(D=${pin_day}, ${pin_hour.toString().padStart(2, '0')}:${pin_minute.toString().padStart(2, '0')})`);
+	}
 }
 
 export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Station) {
@@ -291,6 +325,7 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 	let rt_seg__3 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
+	const rt_seg = [rt_seg__0, rt_seg__1, rt_seg__2, rt_seg__3];
 
 	// Actions.
 	if ((station != null)) {
@@ -309,6 +344,12 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((flag != null)) {
 		station.rt_flag = flag;
+	}
+	if ((flag != null)) {
+		console.log(`RT flag=${flag ? 'A' : 'B'}`);
+	}
+	if ((addr != null) && (rt_seg != null)) {
+		console.log(`RT set @${addr} "${rt_seg}"`);
 	}
 }
 
@@ -333,6 +374,7 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 	let rt_seg__1 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
+	const rt_seg = [rt_seg__0, rt_seg__1];
 
 	// Actions.
 	if ((station != null)) {
@@ -345,6 +387,12 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((flag != null)) {
 		station.rt_flag = flag;
+	}
+	if ((flag != null)) {
+		console.log(`RT flag=${flag ? 'A' : 'B'}`);
+	}
+	if ((addr != null) && (rt_seg != null)) {
+		console.log(`RT set @${addr} "${rt_seg}"`);
 	}
 }
 
@@ -369,6 +417,9 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	if ((aid != null)) {
 		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, station);
+	}
+	if ((aid != null) && (app_group_type != null)) {
+		console.log(`ODA AID=${aid.toString(16).toUpperCase().padStart(4, '0')} in group ${(app_group_type>>1).toString() + ((app_group_type & 1) == 0 ? 'A' : 'B')}`);
 	}
 }
 
@@ -400,6 +451,18 @@ export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Stati
 	if ((hour != null) && (minute != null) && (mjd != null) && (station != null) && (tz_offset != null) && (tz_sign != null)) {
 		station.setClockTime(mjd, hour, minute, tz_sign, tz_offset);
 	}
+	if ((mjd != null)) {
+		console.log(`MJD=${mjd}`);
+	}
+	if ((hour != null)) {
+		console.log(`Hour=${hour.toString().padStart(2, '0')}`);
+	}
+	if ((minute != null)) {
+		console.log(`Minute=${minute.toString().padStart(2, '0')}`);
+	}
+	if ((tz_offset != null) && (tz_sign != null)) {
+		console.log(`TZ=${tz_sign ? '+' : '-'}${tz_offset}`);
+	}
 }
 
 export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Station) {
@@ -426,6 +489,7 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 	let ptyn_seg__3 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
+	const ptyn_seg = [ptyn_seg__0, ptyn_seg__1, ptyn_seg__2, ptyn_seg__3];
 
 	// Actions.
 	if ((station != null)) {
@@ -441,6 +505,12 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 		if ((addr != null) && (ptyn_seg__3 != null)) {
 			station.ptyn.setByte(addr*4 + 3, ptyn_seg__3);
 		}
+	}
+	if ((flag_ab != null)) {
+		console.log(`PTYN flag=${flag_ab ? 'A' : 'B'}`);
+	}
+	if ((ptyn_seg != null)) {
+		console.log(`PTYN seg @${ptyn_seg} "${ptyn_seg}"`);
 	}
 }
 
@@ -468,6 +538,7 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 	let lps_seg__3 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
+	const lps_seg = [lps_seg__0, lps_seg__1, lps_seg__2, lps_seg__3];
 
 	// Actions.
 	if ((station != null)) {
@@ -483,6 +554,12 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 		if ((addr != null) && (lps_seg__3 != null)) {
 			station.lps.setByte(addr*4 + 3, lps_seg__3);
 		}
+	}
+	if ((ta != null)) {
+		console.log(`TA=${ta}`);
+	}
+	if ((lps_seg != null)) {
+		console.log(`Long PS seg @${lps_seg} "${lps_seg}"`);
 	}
 }
 
@@ -544,6 +621,12 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], station: Stat
 				break;
 
 		}
+	}
+	if ((ta != null)) {
+		console.log(`TA=${ta}`);
+	}
+	if ((pi != null)) {
+		console.log(`PI=${pi}`);
 	}
 }
 
@@ -637,6 +720,7 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], station: S
 	let ps_seg__1 = (ok[2]) ?
 		((block[2] & 0b11111111))
 		: null;
+	const ps_seg = [ps_seg__0, ps_seg__1];
 	// Field pi_on: uint<16> at +48, width 16.
 	let pi_on = (ok[3]) ?
 		((block[3]))

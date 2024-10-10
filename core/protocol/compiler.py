@@ -26,7 +26,7 @@ simplevartype: ID ("<" INT ">")?
 
 maptype: "map" "<" simplevartype "," simplevartype ">"
 
-bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")? ("log" "{" logelement* "}")?
+bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")? ("log" "{" log_element* "}")?
 
 arg: ID ":" type
 
@@ -77,7 +77,7 @@ switch : "switch" expr "{" switch_case+ "}"
 
 switch_case : "case" INT ("," INT)* "{" action* "}"
 
-logelement: ESCAPED_STRING
+log_element: ESCAPED_STRING
 
 // imports WORD from library
 %import common.WORD   
@@ -104,8 +104,9 @@ class MapElementGuard:
     element_guard: set
     var: str
 
-# Global "elt" variable counter
+# Global variable counters
 elt_counter = 0
+log_counter = 0
 
 class CodeGenerator:
     def __init__(self, of, indent=0, in_block=False):
@@ -303,6 +304,13 @@ def compile_field_parsing(codegen, st, pos):
                 cgn.line(f'{typ.conv(" | ".join(ts_ops))}')
                 cgn.line(f': null;')
             pos += typ.elemwidth
+        # Add summary constant for logging.
+        if typ.num > 1:
+            codegen.line(
+                f'const {field} = [' +
+                ', '.join(f'{field}__{i}' for i in range(typ.num)) +
+                '];')
+
     return end_pos
 
 def compile_lvalue(st):
@@ -453,6 +461,84 @@ def compile_action(codegen, st, arguments):
         case _:
             codegen.line(f'// Unhandled action: {action}')
 
+def compile_log_element(codegen, st):
+    if len(st.children) == 0:
+        return
+    elif len(st.children) > 1:
+        raise Exception('More than one log element!')
+    log_element = st.children[0]
+
+    match log_element:
+        case lark.Token(type='ESCAPED_STRING', value=s):
+            s = s[1:-1].replace('\\"', '"')
+            compile_log_string(codegen, s)
+        case _:
+            raise Exception(f'Unexpected log element: {log_action}')
+
+def format_expr(var, fmt):
+    match fmt:
+        case 'u':
+            return var
+        case '02u':
+            return f"{var}.toString().padStart(2, '0')"
+        case '02x':
+            return f"{var}.toString(16).toUpperCase().padStart(2, '0')"
+        case '04x':
+            return f"{var}.toString(16).toUpperCase().padStart(4, '0')"
+        case 'grouptype':
+            return f"({var}>>1).toString() + (({var} & 1) == 0 ? 'A' : 'B')"
+        case 'freq':
+            # TODO with channelToFrequency()
+            return var
+        case 'rdstext':
+            # TODO
+            return var
+        case 'bytes':
+            # TODO
+            return var
+        case 'letter':
+            return f"{var} ? 'A' : 'B'"
+        case 'sign':
+            return f"{var} ? '+' : '-'"
+        case _:
+            raise Exception(f'Unknwon log format string: "{fmt}"')
+
+def compile_log_string(codegen, s):
+    global log_counter
+
+    var = f'log{log_counter}'
+    log_counter += 1
+
+    # Modes:
+    #  0: appending literal characters
+    #  1: appending expression
+    mode = 0
+    part = ''
+    variables = set()
+    logstr = ''
+
+    for c in s:
+        if mode == 0 and c == '{':
+            logstr += part
+            part = ''
+            mode = 1
+        elif mode == 1 and c == '}':
+            [var, fmt] = part.split(':', 2)
+            logstr += f'${{{format_expr(var, fmt)}}}'
+            variables.add(var)
+            part = ''
+            mode = 0
+        else:
+            part += c
+
+    # Handle last current part.
+    if mode != 0:
+        raise Exception(f'Log string stopped inside expression: {s}')
+    logstr += part
+
+    with codegen.guarded_block(variables) as b:
+        b.line(f'console.log(`{logstr}`);')
+
 rules = {}
 
 def build_argument_list(arguments, with_types):
@@ -490,6 +576,8 @@ def compile_bitstruct(codegen, cc):
         cgn.line('// Actions.')
         for st in subtrees_of_type(cc, 'action'):
             compile_action(cgn, st, arguments)
+        for st in subtrees_of_type(cc, 'log_element'):
+            compile_log_element(cgn, st)
         
     cgn.line()
 
