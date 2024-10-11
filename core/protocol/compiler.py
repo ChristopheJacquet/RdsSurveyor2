@@ -488,14 +488,11 @@ def format_expr(var, fmt):
         case 'grouptype':
             return f"({var}>>1).toString() + (({var} & 1) == 0 ? 'A' : 'B')"
         case 'freq':
-            # TODO with channelToFrequency()
-            return var
+            return f'formatAf({var})'
         case 'rdstext':
-            # TODO
-            return var
+            return f'formatRdsText({var})'
         case 'bytes':
-            # TODO
-            return var
+            return f'formatBytes({var})'
         case 'letter':
             return f"{var} ? 'A' : 'B'"
         case 'sign':
@@ -635,7 +632,7 @@ def compile_struct(codegen, cc):
 def compile(codegen, t):
     codegen.line('// Generated file. DO NOT EDIT.')
     codegen.line()
-    codegen.line('import { RdsString, StationImpl } from "./rds_types";')
+    codegen.line('import { RDS_CHARMAP, RdsString, StationImpl, channelToFrequency } from "./rds_types";')
     codegen.line()
 
     for c in t.children:
@@ -659,6 +656,19 @@ def compile(codegen, t):
             for (rule_id, ts_func) in rules.items():
                 blk2.line(f'case "{rule_id}": return {ts_func};')
         blk2.line('throw new RangeError("Invalid rule: " + rule);')
+
+    codegen.line()
+    with codegen.block('function formatAf(af: number): string {') as blk1:
+        blk1.line('const freq = channelToFrequency(af);')
+        blk1.line('return freq > 0 ? (freq/10).toString() : "None";')
+
+    codegen.line()
+    with codegen.block('function formatRdsText(text: Array<number | null>): string {') as blk1:
+        blk1.line('return text.map((c) => c == null ? "." : RDS_CHARMAP[c]).join("");')
+
+    codegen.line()
+    with codegen.block('function formatBytes(bytes: Array<number | null>): string {') as blk1:
+        blk1.line('return bytes.map((b) => b == null ? ".." : b.toString(16).toUpperCase().padStart(2, "0")).join(" ");')
 
 l = Lark(grammar)
 

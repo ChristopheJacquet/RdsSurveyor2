@@ -1,6 +1,6 @@
 // Generated file. DO NOT EDIT.
 
-import { RdsString, StationImpl } from "./rds_types";
+import { RDS_CHARMAP, RdsString, StationImpl, channelToFrequency } from "./rds_types";
 
 export interface Station {
 	pi?: number;
@@ -123,7 +123,7 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	}
 	get_parse_function("group_0B_0_common")(block, ok, station);
 	if ((af1 != null) && (af2 != null)) {
-		console.log(`AFs ${af1}, ${af2}`);
+		console.log(`AFs ${formatAf(af1)}, ${formatAf(af2)}`);
 	}
 }
 
@@ -202,7 +202,7 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 		console.log(`TA=${ta}`);
 	}
 	if ((addr != null) && (ps_seg != null)) {
-		console.log(`PS seg @${addr} "${ps_seg}"`);
+		console.log(`PS seg @${addr} "${formatRdsText(ps_seg)}"`);
 	}
 }
 
@@ -349,7 +349,7 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 		console.log(`RT flag=${flag ? 'A' : 'B'}`);
 	}
 	if ((addr != null) && (rt_seg != null)) {
-		console.log(`RT set @${addr} "${rt_seg}"`);
+		console.log(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
 	}
 }
 
@@ -392,7 +392,7 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 		console.log(`RT flag=${flag ? 'A' : 'B'}`);
 	}
 	if ((addr != null) && (rt_seg != null)) {
-		console.log(`RT set @${addr} "${rt_seg}"`);
+		console.log(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
 	}
 }
 
@@ -509,8 +509,8 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 	if ((flag_ab != null)) {
 		console.log(`PTYN flag=${flag_ab ? 'A' : 'B'}`);
 	}
-	if ((ptyn_seg != null)) {
-		console.log(`PTYN seg @${ptyn_seg} "${ptyn_seg}"`);
+	if ((addr != null) && (ptyn_seg != null)) {
+		console.log(`PTYN seg @${addr} "${formatRdsText(ptyn_seg)}"`);
 	}
 }
 
@@ -558,8 +558,8 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 	if ((ta != null)) {
 		console.log(`TA=${ta}`);
 	}
-	if ((lps_seg != null)) {
-		console.log(`Long PS seg @${lps_seg} "${lps_seg}"`);
+	if ((addr != null) && (lps_seg != null)) {
+		console.log(`Long PS seg @${addr} ${formatBytes(lps_seg)}`);
 	}
 }
 
@@ -1094,4 +1094,17 @@ export function get_parse_function(rule: string) {
 		case "group_dabxref_service": return parse_group_dabxref_service;
 	}
 	throw new RangeError("Invalid rule: " + rule);
+}
+
+function formatAf(af: number): string {
+	const freq = channelToFrequency(af);
+	return freq > 0 ? (freq/10).toString() : "None";
+}
+
+function formatRdsText(text: Array<number | null>): string {
+	return text.map((c) => c == null ? "." : RDS_CHARMAP[c]).join("");
+}
+
+function formatBytes(bytes: Array<number | null>): string {
+	return bytes.map((b) => b == null ? ".." : b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
 }

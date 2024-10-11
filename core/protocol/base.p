@@ -291,7 +291,7 @@ bitstruct group_10A(station: Station) {
     copy station.ptyn, addr, 4, ptyn_seg
 } log {
     "PTYN flag={flag_ab:letter}"
-    "PTYN seg @{ptyn_seg:u} \"{ptyn_seg:rdstext}\""
+    "PTYN seg @{addr:u} \"{ptyn_seg:rdstext}\""
 }
 
 # Long PS.
@@ -307,7 +307,7 @@ bitstruct group_15A(station: Station) {
     copy station.lps, addr, 4, lps_seg
 } log {
     "TA={ta:u}"
-    "Long PS seg @{lps_seg:u} \"{lps_seg:bytes}\""
+    "Long PS seg @{addr:u} {lps_seg:bytes}"
 }
 
 bitstruct group_15B(station: Station) {

@@ -515,7 +515,7 @@ function isAfListLengthIndicator(af: number): boolean {
  * @return The frequency in multiples of 100 kHz, or -1 for the filler code, or 0 if an invalid
  * code was supplied
  */
-function channelToFrequency(channel: number): number {
+export function channelToFrequency(channel: number): number {
   if (channel >= 0 && channel <= 204) return 875 + channel;
   else if (channel == 205) return -1;     // -1 = filler code.
   else return 0;
@@ -694,7 +694,7 @@ const GROUP_15B = 0b11111;
 
 const CTRLCHAR = '\u2423';
   
-const RDS_CHARMAP = new Array<string>(
+export const RDS_CHARMAP = new Array<string>(
   CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR,
   CTRLCHAR, CTRLCHAR, '\u240A', '\u240B', CTRLCHAR, '\u21B5', CTRLCHAR, CTRLCHAR,
   CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR,
