@@ -212,7 +212,7 @@ bitstruct group_2A(station: Station) {
     station.rt_flag = flag
 } log {
     "RT flag={flag:letter}"
-    "RT set @{addr:u} \"{rt_seg:rdstext}\""
+    "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_2B(station: Station) {
@@ -232,7 +232,7 @@ bitstruct group_2B(station: Station) {
     station.rt_flag = flag
 } log {
     "RT flag={flag:letter}"
-    "RT set @{addr:u} \"{rt_seg:rdstext}\""
+    "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_3A(station: Station) {

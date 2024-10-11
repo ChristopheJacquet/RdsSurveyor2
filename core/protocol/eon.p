@@ -38,6 +38,10 @@ bitstruct group_14A(station: Station) {
             parse _ "group_14A_pin"
         }
     }
+} log {
+    "EON variant={variant:u}"
+    "ON.PI={pi_on:04x}"
+    "ON.TP={tp_on:u}"
 }
 
 bitstruct group_14A_ps(station: Station) {
@@ -53,6 +57,8 @@ bitstruct group_14A_ps(station: Station) {
     pi_on: uint<16>
 } action {
     copy station.other_networks[pi_on].ps, addr, 2, ps_seg
+} log {
+    "ON.PS seg @{addr:u}: \"{ps_seg:rdstext}\""
 }
 
 bitstruct group_14A_af_a(station: Station) {
@@ -66,6 +72,8 @@ bitstruct group_14A_af_a(station: Station) {
     pi_on: uint<16>
 } action {
     station.other_networks[pi_on].addAfPair(af1, af2)
+} log {
+    "ON.AFs {af1:freq} {af2:freq}"
 }
 
 bitstruct group_14A_mapped_af(station: Station) {
@@ -79,6 +87,8 @@ bitstruct group_14A_mapped_af(station: Station) {
     pi_on: uint<16>
 } action {
     station.other_networks[pi_on].addMappedAF(channel, mapped_channel)
+} log {
+    "ON.AF mapped {channel:freq} -> {mapped_channel:freq}"
 }
 
 bitstruct group_14A_pty_ta(station: Station) {
@@ -94,6 +104,9 @@ bitstruct group_14A_pty_ta(station: Station) {
 } action {
     station.other_networks[pi_on].pty = pty_on
     station.other_networks[pi_on].ta = ta_on
+} log {
+    "ON.PTY = {pty_on:u}"
+    "ON.TA = {ta_on:u}"
 }
 
 bitstruct group_14A_pin(station: Station) {
@@ -110,6 +123,8 @@ bitstruct group_14A_pin(station: Station) {
     station.other_networks[pi_on].pin_day = pin_day_on
     station.other_networks[pi_on].pin_hour = pin_hour_on
     station.other_networks[pi_on].pin_minute = pin_minute_on
+} log {
+    "ON.PIN=(D={pin_day_on:u}, {pin_hour_on:02u}:{pin_minute_on:02u})"
 }
 
 bitstruct group_14B(station: Station) {
@@ -128,4 +143,6 @@ bitstruct group_14B(station: Station) {
 } action {
     station.other_networks[pi_on].ta = ta_on
     station.reportOtherNetworkSwitch(pi_on, ta_on)
+} log {
+    "Other network switch ON.TA={ta_on:u}"
 }

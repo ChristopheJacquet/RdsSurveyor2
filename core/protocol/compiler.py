@@ -520,7 +520,11 @@ def compile_log_string(codegen, s):
             part = ''
             mode = 1
         elif mode == 1 and c == '}':
-            [var, fmt] = part.split(':', 2)
+            format_parts = part.split(':')
+            if len(format_parts) != 2:
+                raise Exception(
+                    f'Format must be of the form {{variable:formatter}} in log string {s}')
+            [var, fmt] = format_parts
             logstr += f'${{{format_expr(var, fmt)}}}'
             variables.add(var)
             part = ''
