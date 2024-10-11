@@ -20,6 +20,7 @@ export class AppComponent {
   receiveGroup(evt: GroupEvent | NewStationEvent) {
     if (evt instanceof GroupEvent) {
       const log = new LogMessage();
+      log.add('[' + evt.hexDump() + '] ', false)
       parse_group(evt.blocks, evt.ok, log, this.station);
       this.station.addLogMessage(log);
       this.station.tickGroupDuration();

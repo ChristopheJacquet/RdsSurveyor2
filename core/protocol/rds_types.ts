@@ -378,6 +378,9 @@ export class StationImpl implements Station {
   }
 
   public addLogMessage(logMessage: LogMessage) {
+    if (this.log.length >= MAX_LOG_SIZE) {
+      this.log.shift();
+    }
     this.log.push(logMessage);
   }
 }
@@ -666,18 +669,25 @@ class OtherNetworkSwitch extends TrafficEvent {
 
 export class LogMessage {
   text = "";
+  addSeparator = false;
 
-  add(message: string) {
-    if (this.text.length > 0) {
+  add(message: string, addSeparator=true) {
+    if (this.addSeparator) {
       this.text += ", ";
     }
     this.text += message;
+    // Record if we want to start with a separator next time. (The separator is
+    // added if and when there is a next message.)
+    this.addSeparator = addSeparator;
   }
 
   toString() {
     return this.text;
   }
 }
+
+// Maximum number of log messages. We limit it for performance reasons.
+const MAX_LOG_SIZE = 1000;
 
 // Group type constants.
 const GROUP_0A = 0b00000;

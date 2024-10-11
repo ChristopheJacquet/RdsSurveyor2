@@ -432,6 +432,12 @@ export class GroupEvent {
     this.blocks = blocks;
     this.ok = ok;
   }
+
+  public hexDump(): string {
+    return [...this.blocks].map(
+      (b, i) => this.ok[i] ? b.toString(16).toUpperCase().padStart(4, "0") : "----"
+    ).join(" ");
+  }
 }
 
 export class NewStationEvent {
