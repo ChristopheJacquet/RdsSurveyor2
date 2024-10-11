@@ -658,6 +658,21 @@ class OtherNetworkSwitch extends TrafficEvent {
   }
 }
 
+export class LogMessage {
+  text = "";
+
+  add(message: string) {
+    if (this.text.length > 0) {
+      this.text += ", ";
+    }
+    this.text += message;
+  }
+
+  toString() {
+    return this.text;
+  }
+}
+
 // Group type constants.
 const GROUP_0A = 0b00000;
 const GROUP_0B = 0b00001;

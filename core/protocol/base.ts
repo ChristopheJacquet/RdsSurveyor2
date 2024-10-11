@@ -1,6 +1,6 @@
 // Generated file. DO NOT EDIT.
 
-import { RDS_CHARMAP, RdsString, StationImpl, channelToFrequency } from "./rds_types";
+import { RDS_CHARMAP, LogMessage, RdsString, StationImpl, channelToFrequency } from "./rds_types";
 
 export interface Station {
 	pi?: number;
@@ -37,7 +37,7 @@ export interface Station {
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
 }
 
-export function parse_group(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field pi: uint<16> at +0, width 16.
 	let pi = (ok[0]) ?
 		((block[0]))
@@ -58,6 +58,18 @@ export function parse_group(block: Uint16Array, ok: boolean[], station: Station)
 
 	// Actions.
 	if ((pi != null)) {
+		log.add(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
+	if ((type != null)) {
+		log.add(`Group ${(type>>1).toString() + ((type & 1) == 0 ? 'A' : 'B')}`);
+	}
+	if ((tp != null)) {
+		log.add(`TP=${tp}`);
+	}
+	if ((pty != null)) {
+		log.add(`PTY=${pty}`);
+	}
+	if ((pi != null)) {
 		station.pi = pi;
 	}
 	if ((tp != null)) {
@@ -70,23 +82,11 @@ export function parse_group(block: Uint16Array, ok: boolean[], station: Station)
 		station.addToGroupStats(type);
 	}
 	if ((type != null)) {
-		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, station);
-	}
-	if ((pi != null)) {
-		console.log(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
-	}
-	if ((type != null)) {
-		console.log(`Group ${(type>>1).toString() + ((type & 1) == 0 ? 'A' : 'B')}`);
-	}
-	if ((tp != null)) {
-		console.log(`TP=${tp}`);
-	}
-	if ((pty != null)) {
-		console.log(`PTY=${pty}`);
+		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, log, station);
 	}
 }
 
-export function parse_group_unknown(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_unknown(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field block_b_rest: uint<5> at +27, width 5.
 	let block_b_rest = (ok[1]) ?
@@ -104,7 +104,7 @@ export function parse_group_unknown(block: Uint16Array, ok: boolean[], station: 
 	// Actions.
 }
 
-export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_0A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field af1: uint<8> at +32, width 8.
@@ -118,16 +118,16 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], station: Stati
 	// Field _: unparsed<16> at +48, width 16.
 
 	// Actions.
+	if ((af1 != null) && (af2 != null)) {
+		log.add(`AFs ${formatAf(af1)}, ${formatAf(af2)}`);
+	}
 	if ((af1 != null) && (af2 != null) && (station != null)) {
 		station.addAfPair(af1, af2);
 	}
-	get_parse_function("group_0B_0_common")(block, ok, station);
-	if ((af1 != null) && (af2 != null)) {
-		console.log(`AFs ${formatAf(af1)}, ${formatAf(af2)}`);
-	}
+	get_parse_function("group_0B_0_common")(block, ok, log, station);
 }
 
-export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -156,6 +156,12 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 	const ps_seg = [ps_seg__0, ps_seg__1];
 
 	// Actions.
+	if ((ta != null)) {
+		log.add(`TA=${ta}`);
+	}
+	if ((addr != null) && (ps_seg != null)) {
+		log.add(`PS seg @${addr} "${formatRdsText(ps_seg)}"`);
+	}
 	if ((ta != null)) {
 		station.ta = ta;
 	}
@@ -198,15 +204,9 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], stati
 
 		}
 	}
-	if ((ta != null)) {
-		console.log(`TA=${ta}`);
-	}
-	if ((addr != null) && (ps_seg != null)) {
-		console.log(`PS seg @${addr} "${formatRdsText(ps_seg)}"`);
-	}
 }
 
-export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field linkage_actuator: bool at +32, width 1.
@@ -225,13 +225,19 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((linkage_actuator != null)) {
+		log.add(`LA=${linkage_actuator}`);
+	}
+	if ((variant != null)) {
+		log.add(`v=${variant}`);
+	}
+	if ((linkage_actuator != null)) {
 		station.linkage_actuator = linkage_actuator;
 	}
-	get_parse_function("group_1B_1_common")(block, ok, station);
+	get_parse_function("group_1B_1_common")(block, ok, log, station);
 	if ((variant != null)) {
 		switch (variant) {
 			case 0:
-				get_parse_function("group_1A_ecc")(block, ok, station);
+				get_parse_function("group_1A_ecc")(block, ok, log, station);
 				break;
 
 			case 3:
@@ -242,15 +248,9 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], station: Stati
 
 		}
 	}
-	if ((linkage_actuator != null)) {
-		console.log(`LA=${linkage_actuator}`);
-	}
-	if ((variant != null)) {
-		console.log(`v=${variant}`);
-	}
 }
 
-export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field _: unparsed<32> at +0, width 32.
 	// Field linkage_actuator: unparsed<1> at +32, width 1.
 	// Field variant: unparsed<3> at +33, width 3.
@@ -263,14 +263,14 @@ export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], station: S
 
 	// Actions.
 	if ((ecc != null)) {
-		station.ecc = ecc;
+		log.add(`ECC=${ecc.toString(16).toUpperCase().padStart(2, '0')}`);
 	}
 	if ((ecc != null)) {
-		console.log(`ECC=${ecc.toString(16).toUpperCase().padStart(2, '0')}`);
+		station.ecc = ecc;
 	}
 }
 
-export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field _: unparsed<16> at +32, width 16.
@@ -288,6 +288,9 @@ export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], stati
 		: null;
 
 	// Actions.
+	if ((pin_day != null) && (pin_hour != null) && (pin_minute != null)) {
+		log.add(`PIN=(D=${pin_day}, ${pin_hour.toString().padStart(2, '0')}:${pin_minute.toString().padStart(2, '0')})`);
+	}
 	if ((pin_day != null)) {
 		station.pin_day = pin_day;
 	}
@@ -297,12 +300,9 @@ export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], stati
 	if ((pin_minute != null)) {
 		station.pin_minute = pin_minute;
 	}
-	if ((pin_day != null) && (pin_hour != null) && (pin_minute != null)) {
-		console.log(`PIN=(D=${pin_day}, ${pin_hour.toString().padStart(2, '0')}:${pin_minute.toString().padStart(2, '0')})`);
-	}
 }
 
-export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_2A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag: uint<1> at +27, width 1.
 	let flag = (ok[1]) ?
@@ -328,6 +328,12 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 	const rt_seg = [rt_seg__0, rt_seg__1, rt_seg__2, rt_seg__3];
 
 	// Actions.
+	if ((flag != null)) {
+		log.add(`RT flag=${flag ? 'A' : 'B'}`);
+	}
+	if ((addr != null) && (rt_seg != null)) {
+		log.add(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
+	}
 	if ((station != null)) {
 		if ((addr != null) && (rt_seg__0 != null)) {
 			station.rt.setByte(addr*4 + 0, rt_seg__0);
@@ -345,15 +351,9 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], station: Stati
 	if ((flag != null)) {
 		station.rt_flag = flag;
 	}
-	if ((flag != null)) {
-		console.log(`RT flag=${flag ? 'A' : 'B'}`);
-	}
-	if ((addr != null) && (rt_seg != null)) {
-		console.log(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
-	}
 }
 
-export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_2B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag: uint<1> at +27, width 1.
 	let flag = (ok[1]) ?
@@ -377,6 +377,12 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 	const rt_seg = [rt_seg__0, rt_seg__1];
 
 	// Actions.
+	if ((flag != null)) {
+		log.add(`RT flag=${flag ? 'A' : 'B'}`);
+	}
+	if ((addr != null) && (rt_seg != null)) {
+		log.add(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
+	}
 	if ((station != null)) {
 		if ((addr != null) && (rt_seg__0 != null)) {
 			station.rt.setByte(addr*2 + 0, rt_seg__0);
@@ -388,15 +394,9 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], station: Stati
 	if ((flag != null)) {
 		station.rt_flag = flag;
 	}
-	if ((flag != null)) {
-		console.log(`RT flag=${flag ? 'A' : 'B'}`);
-	}
-	if ((addr != null) && (rt_seg != null)) {
-		console.log(`RT set @${addr} "${formatRdsText(rt_seg)}"`);
-	}
 }
 
-export function parse_group_3A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field app_group_type: uint<5> at +27, width 5.
 	let app_group_type = (ok[1]) ?
@@ -410,20 +410,20 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], station: Stati
 
 	// Actions.
 	if ((aid != null) && (app_group_type != null)) {
+		log.add(`ODA AID=${aid.toString(16).toUpperCase().padStart(4, '0')} in group ${(app_group_type>>1).toString() + ((app_group_type & 1) == 0 ? 'A' : 'B')}`);
+	}
+	if ((aid != null) && (app_group_type != null)) {
 		station.transmitted_odas.set(app_group_type, aid);
 	}
 	if ((aid != null) && (app_group_type != null)) {
 		station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
 	}
 	if ((aid != null)) {
-		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, station);
-	}
-	if ((aid != null) && (app_group_type != null)) {
-		console.log(`ODA AID=${aid.toString(16).toUpperCase().padStart(4, '0')} in group ${(app_group_type>>1).toString() + ((app_group_type & 1) == 0 ? 'A' : 'B')}`);
+		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, log, station);
 	}
 }
 
-export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_4A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: uint<3> at +27, width 3.
 	// Field mjd: uint<17> at +30, width 17.
@@ -448,24 +448,24 @@ export function parse_group_4A(block: Uint16Array, ok: boolean[], station: Stati
 		: null;
 
 	// Actions.
+	if ((mjd != null)) {
+		log.add(`MJD=${mjd}`);
+	}
+	if ((hour != null)) {
+		log.add(`Hour=${hour.toString().padStart(2, '0')}`);
+	}
+	if ((minute != null)) {
+		log.add(`Minute=${minute.toString().padStart(2, '0')}`);
+	}
+	if ((tz_offset != null) && (tz_sign != null)) {
+		log.add(`TZ=${tz_sign ? '+' : '-'}${tz_offset}`);
+	}
 	if ((hour != null) && (minute != null) && (mjd != null) && (station != null) && (tz_offset != null) && (tz_sign != null)) {
 		station.setClockTime(mjd, hour, minute, tz_sign, tz_offset);
 	}
-	if ((mjd != null)) {
-		console.log(`MJD=${mjd}`);
-	}
-	if ((hour != null)) {
-		console.log(`Hour=${hour.toString().padStart(2, '0')}`);
-	}
-	if ((minute != null)) {
-		console.log(`Minute=${minute.toString().padStart(2, '0')}`);
-	}
-	if ((tz_offset != null) && (tz_sign != null)) {
-		console.log(`TZ=${tz_sign ? '+' : '-'}${tz_offset}`);
-	}
 }
 
-export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_10A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -492,6 +492,12 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 	const ptyn_seg = [ptyn_seg__0, ptyn_seg__1, ptyn_seg__2, ptyn_seg__3];
 
 	// Actions.
+	if ((flag_ab != null)) {
+		log.add(`PTYN flag=${flag_ab ? 'A' : 'B'}`);
+	}
+	if ((addr != null) && (ptyn_seg != null)) {
+		log.add(`PTYN seg @${addr} "${formatRdsText(ptyn_seg)}"`);
+	}
 	if ((station != null)) {
 		if ((addr != null) && (ptyn_seg__0 != null)) {
 			station.ptyn.setByte(addr*4 + 0, ptyn_seg__0);
@@ -506,15 +512,9 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], station: Stat
 			station.ptyn.setByte(addr*4 + 3, ptyn_seg__3);
 		}
 	}
-	if ((flag_ab != null)) {
-		console.log(`PTYN flag=${flag_ab ? 'A' : 'B'}`);
-	}
-	if ((addr != null) && (ptyn_seg != null)) {
-		console.log(`PTYN seg @${addr} "${formatRdsText(ptyn_seg)}"`);
-	}
 }
 
-export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_15A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -541,6 +541,12 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 	const lps_seg = [lps_seg__0, lps_seg__1, lps_seg__2, lps_seg__3];
 
 	// Actions.
+	if ((ta != null)) {
+		log.add(`TA=${ta}`);
+	}
+	if ((addr != null) && (lps_seg != null)) {
+		log.add(`Long PS seg @${addr} ${formatBytes(lps_seg)}`);
+	}
 	if ((station != null)) {
 		if ((addr != null) && (lps_seg__0 != null)) {
 			station.lps.setByte(addr*4 + 0, lps_seg__0);
@@ -555,15 +561,9 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], station: Stat
 			station.lps.setByte(addr*4 + 3, lps_seg__3);
 		}
 	}
-	if ((ta != null)) {
-		console.log(`TA=${ta}`);
-	}
-	if ((addr != null) && (lps_seg != null)) {
-		console.log(`Long PS seg @${addr} ${formatBytes(lps_seg)}`);
-	}
 }
 
-export function parse_group_15B(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -588,6 +588,12 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], station: Stat
 	// Field repeat: unparsed<16> at +48, width 16.
 
 	// Actions.
+	if ((ta != null)) {
+		log.add(`TA=${ta}`);
+	}
+	if ((pi != null)) {
+		log.add(`PI=${pi}`);
+	}
 	if ((ta != null)) {
 		station.ta = ta;
 	}
@@ -622,15 +628,9 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], station: Stat
 
 		}
 	}
-	if ((ta != null)) {
-		console.log(`TA=${ta}`);
-	}
-	if ((pi != null)) {
-		console.log(`PI=${pi}`);
-	}
 }
 
-export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
 	let tp_on = (ok[1]) ?
@@ -675,18 +675,18 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Stat
 			case 1:
 			case 2:
 			case 3:
-				get_parse_function("group_14A_ps")(block, ok, station);
+				get_parse_function("group_14A_ps")(block, ok, log, station);
 				break;
 
 			case 4:
-				get_parse_function("group_14A_af_a")(block, ok, station);
+				get_parse_function("group_14A_af_a")(block, ok, log, station);
 				break;
 
 			case 5:
 			case 6:
 			case 7:
 			case 8:
-				get_parse_function("group_14A_mapped_af")(block, ok, station);
+				get_parse_function("group_14A_mapped_af")(block, ok, log, station);
 				break;
 
 			case 9:
@@ -696,18 +696,18 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], station: Stat
 				break;
 
 			case 13:
-				get_parse_function("group_14A_pty_ta")(block, ok, station);
+				get_parse_function("group_14A_pty_ta")(block, ok, log, station);
 				break;
 
 			case 14:
-				get_parse_function("group_14A_pin")(block, ok, station);
+				get_parse_function("group_14A_pin")(block, ok, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field common: unparsed<30> at +0, width 30.
 	// Field addr: uint<2> at +30, width 2.
 	let addr = (ok[1]) ?
@@ -745,7 +745,7 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], station: S
 	}
 }
 
-export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field af1: uint<8> at +32, width 8.
 	let af1 = (ok[2]) ?
@@ -774,7 +774,7 @@ export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], station:
 	}
 }
 
-export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field channel: uint<8> at +32, width 8.
 	let channel = (ok[2]) ?
@@ -803,7 +803,7 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], sta
 	}
 }
 
-export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field pty_on: uint<5> at +32, width 5.
 	let pty_on = (ok[2]) ?
@@ -844,7 +844,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], statio
 	}
 }
 
-export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field pin_day_on: uint<5> at +32, width 5.
 	let pin_day_on = (ok[2]) ?
@@ -899,7 +899,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], station: 
 	}
 }
 
-export function parse_group_14B(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_14B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
 	let tp_on = (ok[1]) ?
@@ -937,7 +937,7 @@ export interface RtPlusApp {
 	setTag(content_type: number, start: number, length: number): void;
 }
 
-export function parse_group_rtplus(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_rtplus(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field item_toggle: bool at +27, width 1.
 	let item_toggle = (ok[1]) ?
@@ -987,7 +987,7 @@ export interface DabCrossRefApp {
 	addServiceLinkageInfo(linkageInfo: number, sid: number): void;
 }
 
-export function parse_group_dabxref(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_dabxref(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field es: uint<1> at +27, width 1.
 	let es = (ok[1]) ?
@@ -999,18 +999,18 @@ export function parse_group_dabxref(block: Uint16Array, ok: boolean[], station: 
 	if ((es != null)) {
 		switch (es) {
 			case 0:
-				get_parse_function("group_dabxref_ensemble")(block, ok, station);
+				get_parse_function("group_dabxref_ensemble")(block, ok, log, station);
 				break;
 
 			case 1:
-				get_parse_function("group_dabxref_service")(block, ok, station);
+				get_parse_function("group_dabxref_service")(block, ok, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field _: unparsed<28> at +0, width 28.
 	// Field mode: uint<2> at +28, width 2.
 	let mode = (ok[1]) ?
@@ -1031,7 +1031,7 @@ export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], 
 	}
 }
 
-export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], station: Station) {
+export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field _: unparsed<28> at +0, width 28.
 	// Field variant: uint<4> at +28, width 4.
 	let variant = (ok[1]) ?

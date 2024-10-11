@@ -415,7 +415,7 @@ def compile_action(codegen, st, arguments):
             
             (c_rule, v_rule) = compile_expr(rule);
             with codegen.guarded_block(v_rule) as cgn:
-                cgn.line(f'get_parse_function({c_rule})(block, ok{build_argument_list(arguments, with_types=False)});')
+                cgn.line(f'get_parse_function({c_rule})(block, ok, log{build_argument_list(arguments, with_types=False)});')
         case lark.Tree(data='invocation', children=[
             lark.Tree(data='lvalue') as obj,
             lark.Token(type='ID', value=method),
@@ -534,7 +534,7 @@ def compile_log_string(codegen, s):
     logstr += part
 
     with codegen.guarded_block(variables) as b:
-        b.line(f'console.log(`{logstr}`);')
+        b.line(f'log.add(`{logstr}`);')
 
 rules = {}
 
@@ -560,7 +560,7 @@ def compile_bitstruct(codegen, cc):
                 
                 arguments[arg_name] = arg_type
     
-    with codegen.block(f'export function {ts_func}(block: Uint16Array, ok: boolean[]{build_argument_list(arguments, with_types=True)}) {{') as cgn:
+    with codegen.block(f'export function {ts_func}(block: Uint16Array, ok: boolean[], log: LogMessage{build_argument_list(arguments, with_types=True)}) {{') as cgn:
 
         pos = 0
         for st in subtrees_of_type(cc, 'decl'):
@@ -571,10 +571,10 @@ def compile_bitstruct(codegen, cc):
 
         cgn.line()
         cgn.line('// Actions.')
-        for st in subtrees_of_type(cc, 'action'):
-            compile_action(cgn, st, arguments)
         for st in subtrees_of_type(cc, 'log_element'):
             compile_log_element(cgn, st)
+        for st in subtrees_of_type(cc, 'action'):
+            compile_action(cgn, st, arguments)
         
     cgn.line()
 
@@ -632,7 +632,7 @@ def compile_struct(codegen, cc):
 def compile(codegen, t):
     codegen.line('// Generated file. DO NOT EDIT.')
     codegen.line()
-    codegen.line('import { RDS_CHARMAP, RdsString, StationImpl, channelToFrequency } from "./rds_types";')
+    codegen.line('import { RDS_CHARMAP, LogMessage, RdsString, StationImpl, channelToFrequency } from "./rds_types";')
     codegen.line()
 
     for c in t.children:
