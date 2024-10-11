@@ -18,10 +18,10 @@ export class AppComponent {
   station: StationImpl;
 
   receiveGroup(evt: GroupEvent | NewStationEvent) {
-    const log = new LogMessage();
     if (evt instanceof GroupEvent) {
+      const log = new LogMessage();
       parse_group(evt.blocks, evt.ok, log, this.station);
-      console.log(log.toString());
+      this.station.addLogMessage(log);
       this.station.tickGroupDuration();
     } else if (evt instanceof NewStationEvent) {
       this.station.reset();

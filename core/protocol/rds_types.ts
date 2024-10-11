@@ -36,6 +36,7 @@ export class StationImpl implements Station {
   ecc?: number;
   language_code?: number;
   other_networks = new Map<number, StationImpl>();
+  log = new Array<LogMessage>();
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -226,6 +227,8 @@ export class StationImpl implements Station {
     // Reset ODAs.
     this.rt_plus_app.reset();
     this.dab_cross_ref_app.reset();
+
+    this.log = [];
   }
 
 	public addAfPair(a: number, b: number) {
@@ -374,6 +377,9 @@ export class StationImpl implements Station {
     this.trafficEvents.push(event);
   }
 
+  public addLogMessage(logMessage: LogMessage) {
+    this.log.push(logMessage);
+  }
 }
 
 function padNumber(num: number, width: number) {
