@@ -477,6 +477,8 @@ def compile_log_element(codegen, st):
 
 def format_expr(var, fmt):
     match fmt:
+        case 'bool':
+            return f"{var} ? '1': '0'"
         case 'u':
             return var
         case '02u':

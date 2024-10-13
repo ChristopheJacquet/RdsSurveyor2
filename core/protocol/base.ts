@@ -64,7 +64,7 @@ export function parse_group(block: Uint16Array, ok: boolean[], log: LogMessage, 
 		log.add(`Group ${(type>>1).toString() + ((type & 1) == 0 ? 'A' : 'B')}`);
 	}
 	if ((tp != null)) {
-		log.add(`TP=${tp}`);
+		log.add(`TP=${tp ? '1': '0'}`);
 	}
 	if ((pty != null)) {
 		log.add(`PTY=${pty}`);
@@ -157,7 +157,7 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], log: 
 
 	// Actions.
 	if ((ta != null)) {
-		log.add(`TA=${ta}`);
+		log.add(`TA=${ta ? '1': '0'}`);
 	}
 	if ((addr != null) && (ps_seg != null)) {
 		log.add(`PS seg @${addr} "${formatRdsText(ps_seg)}"`);
@@ -225,7 +225,7 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessag
 
 	// Actions.
 	if ((linkage_actuator != null)) {
-		log.add(`LA=${linkage_actuator}`);
+		log.add(`LA=${linkage_actuator ? '1': '0'}`);
 	}
 	if ((variant != null)) {
 		log.add(`v=${variant}`);
@@ -542,7 +542,7 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], log: LogMessa
 
 	// Actions.
 	if ((ta != null)) {
-		log.add(`TA=${ta}`);
+		log.add(`TA=${ta ? '1': '0'}`);
 	}
 	if ((addr != null) && (lps_seg != null)) {
 		log.add(`Long PS seg @${addr} ${formatBytes(lps_seg)}`);
@@ -589,7 +589,7 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessa
 
 	// Actions.
 	if ((ta != null)) {
-		log.add(`TA=${ta}`);
+		log.add(`TA=${ta ? '1': '0'}`);
 	}
 	if ((pi != null)) {
 		log.add(`PI=${pi}`);
@@ -648,13 +648,13 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 
 	// Actions.
 	if ((variant != null)) {
-		log.add(`EON variant=${variant}`);
+		log.add(`EON v=${variant}`);
 	}
 	if ((pi_on != null)) {
 		log.add(`ON.PI=${pi_on.toString(16).toUpperCase().padStart(4, '0')}`);
 	}
 	if ((tp_on != null)) {
-		log.add(`ON.TP=${tp_on}`);
+		log.add(`ON.TP=${tp_on ? '1': '0'}`);
 	}
 	let elt0: StationImpl | undefined;
 	if ((pi_on != null)) {
@@ -806,7 +806,7 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], log
 
 	// Actions.
 	if ((channel != null) && (mapped_channel != null)) {
-		log.add(`ON.AF mapped ${formatAf(channel)} -> ${formatAf(mapped_channel)}`);
+		log.add(`ON.AF mapped ${formatAf(channel)} → ${formatAf(mapped_channel)}`);
 	}
 	let elt4: StationImpl | undefined;
 	if ((pi_on != null)) {
@@ -842,7 +842,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: L
 		log.add(`ON.PTY = ${pty_on}`);
 	}
 	if ((ta_on != null)) {
-		log.add(`ON.TA = ${ta_on}`);
+		log.add(`ON.TA = ${ta_on ? '1': '0'}`);
 	}
 	let elt5: StationImpl | undefined;
 	if ((pi_on != null)) {
@@ -945,7 +945,7 @@ export function parse_group_14B(block: Uint16Array, ok: boolean[], log: LogMessa
 
 	// Actions.
 	if ((ta_on != null)) {
-		log.add(`Other network switch ON.TA=${ta_on}`);
+		log.add(`Other network switch ON.TA=${ta_on ? '1': '0'}`);
 	}
 	let elt10: StationImpl | undefined;
 	if ((pi_on != null)) {

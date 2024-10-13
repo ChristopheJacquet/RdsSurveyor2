@@ -66,7 +66,7 @@ bitstruct group(station: Station) {
 } log {
     "PI={pi:04x}"
     "Group {type:grouptype}"
-    "TP={tp:u}"
+    "TP={tp:bool}"
     "PTY={pty:u}"
 }
 
@@ -130,7 +130,7 @@ bitstruct group_0B_0_common(station: Station) {
         }
     }
 } log {
-    "TA={ta:u}"
+    "TA={ta:bool}"
     "PS seg @{addr:u} \"{ps_seg:rdstext}\""
 }
 
@@ -160,7 +160,7 @@ bitstruct group_1A(station: Station) {
         }
     }
 } log {
-    "LA={linkage_actuator:u}"
+    "LA={linkage_actuator:bool}"
     "v={variant:u}"
 }
 
@@ -306,7 +306,7 @@ bitstruct group_15A(station: Station) {
 } action {
     copy station.lps, addr, 4, lps_seg
 } log {
-    "TA={ta:u}"
+    "TA={ta:bool}"
     "Long PS seg @{addr:u} {lps_seg:bytes}"
 }
 
@@ -343,7 +343,7 @@ bitstruct group_15B(station: Station) {
         }
     }
 } log {
-    "TA={ta:u}"
+    "TA={ta:bool}"
     "PI={pi:u}"
 }
 

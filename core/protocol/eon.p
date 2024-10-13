@@ -39,9 +39,9 @@ bitstruct group_14A(station: Station) {
         }
     }
 } log {
-    "EON variant={variant:u}"
+    "EON v={variant:u}"
     "ON.PI={pi_on:04x}"
-    "ON.TP={tp_on:u}"
+    "ON.TP={tp_on:bool}"
 }
 
 bitstruct group_14A_ps(station: Station) {
@@ -88,7 +88,7 @@ bitstruct group_14A_mapped_af(station: Station) {
 } action {
     station.other_networks[pi_on].addMappedAF(channel, mapped_channel)
 } log {
-    "ON.AF mapped {channel:freq} -> {mapped_channel:freq}"
+    "ON.AF mapped {channel:freq} → {mapped_channel:freq}"
 }
 
 bitstruct group_14A_pty_ta(station: Station) {
@@ -106,7 +106,7 @@ bitstruct group_14A_pty_ta(station: Station) {
     station.other_networks[pi_on].ta = ta_on
 } log {
     "ON.PTY = {pty_on:u}"
-    "ON.TA = {ta_on:u}"
+    "ON.TA = {ta_on:bool}"
 }
 
 bitstruct group_14A_pin(station: Station) {
@@ -144,5 +144,5 @@ bitstruct group_14B(station: Station) {
     station.other_networks[pi_on].ta = ta_on
     station.reportOtherNetworkSwitch(pi_on, ta_on)
 } log {
-    "Other network switch ON.TA={ta_on:u}"
+    "Other network switch ON.TA={ta_on:bool}"
 }
