@@ -4,6 +4,8 @@
   margin-left: 5px;
   padding: 16px;
   border-radius: 10px;
+  display: flex;
+  flex-flow: column;
 }
 .infogrid {
   margin: 0 auto;
@@ -70,4 +72,9 @@
 .station-options {
   padding: 15px;
   text-align: right;
+}
+
+.bottom-tabs {
+  flex: 1;
+  overflow: auto;
 }

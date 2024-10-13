@@ -2,3 +2,18 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+table.data-table {
+  border: 1px solid #444;
+  margin: 1em auto;
+  border-collapse: collapse;
+
+  th, td {
+    border: 1px solid #444;
+    padding: .1em .6em;
+  }
+
+  th {
+    background: #e8ecf9;
+  }
+}

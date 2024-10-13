@@ -97,7 +97,7 @@
   </div>
 </div>
 
-<mat-tab-group>
+<mat-tab-group class="bottom-tabs">
   <mat-tab label="Base">
     <div class="infogrid">
       <div class="infogrid-row">
@@ -148,7 +148,7 @@
   </mat-tab>
   <mat-tab label="EON &amp; Traffic">
     <div>
-      <table>
+      <table class="data-table">
         <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th><th>PIN</th></tr>
         <tr *ngFor="let s of station.other_networks | keyvalue">
           <ng-container *ngIf="s.key != station.pi">
@@ -161,15 +161,15 @@
             <td>
               <!-- AFs -->
               <span *ngFor="let e of s.value.afLists | keyvalue">
-                <strong>AF list:</strong>
+                List:
                 {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
                 <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
               </span>
               <span *ngIf="s.value.mappedAFs.size > 0">
-                <strong>Mapped AFs:</strong>
+                Mapped:
                 <span *ngFor="let m of s.value.mappedAFs | keyvalue">
-                  [{{ m.key/10 | number: '1.1-1' }} →
-                  <span *ngFor="let af of m.value">{{ af/10 | number: '1.1-1' }}  </span>]
+                  [{{ m.key/10 | number: '1.1-1' }} → <ng-container
+                   *ngFor="let af of m.value; let last=last">{{ af/10 | number: '1.1-1' }}<ng-container *ngIf="!last"> </ng-container></ng-container>]
                 </span>
               </span>
             </td>
@@ -189,7 +189,7 @@
     </div>
   </mat-tab>
   <mat-tab label="ODA">
-    <table>
+    <table class="data-table">
       <tr><th>Group</th><th>AID</th><th>ODA name</th></tr>
       <tr *ngFor="let e of station.transmitted_odas | keyvalue">
         <td>{{ formatGroupType(e.key) }}</td>
@@ -199,7 +199,7 @@
     </table>    
   </mat-tab>
   <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
-    <table>
+    <table class="data-table">
       <tr><th>Mode</th><th>Frequency</th><th>EId</th></tr>
       <tr *ngFor="let e of station.dab_cross_ref_app.ensembleTable">
         <td>{{ e.mode }}</td>
