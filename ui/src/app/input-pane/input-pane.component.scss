@@ -16,18 +16,21 @@
 
 .dropzone {
   height: 100%;
-  background-color: #EDF;
-  padding: 1em;
-  margin-right: 10px;
+  background-color: #e8ecf9;
+  padding: 2em 1em;
+  margin: 10px;
   text-align: center;
   // Vertical center text.
   display: flex;
   align-items: center;
   cursor: default;
+  display: block;
+  border-radius: 20px;
+  border: 2px dashed #555;
 }
 
 .dragging {
-  background-color: #FFA;
+  background-color: #c5d0f3;
 }
 
 input {
@@ -67,4 +70,8 @@ input {
 
 .hidden {
   display: none;
+}
+
+::ng-deep .input_tabs .mat-mdc-tab-body-wrapper {
+  display: block !important;
 }
