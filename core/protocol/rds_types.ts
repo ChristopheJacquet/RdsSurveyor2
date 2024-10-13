@@ -322,7 +322,7 @@ export class StationImpl implements Station {
       case 0xF2: return ECC_F2[piCC];
       case 0xF3: return ECC_F3[piCC];
       case 0xF4: return ECC_F4[piCC];
-      default: return 'Invalid';
+      default: return `Invalid (${this.ecc.toString(16).padStart(2, '0')})`;
     }
   }
   
