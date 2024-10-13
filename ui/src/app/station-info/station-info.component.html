@@ -146,7 +146,7 @@
       </mat-list-item>
     </mat-list>    
   </mat-tab>
-  <mat-tab label="EON &amp; Traffic">
+  <mat-tab label="EON">
     <div>
       <table class="data-table">
         <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th><th>PIN</th></tr>
@@ -182,10 +182,10 @@
         </tr>
       </table>
     </div>
-    <div>
-      <div *ngFor="let e of station.trafficEvents">
-        {{ e }}
-      </div>
+  </mat-tab>
+  <mat-tab label="Traffic">
+    <div *ngFor="let e of station.trafficEvents">
+      {{ e }}
     </div>
   </mat-tab>
   <mat-tab label="ODA">
