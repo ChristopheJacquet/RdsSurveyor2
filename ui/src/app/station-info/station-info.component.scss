@@ -30,7 +30,7 @@
   border: 1px solid #444;
   border-radius: 5px;
   padding: 3px;
-  font-family: monospace;
+  font-family: "Roboto mono", monospace;
   font-size: 140%;
   white-space: pre;
 }
@@ -39,8 +39,11 @@
   padding-left: 3px;
 }
 
+.infogrid-value.infogrid-chips {
+  font-family: inherit;  // Override monospace font.
+}
+
 .infogrid-chips span {
-  font-family: sans-serif;
   padding: 3px 10px;
   margin: 3px 4px;
   background-color: #BDF;
@@ -77,4 +80,10 @@
 .bottom-tabs {
   flex: 1;
   overflow: auto;
+}
+
+.group-log {
+  font-family: "Roboto Mono", monospace;
+  letter-spacing: -0.05em;
+  line-height: 1.3;
 }

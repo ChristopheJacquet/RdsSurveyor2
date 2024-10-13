@@ -209,8 +209,10 @@
     </table>
   </mat-tab>
   <mat-tab label="Group log">
-    <div *ngFor="let m of station.log">
-      {{ m.toString() }}
+    <div class="group-log">
+      <div *ngFor="let m of station.log">
+        {{ m.toString() }}
+      </div>
     </div>
   </mat-tab>
 </mat-tab-group>
