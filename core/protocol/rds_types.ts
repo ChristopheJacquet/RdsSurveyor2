@@ -222,6 +222,7 @@ export class StationImpl implements Station {
       [GROUP_15A, "group_15A"],
       [GROUP_15B, "group_15B"]]);
     this.datetime = "";
+    this.date = null;
     this.group_stats.fill(0);
 
     // Reset ODAs.
