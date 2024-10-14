@@ -1,5 +1,5 @@
 import { RtPlusApp } from './base';
-import { Oda, StationImpl } from './rds_types';
+import { Oda, RdsStringHistoryEntry, StationImpl } from './rds_types';
 
 const classNames: Array<string> = [
   "DUMMY_CLASS",
@@ -107,31 +107,31 @@ export class RtPlusAppImpl implements Oda, RtPlusApp {
     // }
 
     if (length > 0) {
-      this.addToHistory(this.station.rt.getCurrentIndex(), content_type, start, length);
+      this.addToHistory(this.station.rt.getCurrentId(), content_type, start, length);
     }
   }
 
-	addToHistory(textIndex: number, type: number, start: number, length: number) {
+	addToHistory(textId: number, type: number, start: number, length: number) {
 		// Do not add anything if this type exists already for this index.
     for (let i of this.history) {
-      if (i.textIndex == textIndex && i.type == type) {
+      if (i.textId == textId && i.type == type) {
         return;
       }
     }
 		
 		// Else add a new history entry.
-		this.history.push(new RTPlusItem(textIndex, type, start, length));
+		this.history.push(new RTPlusItem(textId, type, start, length));
 	}
 
-	getHistoryForIndex(textIndex: number, text: string): string {
+	getHistoryEntry(rtEntry: RdsStringHistoryEntry): string {
 		let res = "";
 
     for(let i of this.history) {
-      if(i.textIndex == textIndex) {
+      if(i.textId == rtEntry.id) {
         // Handle the case when the currently received RT string is too short.
-        const endIndex = Math.min(i.start + i.length + 1, text.length);
+        const endIndex = Math.min(i.start + i.length + 1, rtEntry.message.length);
 
-        res += `${classNames[i.type]} = "${text.substring(i.start, endIndex)}"    `;
+        res += `${classNames[i.type]} = "${rtEntry.message.substring(i.start, endIndex)}"    `;
       }
     }
 		
@@ -146,7 +146,7 @@ export class RtPlusAppImpl implements Oda, RtPlusApp {
 
 class RTPlusItem {
   constructor(
-    public textIndex: number,
+    public textId: number,
     public type: number,
     public start: number,
     public length: number) {};

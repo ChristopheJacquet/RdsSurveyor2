@@ -119,12 +119,12 @@ export class StationInfoComponent {
 	getRThistory(): Array<RtEntry> {
 		const res = Array<RtEntry>();
 		const messages = this.station.rt.getPastMessages(true);
-		for (let i=0; i<messages.length; i++) {
+		for (let m of messages) {
 			res.push(
 				new RtEntry(
-					messages[i],
+					m.message,
 					this.station.rt_plus_app.enabled ?
-						this.station.rt_plus_app.getHistoryForIndex(i, messages[i]) :
+						this.station.rt_plus_app.getHistoryEntry(m) :
 						null));
 		}
 		return res;

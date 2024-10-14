@@ -70,7 +70,7 @@ export class StationImpl implements Station {
   }
 
   getPS(): string {
-    return this.ps.getLatestCompleteOrPartialText();
+    return this.ps.toString();
   }
 
   getStationName(): string {
@@ -126,17 +126,17 @@ export class StationImpl implements Station {
     for (let i=0; i<msg.length && res.length < 80; i++) {
       const current = msg[i];
       let done = false;
-      if (prev != null && prev.length == 8 && current.length == 8) {
+      if (prev != null && prev.length == 8 && current.message.length == 8) {
         // if the 7 rightmost characters of the current PS correspond
         // to the 7 leftmost characters of the "previous" PS (going 
         // backward in time), then the PS is scrolling one character
         // at a time, so we just add *the* leftmost character at the
         // start
-        if (prev.substring(0, 6) == current.substring(1, 7)) {
-          res = current.charAt(0) + res;
+        if (prev.substring(0, 6) == current.message.substring(1, 7)) {
+          res = current.message.charAt(0) + res;
           done = true;
-        } else if (prev.substring(0, 5) == current.substring(2, 7)) {
-          res = current.substring(0, 2) + res;
+        } else if (prev.substring(0, 5) == current.message.substring(2, 7)) {
+          res = current.message.substring(0, 2) + res;
           done = true;
         }
       } 
@@ -144,23 +144,23 @@ export class StationImpl implements Station {
       if(! done) {
         // otherwise, the PS is not scrolling, it's just displaying a
         // succession of 8-character words/sentences
-        res = current.trim() + " " + res;
+        res = current.message.trim() + " " + res;
       }
-      prev = current;
+      prev = current.message;
     }
     return res;
   }
 
   getLPS(): string {
-    return this.lps.getLatestCompleteOrPartialText();
+    return this.lps.toString();
   }
 
   getRT(): string {
-    return this.rt.getLatestCompleteOrPartialText();
+    return this.rt.toString();
   }
 
   getPTYN(): string {
-    return this.ptyn.getLatestCompleteOrPartialText();
+    return this.ptyn.toString();
   }
 
   addToGroupStats(type: number): void {
@@ -396,15 +396,19 @@ function padNumber(num: number, width: number) {
   return num.toString().padStart(width, "0");
 }
 
+export class RdsStringHistoryEntry {
+  public constructor(public message: string, public id: number) {}
+}
+
 export abstract class RdsString {
   currentText: Uint8Array;
   currentFlags: number = 0;
-  messages = new Array<string>();
+  history = new Array<RdsStringHistoryEntry>();
   latest: number = -1;
   empty: boolean = true;
   currentTicks: number = 0;
   tickHistory = new Map<string, number>();
-  currentIndex: number = 0;
+  currentId = 42;  // Start at arbitrary value. Could be 0.
 
   constructor(size: number) {
     this.currentText = new Uint8Array(size);
@@ -416,8 +420,9 @@ export abstract class RdsString {
       // This is a new text: save the previous message...
       if (!this.empty) {
         const message = this.toString();
-        this.messages.unshift(message);  // Newest messages on top.
-        this.currentIndex++;
+        // Add newest message on top.
+        this.history.unshift(new RdsStringHistoryEntry(message, this.currentId));
+        this.currentId++;
                   
         const prev = this.tickHistory.get(message);
         this.tickHistory.set(message, this.currentTicks + (prev == null ? 0 : prev));
@@ -438,12 +443,11 @@ export abstract class RdsString {
   public reset(): void {
     this.currentText.fill(0);
     this.currentFlags = 0;
-    this.messages = [];
+    this.history = [];
     this.latest = -1;
     this.empty = true;
     this.currentTicks = 0;
     this.tickHistory.clear();
-    this.currentIndex = 0;
   }
   
   public abstract toString(): string;
@@ -452,12 +456,12 @@ export abstract class RdsString {
     return this.latest;
   }
   
-  public getPastMessages(includingCurrent: boolean): Array<string> {
+  public getPastMessages(includingCurrent: boolean): Array<RdsStringHistoryEntry> {
     if (!includingCurrent || this.empty) {
-      return this.messages;
+      return this.history;
     }
 
-    const l = [this.toString(), ...this.messages];
+    const l = [new RdsStringHistoryEntry(this.toString(), this.currentId), ...this.history];
     return l;
   }
 
@@ -506,8 +510,8 @@ export abstract class RdsString {
   public getLatestCompleteOrPartialText(): string {
     if (this.isComplete()) {
       return this.toString();
-    } else if (this.messages.length > 0) {
-      return this.messages[this.messages.length-1];
+    } else if (this.history.length > 0) {
+      return this.history[0].message;
     } else {
       const t = this.toString();
       if (t != null) return t; else return "";
@@ -515,8 +519,8 @@ export abstract class RdsString {
 
   }
   
-  public getCurrentIndex(): number {
-    return this.currentIndex;
+  public getCurrentId(): number {
+    return this.currentId;
   }
 }
 
