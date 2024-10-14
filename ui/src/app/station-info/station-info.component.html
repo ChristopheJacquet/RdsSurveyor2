@@ -140,9 +140,9 @@
   </mat-tab>
   <mat-tab label="RT">
     <mat-list role="list">
-      <mat-list-item role="listitem" *ngFor="let msg of getRThistory()">
+      <mat-list-item role="listitem" class="rt-item" *ngFor="let msg of getRThistory()">
         <div>{{ msg.rt }}</div>
-        <div *ngIf="msg.rtPlus != null">{{ msg.rtPlus }}</div>
+        <div *ngIf="msg.rtPlus != null" class="rtplus-tags">{{ msg.rtPlus }}</div>
       </mat-list-item>
     </mat-list>    
   </mat-tab>
