@@ -1003,6 +1003,15 @@ export function parse_group_rtplus(block: Uint16Array, ok: boolean[], log: LogMe
 		: null;
 
 	// Actions.
+	if ((item_running != null) && (item_toggle != null)) {
+		log.add(`RT+ item_toggle=${item_toggle ? '1': '0'} item_running=${item_running ? '1': '0'}`);
+	}
+	if ((content_type_1 != null) && (length_1 != null) && (start_1 != null)) {
+		log.add(`Tag 1: type=${content_type_1}, start=${start_1}, length=${length_1}`);
+	}
+	if ((content_type_2 != null) && (length_2 != null) && (start_2 != null)) {
+		log.add(`Tag 2: type=${content_type_2}, start=${start_2}, length=${length_2}`);
+	}
 	if ((content_type_1 != null) && (length_1 != null) && (start_1 != null) && (station != null)) {
 		station.rt_plus_app.setTag(content_type_1, start_1, length_1);
 	}
@@ -1077,6 +1086,16 @@ export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], l
 		: null;
 
 	// Actions.
+	log.add(`DAB xref`);
+	if ((variant != null)) {
+		log.add(`v=${variant}`);
+	}
+	if ((info != null)) {
+		log.add(`info=${info.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
+	if ((sid != null)) {
+		log.add(`sid=${sid.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
 	if ((variant != null)) {
 		switch (variant) {
 			case 0:

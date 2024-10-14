@@ -22,6 +22,10 @@ bitstruct group_rtplus(station: Station) {
 } action {
   station.rt_plus_app.setTag(content_type_1, start_1, length_1)
   station.rt_plus_app.setTag(content_type_2, start_2, length_2)
+} log {
+  "RT+ item_toggle={item_toggle:bool} item_running={item_running:bool}"
+  "Tag 1: type={content_type_1:u}, start={start_1:u}, length={length_1:u}"
+  "Tag 2: type={content_type_2:u}, start={start_2:u}, length={length_2:u}"
 }
 
 # ETSI standard EN 301700 describes a way to cross-reference DAB (aka Eureka
@@ -75,4 +79,9 @@ bitstruct group_dabxref_service(station: Station) {
       station.dab_cross_ref_app.addServiceLinkageInfo(info, sid)
     }
   }
+} log {
+  "DAB xref"
+  "v={variant:u}"
+  "info={info:04x}"
+  "sid={sid:04x}"
 }
