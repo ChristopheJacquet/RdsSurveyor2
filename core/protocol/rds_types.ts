@@ -232,8 +232,12 @@ export class StationImpl implements Station {
   }
 
 	public addAfPair(a: number, b: number) {
+    // If two filler codes, we cannot do anything.
+    if (a == 205 && b == 205) {
+      return;
+    }
 		if (isAfListLengthIndicator(a)) {
-			if (b >= 0 && b <= 205) {
+			if (b >= 0 && b < 205) {
 				const afList = this.afLists.get(b);
 				if (afList == undefined) {
 					this.currentAfList = new AFList(b);
@@ -243,12 +247,15 @@ export class StationImpl implements Station {
         }
 			}
 		} else {
-			if(a >= 0 && a <= 205 && b >= 0 && b <= 205) {
+			if (a >= 0 && a <= 205 && b >= 0 && b <= 205) {
         if (this.currentAfList == null || !this.currentAfList.addPair(a, b)) {
 					// This means that the method addPair has determined that
 					// the new AF pair cannot belong to the existing list.
-					// So create a new list.
-					this.currentAfList = new AFList(-1);
+					// So create a new list. Use one of (a, b) that is not 205 (the
+          // filler code). This is always the case, as the case where both a
+          // and b are the filler code has been proceeded at the beginning of
+          // the method.
+					this.currentAfList = new AFList(a == 205 ? b : a);
 					this.currentAfList.addPair(a, b);
 				}
 			}
