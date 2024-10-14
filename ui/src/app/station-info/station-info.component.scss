@@ -37,6 +37,7 @@
 
 .infogrid-title {
   padding-left: 3px;
+  padding-right: 3px;
 }
 
 .infogrid-value.infogrid-chips {
@@ -95,4 +96,19 @@
 .rtplus-tags {
   margin-left: 3em;
   color: #005cbb;
+}
+
+.dynamic-ps-title {
+  text-align: right;
+}
+
+.dynamic-ps-parent {
+  // The element needs to be positioned so that its child .dynamic-ps can be
+  // absolutely positioned.
+  position: relative;
+}
+
+.dynamic-ps {
+  position: absolute;
+  right: 0;
 }
