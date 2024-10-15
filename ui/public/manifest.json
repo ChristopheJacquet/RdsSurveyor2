@@ -1,0 +1,28 @@
+{
+  "name": "RDS Surveyor",
+  "description": "Radio Data System protocol decoder and analyzer",
+  "icons": [
+    {
+      "src": "icon_512.svg",
+      "type": "image/svg",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icon_144.png",
+      "type": "image/png",
+      "sizes": "144x144"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "lang": "en-us",
+  "screenshots" : [
+    {
+      "src": "screenshot_wide.png",
+      "sizes": "1621x1065",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Decoding recorded RDS data"
+    }
+  ]
+}
