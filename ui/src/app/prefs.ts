@@ -8,7 +8,10 @@ export class Pref<T> {
   }
 
   init() {
-    this.value = JSON.parse(localStorage[this.keyName]) || this.value;
+    const storedValue = localStorage[this.keyName];
+    if (storedValue != undefined) {
+      this.value = JSON.parse(storedValue);
+    }
   }
 
   setValue(value: T) {
