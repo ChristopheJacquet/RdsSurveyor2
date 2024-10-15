@@ -302,7 +302,7 @@ export class StationImpl implements Station {
   }
 
   public getISOCountryCode(): string {
-    if (this.pi == undefined || this.ecc == undefined) {
+    if (this.pi == undefined || this.ecc == undefined || this.ecc == 0) {
       return '';
     }
 
