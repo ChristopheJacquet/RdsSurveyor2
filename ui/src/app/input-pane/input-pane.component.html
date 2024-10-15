@@ -1,7 +1,7 @@
 <mat-tab-group class="input_tabs">
   <mat-tab label="File playback">
     <div class="playback-speed-container">
-      <mat-button-toggle-group #playbackSpeed name="playbackSpeed" value="fast"
+      <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [value]="prefPlaybackSpeed.value"
           (change)="setPlaybackSpeed($event)">
         <mat-button-toggle value="fast">Fast</mat-button-toggle>
         <mat-button-toggle value="realtime">Real time</mat-button-toggle>

@@ -10,6 +10,7 @@ import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../.
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator } from "../../../../core/signals/baseband";
+import { Pref } from '../prefs';
 
 @Component({
   selector: 'app-input-pane',
@@ -45,6 +46,9 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   constellationDiagramWidth: number = 0;
   constellationDiagramHeight: number = 0;
 
+  prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
+  prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
+
   public ngAfterViewInit() {
     // Initialize block error rate graph.
     const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
@@ -64,6 +68,13 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     this.constellationDiagramWidth = diagramEl.width;
     this.constellationDiagramHeight = diagramEl.height;
     return this.constellationDiagramCx;
+  }
+
+  public ngOnInit() {
+    this.prefPlaybackSpeed.init();
+    this.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
+
+    this.prefTunedFrequency.init();
   }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
@@ -315,6 +326,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   setPlaybackSpeed(event: any) {
     this.realtimePlayback = event.value == "realtime";
+    this.prefPlaybackSpeed.setValue(event.value);
   }
 
   sendDemoGroups() {
@@ -343,11 +355,12 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       this.dongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
   
       await this.dongle.init();
-      await this.dongle.tune(99900);
+      await this.dongle.tune(this.prefTunedFrequency.value);
     }
   }
 
   async processRdsReportEvent(event: RdsReportEvent) {
+    this.prefTunedFrequency.setValue(event.freq);
     this.frequency = event.freq;
     if (event.type == RdsReportEventType.GROUP 
       && event.ok != undefined && event.blocks != undefined) {
@@ -377,6 +390,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       if(newFreq < 87500) newFreq = 108000;
       this.dongle.tune(newFreq);
       this.frequency = newFreq;
+      this.prefTunedFrequency.setValue(newFreq);
     }
   }
 

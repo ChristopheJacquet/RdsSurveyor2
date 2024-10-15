@@ -4,6 +4,7 @@ import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatListModule} from '@angular/material/list'; 
 import {MatTabsModule} from '@angular/material/tabs'; 
 import { HexPipe } from '../hex.pipe';
+import { Pref } from '../prefs';
 import { StationImpl } from '../../../../core/protocol/rds_types';
 
 @Component({
@@ -17,9 +18,16 @@ export class StationInfoComponent {
   @Input() station!: StationImpl;
   group_ids = Array(16).fill(0).map((x,i)=>i);
 	rdsVariant: RdsVariant = RdsVariant.RDS;
+	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
+
+	ngOnInit() {
+		this.prefRdsVariant.init();
+		this.rdsVariant = this.prefRdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+	}
 
 	setRdsVariant(event: any) {
     this.rdsVariant = event.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+		this.prefRdsVariant.setValue(event.value);
 	}
 
 	rdsPtyLabels = new Array<string>(

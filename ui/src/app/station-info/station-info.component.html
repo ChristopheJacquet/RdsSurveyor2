@@ -1,5 +1,5 @@
 <div class="station-options">
-  <mat-button-toggle-group name="rdsVariant" value="rds"
+  <mat-button-toggle-group name="rdsVariant" [value]="prefRdsVariant.value"
       (change)="setRdsVariant($event)">
     <mat-button-toggle value="rds">RDS</mat-button-toggle>
     <mat-button-toggle value="rbds">RBDS</mat-button-toggle>
