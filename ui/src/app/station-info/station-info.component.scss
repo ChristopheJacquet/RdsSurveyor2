@@ -7,6 +7,7 @@
   display: flex;
   flex-flow: column;
   overflow-x: hidden; // Prevents UI from growing and having a horizontal scrollbar.
+  position: relative; // So children can be positioned absolutely with respect to it.
 }
 .infogrid {
   margin: 0 auto;
@@ -79,9 +80,14 @@
   display: flex;
 }
 
+.app-icon {
+  position: absolute;
+  top: 2px;
+}
+
 .app-title-box {
   flex: 1;
-  margin-left: 30px;
+  margin-left: 100px;
 }
 
 .app-title {
