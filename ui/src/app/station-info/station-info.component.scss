@@ -6,6 +6,7 @@
   border-radius: 10px;
   display: flex;
   flex-flow: column;
+  overflow-x: hidden; // Prevents UI from growing and having a horizontal scrollbar.
 }
 .infogrid {
   margin: 0 auto;
@@ -83,6 +84,10 @@
   overflow: auto;
 }
 
+::ng-deep .mat-mdc-tab-body-wrapper {
+  height: 100%;
+}
+
 .group-log {
   font-family: "Roboto Mono", monospace;
   letter-spacing: -0.05em;
@@ -96,6 +101,10 @@
 .rtplus-tags {
   margin-left: 3em;
   color: #005cbb;
+
+  span {
+    margin-right: 1.5em;
+  }
 }
 
 .dynamic-ps-title {

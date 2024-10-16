@@ -156,7 +156,7 @@ export enum RdsVariant {
 class RtEntry {
 	constructor(
 		public rt: string,
-		public rtPlus: string | null) {};
+		public rtPlus: Array<string> | null) {};
 }
 
 const WELL_KNOWN_ODAS = new Map<number, string>([

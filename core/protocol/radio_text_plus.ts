@@ -123,15 +123,15 @@ export class RtPlusAppImpl implements Oda, RtPlusApp {
 		this.history.push(new RTPlusItem(textId, type, start, length));
 	}
 
-	getHistoryEntry(rtEntry: RdsStringHistoryEntry): string {
-		let res = "";
+	getHistoryEntry(rtEntry: RdsStringHistoryEntry): Array<string> {
+		let res = new Array<string>();
 
     for(let i of this.history) {
       if(i.textId == rtEntry.id) {
         // Handle the case when the currently received RT string is too short.
         const endIndex = Math.min(i.start + i.length + 1, rtEntry.message.length);
 
-        res += `${classNames[i.type]} = "${rtEntry.message.substring(i.start, endIndex)}"    `;
+        res.push(`${classNames[i.type]} = "${rtEntry.message.substring(i.start, endIndex)}" `);
       }
     }
 		
