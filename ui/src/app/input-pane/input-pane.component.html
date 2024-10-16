@@ -19,7 +19,7 @@
   </mat-tab>
   <mat-tab label="USB dongle">
     <div class="usb-connect-pane">
-      <button mat-stroked-button [disabled]="dongle != null" (click)="connectSi470x()">Connect Si 470x</button>
+      <button mat-stroked-button (click)="connectOrCloseSi470x()">{{ si470xActive ? "Disconnect" : "Connect" }} Si 470x</button>
     </div>
 
     <div class="tuner-pane">

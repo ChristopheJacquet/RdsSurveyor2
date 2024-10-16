@@ -31,7 +31,8 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
   realtimePlayback: boolean = false;
-  dongle: Si470x | null = null;
+  si470xDongle: Si470x | null = null;
+  si470xActive = false;
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
@@ -337,8 +338,19 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       F201 040F 474E 5220`);
   }
 
-  async connectSi470x() {
-    if ("hid" in navigator) {
+  async connectOrCloseSi470x() {
+    if (this.si470xActive) {
+      // Already running: close it.
+      if (this.si470xDongle != null) {
+        await this.si470xDongle.close();
+      }
+      this.si470xActive = false;
+      this.frequency = -1;
+      return;
+    }
+
+    // If dongle not initialized yet, try to do so.
+    if (this.si470xDongle == null && "hid" in navigator) {
       console.log("WebHID API is supported.");
 
       const devices = await navigator.hid.getDevices();
@@ -352,10 +364,14 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       }
   
       this.synchronizer = null;
-      this.dongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
-  
-      await this.dongle.init();
-      await this.dongle.tune(this.prefTunedFrequency.value);
+      this.si470xDongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
+    }
+
+    if (this.si470xDongle != null) {
+      await this.si470xDongle.init();
+      await this.si470xDongle.tune(this.prefTunedFrequency.value);
+
+      this.si470xActive = true;
     }
   }
 
@@ -372,23 +388,23 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   seekUp() {
-    if (this.dongle != null) {
-      this.dongle.seek(false, 1);
+    if (this.si470xDongle != null) {
+      this.si470xDongle.seek(false, 1);
     }
   }
   
   seekDown() {
-    if (this.dongle != null) {
-      this.dongle.seek(false, 0);
+    if (this.si470xDongle != null) {
+      this.si470xDongle.seek(false, 0);
     }
   }
 
   tuneBy(frequencyDiff: number) {
-    if (this.dongle != null) {
+    if (this.si470xDongle != null) {
       let newFreq = this.frequency + frequencyDiff;
       if(newFreq > 108000) newFreq = 87500;
       if(newFreq < 87500) newFreq = 108000;
-      this.dongle.tune(newFreq);
+      this.si470xDongle.tune(newFreq);
       this.frequency = newFreq;
       this.prefTunedFrequency.setValue(newFreq);
     }

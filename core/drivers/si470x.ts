@@ -214,6 +214,12 @@ export class Si470x {
       default:
       case ChannelSpacing.CHANNEL_SPACING_100_KHZ: this.channelSpacingKhz = 100; break;
     }
+
+    // The event listener is added in the constructor, otherwise it could get
+    // added several times, leading to groups being processed multiple times.
+    this.device.addEventListener(
+      "inputreport",
+      (event: HIDInputReportEvent) => this.processRdsReport(event));
   }
 
   channelToFrequency(channel: number) {
@@ -244,8 +250,11 @@ export class Si470x {
     await this.setRegister(SYSCONFIG3,
       6 << 4 |    // bits 07..04: Seek SNR Threshold
       10);        // bits 03..00: Seek FM Impulse Detection Threshold
+  }
 
-    this.device.addEventListener("inputreport", (event: HIDInputReportEvent) => this.processRdsReport(event));
+  async close() {
+    await this.device.close();
+    this.device.removeEventListener("inputreport", this.processRdsReport);
   }
 
   async setRegister(regNum: number, regVal: number) {
