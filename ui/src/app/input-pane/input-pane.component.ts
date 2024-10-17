@@ -33,6 +33,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   realtimePlayback: boolean = false;
   si470xDongle: Si470x | null = null;
   si470xActive = false;
+  inputActive = false;  // True if any input source is active. Disable the others until it stops.
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
@@ -297,28 +298,36 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async handleFileDrop(files: FileList) {
+    if (this.inputActive) {
+      // Don't play a file back if input is already active.
+      return;
+    }
+
+    this.inputActive = true;
+    console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
     for (let f of Array.from(files)) {
       const header = await f.slice(0, 16).arrayBuffer();
       switch (guessFileType(new Uint8Array(header))) {
         case FileType.HEX_GROUPS: {
           const text = await f.text();
-          this.processTextualGroups(text);
+          await this.processTextualGroups(text);
           break;
         }
 
         case FileType.UNSYNCED_BINARY_RDS: {
           const bytes = await f.arrayBuffer();
-          this.processBinaryGroups(new Uint8Array(bytes));
+          await this.processBinaryGroups(new Uint8Array(bytes));
           break;
         }
 
         case FileType.BASEBAND_WAV: {
           const buffer = await f.arrayBuffer();
-          this.processBasebandWav(buffer);
+          await this.processBasebandWav(buffer);
           break;
         }
       }
     }
+    this.inputActive = false;
   }
 
   onFileSelect(event: any) {
@@ -339,12 +348,19 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async connectOrCloseSi470x() {
+    console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
+    if (this.inputActive && !this.si470xActive) {
+      console.log("Another input source is active, not connecting or deconnecting the Si470x dongle.");
+      return;
+    }
+
     if (this.si470xActive) {
       // Already running: close it.
       if (this.si470xDongle != null) {
         await this.si470xDongle.close();
       }
       this.si470xActive = false;
+      this.inputActive = false;
       this.frequency = -1;
       return;
     }
@@ -372,6 +388,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       await this.si470xDongle.tune(this.prefTunedFrequency.value);
 
       this.si470xActive = true;
+      this.inputActive = true;
     }
   }
 

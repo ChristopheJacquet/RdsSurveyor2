@@ -15,22 +15,29 @@
 }
 
 .dropzone {
-  height: 100%;
   background-color: #e8ecf9;
   padding: 2em 1em;
   margin: 10px;
   text-align: center;
+  
   // Vertical center text.
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+
   cursor: default;
-  display: block;
   border-radius: 20px;
   border: 2px dashed #555;
+  height: 50px;
 }
 
 .dragging {
   background-color: #c5d0f3;
+}
+
+.disabled {
+  background-color: #CCC;
 }
 
 input {

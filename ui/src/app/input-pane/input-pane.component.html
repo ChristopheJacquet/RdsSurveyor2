@@ -9,17 +9,28 @@
     </div>
     <div
       class="dropzone"
-      [class.dragging]="isDragging"
-      (click)="fileInput.click()"
-      (drop)="onDrop($event)"
-      (dragover)="onDragOver($event)">
-        Drop file here or<br>click for selection dialog.
+      [class.dragging]="isDragging && !inputActive"
+      [class.disabled]="inputActive"
+      (click)="inputActive ? '' : fileInput.click()"
+      (drop)="inputActive ? '' : onDrop($event)"
+      (dragover)="inputActive ? '' : onDragOver($event)">
+        <ng-content *ngIf="inputActive; else dropPrompt">
+          Wait for current input to complete.
+        </ng-content>
+        <ng-template #dropPrompt>
+          Drop file here or<br>click for selection dialog.
+        </ng-template>
         <input #fileInput type="file" (change)="onFileSelect($event);">
     </div>
   </mat-tab>
   <mat-tab label="USB dongle">
     <div class="usb-connect-pane">
-      <button mat-stroked-button (click)="connectOrCloseSi470x()">{{ si470xActive ? "Disconnect" : "Connect" }} Si 470x</button>
+      <button
+        mat-stroked-button
+        [disabled]="inputActive && !si470xActive"
+        (click)="connectOrCloseSi470x()">
+          {{ si470xActive ? "Disconnect" : "Connect" }} Si 470x
+      </button>
     </div>
 
     <div class="tuner-pane">
