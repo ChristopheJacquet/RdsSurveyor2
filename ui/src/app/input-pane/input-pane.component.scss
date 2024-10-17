@@ -10,8 +10,13 @@
 }
 
 .playback-speed-container {
-  padding: 10px;
-  text-align: center;
+  padding: 10px 10px;
+  display: flex;
+  overflow: hidden;
+}
+
+.playback-speed-expander {
+  flex: 1;
 }
 
 .dropzone {
@@ -19,7 +24,7 @@
   padding: 2em 1em;
   margin: 10px;
   text-align: center;
-  
+
   // Vertical center text.
   display: flex;
   flex-direction: column;

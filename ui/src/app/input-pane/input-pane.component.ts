@@ -33,7 +33,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   realtimePlayback: boolean = false;
   si470xDongle: Si470x | null = null;
   si470xActive = false;
-  inputActive = false;  // True if any input source is active. Disable the others until it stops.
+  // True if any input source is active. Disable the others until it stops.
+  inputActive = false;
+  // Normally set to true, except during file playback. Set to true to request stopping playback.
+  stoppingPlayback = true;
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
@@ -221,6 +224,9 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
         ok.push(!Number.isNaN(val));
       }
       this.emitGroup(Uint16Array.from(bl), ok);
+      if (this.stoppingPlayback) {
+        return;
+      }
       // Duration of a group (1000 ms / (1187.5/104)).
       await timing.enforceInterval(this.realtimePlayback ? 87 : 0);
     }
@@ -241,6 +247,9 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       remainingLength -= 8;
       this.synchronizer.addBits(dataSlice);
 
+      if (this.stoppingPlayback) {
+        return;
+      }
       // Duration of a slice of 8*8 bits.
       await timing.enforceInterval(this.realtimePlayback ? 1000 / (1187.5/(8*8)) : 0);
     }
@@ -272,6 +281,11 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
     for (let i=0; i<samples.length; i++) {
       this.demodulator.addSample(samples[i]);
+
+      if (this.stoppingPlayback) {
+        return;
+      }
+
       if (i % blockSize == 0) {
         await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
         this.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
@@ -304,6 +318,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
 
     this.inputActive = true;
+    this.stoppingPlayback = false;
     console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
     for (let f of Array.from(files)) {
       const header = await f.slice(0, 16).arrayBuffer();
@@ -328,6 +343,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       }
     }
     this.inputActive = false;
+    this.stoppingPlayback = true;
   }
 
   onFileSelect(event: any) {
@@ -337,6 +353,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   setPlaybackSpeed(event: any) {
     this.realtimePlayback = event.value == "realtime";
     this.prefPlaybackSpeed.setValue(event.value);
+  }
+
+  stopPlayback() {
+    this.stoppingPlayback = true;
   }
 
   sendDemoGroups() {

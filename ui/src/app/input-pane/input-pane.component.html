@@ -6,6 +6,10 @@
         <mat-button-toggle value="fast">Fast</mat-button-toggle>
         <mat-button-toggle value="realtime">Real time</mat-button-toggle>
       </mat-button-toggle-group>
+      <div class="playback-speed-expander"></div>
+      <button mat-icon-button [disabled]="stoppingPlayback" title="Stop playback" (click)="stopPlayback()">
+        <mat-icon>stop_circle</mat-icon>
+      </button>
     </div>
     <div
       class="dropzone"
