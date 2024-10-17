@@ -1,16 +1,18 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
-import {MatListModule} from '@angular/material/list'; 
-import {MatTabsModule} from '@angular/material/tabs'; 
+import {MatListModule} from '@angular/material/list';
+import {MatTabsModule} from '@angular/material/tabs';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { Pref } from '../prefs';
 import { StationImpl } from '../../../../core/protocol/rds_types';
+import { AboutComponent } from '../about/about.component';
 
 @Component({
   selector: 'app-station-info',
   standalone: true,
-  imports: [CommonModule, HexPipe, MatButtonToggleModule, MatListModule, MatTabsModule],
+  imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatListModule, MatTabsModule],
   templateUrl: './station-info.component.html',
   styleUrl: './station-info.component.scss'
 })
@@ -19,6 +21,7 @@ export class StationInfoComponent {
   group_ids = Array(16).fill(0).map((x,i)=>i);
 	rdsVariant: RdsVariant = RdsVariant.RDS;
 	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
+	readonly aboutDialog = inject(MatDialog);
 
 	ngOnInit() {
 		this.prefRdsVariant.init();
@@ -146,6 +149,10 @@ export class StationInfoComponent {
 		return WELL_KNOWN_ODAS.get(aid) || 'Unknown';
 	}
 	
+	showAbout() {
+		const dialog = this.aboutDialog.open(AboutComponent);
+		return false;
+	}
 }
 
 export enum RdsVariant {
