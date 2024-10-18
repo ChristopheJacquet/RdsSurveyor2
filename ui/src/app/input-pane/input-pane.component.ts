@@ -210,7 +210,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
     const timing = new Timing();
     for (let l of s.split('\n')) {
-      l = l.split('@')[0];
+      l = l.split(/[@%]/)[0];
       const blocks = l.trim().split(' ');
       if (blocks.length != 4) {
         console.log("Unrecognized line: ", l);
