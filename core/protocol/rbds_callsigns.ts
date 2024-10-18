@@ -1,6 +1,6 @@
 const canadianPrefixes: Array<string> = ["CF", "CH", "CI", "CJ", "CK"];
 const canadianBase = 49152 + 257;
-const canadianTop = canadianBase + 5*26*27 + 5*26*27/255;		// exclusive
+const canadianTop = Math.floor(canadianBase + 5*26*27 + 5*26*27/255);		// exclusive
 	
 const usKoffset = 4096;
 const usWoffset = usKoffset + 26*26*26;	// 21672
@@ -153,7 +153,7 @@ export function callsign(pi: number): string | null {
     let suffix = '';
     for (let i = 0; i<3; i++) {
       suffix = String.fromCharCode(65 /* 'A' */ + (threeLetterCode % 26)) + suffix;
-      threeLetterCode /= 26;
+      threeLetterCode = Math.floor(threeLetterCode / 26);
     }
     
     return prefix + suffix;
@@ -162,10 +162,10 @@ export function callsign(pi: number): string | null {
   } else if (pi >= canadianBase && pi < canadianTop) {
     // Standard Canadian
     const incAndShift = pi - canadianBase;
-    const shift = incAndShift / 256;
+    const shift = Math.floor(incAndShift / 256);
     const increment = incAndShift - shift;
-    const prefix = increment / (26*27);
-    const third = (increment - 26*27*prefix) / 27;
+    const prefix = Math.floor(increment / (26*27));
+    const third = Math.floor((increment - 26*27*prefix) / 27);
     const fourth = increment - 26*27*prefix - third * 27;
     
     let callsign: string = canadianPrefixes[prefix];
