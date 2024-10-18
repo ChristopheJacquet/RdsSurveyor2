@@ -426,10 +426,13 @@ export abstract class RdsString {
         this.currentId++;
                   
         const prev = this.tickHistory.get(message);
-        this.tickHistory.set(message, this.currentTicks + (prev == null ? 0 : prev));
+        this.tickHistory.set(message, this.currentTicks + (prev ? prev : 0));
 
         // ... And reset the message buffer.
         this.currentText.fill(0);
+        this.currentTicks = 0;
+
+        //console.log(this.tickHistory);
       }
     }
     
