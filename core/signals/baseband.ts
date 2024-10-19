@@ -1,34 +1,66 @@
-import { RdsReportEventListener } from "../drivers/input";
 import { BitStreamSynchronizer } from "./bitstream";
 
-// Credits go to Marc Lichtman, the author of the awesome Software-Defined-Radio
-// textbook PySDR. The Demodulator code in this file is strongly inspired by the
-// RDS end-to-end example in PySDR.
-// PySDR: https://pysdr.org/  -  https://github.com/777arc/PySDR
-// RDS end-to-end example in PySDR: https://pysdr.org/content/rds.html
+// This file is mostly a port of the code in RDS Surveyor v1.
+// https://github.com/ChristopheJacquet/RdsSurveyor/blob/master/RDSSurveyor/src/eu/jacquet80/rds/input/AudioBitReader.java
+// Copyright (c) 2015 Michael von Glasow
+// Portions Copyright (c) Oona Räisänen OH2EIQ (windyoona@gmail.com)
+// Used under the GNU Lesser Public License.
+
+// Filter coefficients.
+const LP_2400_COEFFS_A = [
+  1.0, -4.837342474770194, 9.362520173574179, -9.062853383573557,
+  4.387535946426435, -0.8498599655283411];
+const LP_2400_COEFFS_B = [
+  9.254016278964494E-9, 4.627008139482247E-8, 9.254016278964494E-8,
+  9.254016278964494E-8, 4.627008139482247E-8, 9.254016278964494E-9];
+const LP_PLL_COEFFS_A = [1.0, -0.9461821078275034];
+const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
+
+const PLL_BETA = 50;
+
+// Number of out symbols kept (for drawing the constellation diagram).
+const SYNC_OUT_LENGTH = 100;
 
 export class Demodulator {
-  sampleIndex = 0;
-  sampleRate = 250000;
-  last: Buffer = new Buffer(LP_FILTER_COEFFS.length);
+  // Subcarrier frequency.
+  fsc = FC_0;
 
-  sps = this.sampleRate / 1187.5;       // Samples per symbol.
-  mu = 0.01                             // Phase estimate; that's the sampleIndex we read symbols at.
-  outI: number[] = [0, 0];              // Output "soft symbols", real part.
-  outQ: number[] = [0, 0];              // Output "soft symboles", imaginary part.
-  outRailI: number[] = [0, 0, 0];       // Past values, real part.
-  outRailQ: number[] = [0, 0, 0];       // Past values, imaginary part.
+  // Subcarrier phase.
+  subcarr_phi = 0;
+  
+  // Clock phase offset.
+  clock_offset = 0;
+  
+  // Previous RDS clock.
+  prevclock = 0;
+
+  // Previous baseband sample (on the I axis).
+  prev_bb = 0;
+  
+  acc = 0;
+  
+  numsamples = 0;
+
+	// Demodulated sample from RDS data stream (NRZ-M encoded).
+	private dbit = 0;
+
+  // TODO: Make this a parameter.
+  sampleRate = 250000;
+  decimate = Math.floor(this.sampleRate / 7125);
+
+	// Used by biphase().
+	private prev_acc = 0;
+	private counter = 0;
+	private reading_frame = 0;
+	private tot_errs = [0, 0];
+
+  lp2400iFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
+  lp2400qFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
+  lpPllFilter = new IirFilter(LP_PLL_COEFFS_A, LP_PLL_COEFFS_B);
+
   syncOutI: number[] = [];
   syncOutQ: number[] = [];
 
-  // Costas loop.
-  costasPhase = 0;
-  costasFreq = 0;
-  costasAlpha = 8.0;
-  costasBeta = 0.02;
-
-  // Bit stream.
-  prevBit: boolean = false;
   bitstreamSynchronizer: BitStreamSynchronizer;
 
   constructor(bitstreamSynchronizer: BitStreamSynchronizer) {
@@ -36,158 +68,164 @@ export class Demodulator {
   }
 
   addSample(sample: number) {
-    const carrierFreq = 57000;
-    const demI = sample * Math.cos(2 * Math.PI * carrierFreq / this.sampleRate * this.sampleIndex);
-    const demQ = sample * Math.sin(2 * Math.PI * carrierFreq / this.sampleRate * this.sampleIndex);
+    // Subcarrier downmix & phase recovery.
+    this.subcarr_phi += 2 * Math.PI * this.fsc / this.sampleRate;
+    const subcarr_bb_i = this.lp2400iFilter.step(sample /* / 32768.0*/ * Math.cos(this.subcarr_phi));
+    const subcarr_bb_q = this.lp2400qFilter.step(sample /* / 32768.0*/ * Math.sin(this.subcarr_phi));
 
-    this.last.addSample(demI, demQ);
-    let [inI, inQ] = this.last.applyFilter(LP_FILTER_COEFFS);
-    let symbolSampled = false;
+    const d_phi_sc = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);   // Subcarrier phase error.
+    this.subcarr_phi -= PLL_BETA * d_phi_sc;
+    this.fsc -= 0.5 * PLL_BETA * d_phi_sc;
 
-    // Is it time to sample a new symbol? In this section, we not only read the
-    // symbol, but also update the control loops, decode bits and send them to
-    // the bitstream synchronize.
-    if (this.sampleIndex == Math.floor(this.mu)) {
-      /*** Symbol sampling using the Mueller and Muller algorithm. ***/
-      // Grab sample.
-      this.outI.push(inI);
-      this.outQ.push(inQ);
-      symbolSampled = true;
-
-      this.outRailI.shift();
-      this.outRailI.push(inI > 0 ? 1 : 0);
-      this.outRailQ.shift();
-      this.outRailQ.push(inQ > 0 ? 1 : 0);
-
-      // Note: we only need the real part.
-      const xI = (this.outRailI[2] - this.outRailI[0]) * this.outRailI[1]
-        - (this.outRailQ[2] - this.outRailQ[0]) * this.outRailQ[1];
-      
-      // Note: we only need the real part.
-      const yI = (this.outI[this.outI.length-1] - this.outI[this.outI.length-1-2]) * this.outRailI[1]
-        - (this.outQ[this.outQ.length-1] - this.outQ[this.outQ.length-1-2]) * this.outRailQ[1];
-
-      const mm_val = yI - xI;
-      this.mu += this.sps + 0.01 * mm_val;
-
-      // We're not removing what we have "consumed" of mu because we do not
-      // sample symbols at integer number of samples, so for the time being we
-      // keep the total phase in mu. Therefore mu *is the index* of the next
-      // sample.
-
-      /*** Fine sync using a Costas loop. ***/
-      const cosPhase = Math.cos(this.costasPhase);
-      const sinPhase = Math.sin(this.costasPhase);
-      const costasOutI = inI * cosPhase + inQ * sinPhase;
-      const costasOutQ = inQ * cosPhase - inI * sinPhase;
-
-      const error = costasOutI * costasOutQ;
-
-      this.costasFreq += (this.costasBeta * error);
-
-      this.costasPhase += this.costasFreq + (this.costasAlpha * error);
-
-      while (this.costasPhase >= 2 * Math.PI) {
-        this.costasPhase -= 2 * Math.PI;
+    // Decimate band-limited signal.
+    if (this.numsamples % this.decimate == 0) {
+      // Reset subcarrier frequency if it is outside tolerance range.
+      if ((this.fsc > FC_0 + FC_TOLERANCE) || (this.fsc < FC_0 - FC_TOLERANCE)) {
+        this.fsc = FC_0;
       }
 
-      while (this.costasPhase < 0) {
-        this.costasPhase += 2 * Math.PI;
+      // 1187.5 Hz clock.
+      const clock_phi = this.subcarr_phi / 48.0 + this.clock_offset;   // Clock phase.
+      const lo_clock  = (clock_phi % (2 * Math.PI)) < Math.PI ? 1 : -1;
+
+      // Clock phase recovery.
+      if (sign(this.prev_bb) != sign(subcarr_bb_i)) {
+        let d_cphi = clock_phi % Math.PI;   // Clock phase error.
+        if (d_cphi >= (Math.PI / 2)) d_cphi -= Math.PI;
+        this.clock_offset -= 0.005 * d_cphi;
       }
 
-      this.syncOutI.push(costasOutI);
-      this.syncOutQ.push(costasOutQ);
-      if (this.syncOutI.length > SYNC_OUT_LENGTH) {
-        this.syncOutI.shift();
-        this.syncOutQ.shift();
+      // Biphase symbol integrate & dump.
+      this.acc += subcarr_bb_i * lo_clock;
+
+      if (sign(lo_clock) != sign(this.prevclock)) {
+        this.biphase(this.acc);
+        this.acc = 0;
+
+        this.syncOutI.push(subcarr_bb_i);
+        this.syncOutQ.push(subcarr_bb_q);
+        if (this.syncOutI.length > SYNC_OUT_LENGTH) {
+          this.syncOutI.shift();
+          this.syncOutQ.shift();
+        }
       }
 
-      /*** Differential decoding and output to bitstream synchronizer. ***/
-      const bit = costasOutI > 0;
-      const diffDecodedBit = bit != this.prevBit;
-      this.prevBit = bit;
+      this.prevclock = lo_clock;
+      this.prev_bb = subcarr_bb_i;
+    }
+    
+    this.numsamples++;
+  }
 
-      this.bitstreamSynchronizer.addBit(diffDecodedBit);
+	/**
+	 * Performs differential decoding and reports the new bit as received.
+	 * 
+	 * @param b The new bit received. If it is different from the last bit that was received, 1 is
+	 * stored, else 0 is stored.
+	 */
+	private differentialDecodeAndReportBit(b: number) {
+    this.bitstreamSynchronizer.addBit((b ^ this.dbit) != 0);
+		this.dbit = b;
+	}
+
+	private biphase(acc: number) {
+		if (sign(acc) != sign(this.prev_acc)) {
+			this.tot_errs[this.counter % 2] ++;
+		}
+
+		if (this.counter % 2 == this.reading_frame) {
+			this.differentialDecodeAndReportBit(sign(acc + this.prev_acc));
+		}
+		if (this.counter == 0) {
+			if (this.tot_errs[1 - this.reading_frame] < this.tot_errs[this.reading_frame]) {
+				this.reading_frame = 1 - this.reading_frame;
+			}
+			this.tot_errs[0] = 0;
+			this.tot_errs[1] = 0;
+		}
+
+		this.prev_acc = acc;
+		this.counter = (this.counter + 1) % 800;
+	}
+}
+
+// The IirFilter class was adapted from
+// https://github.com/chdh/dsp-collection-java/blob/master/src/main/java/biz/source_code/dsp/filter/IirFilter.java
+// Original code copyright 2013 Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland.
+// Used under the GNU Lesser General Public License, V2.1 or later.
+class IirFilter {
+  n1: number;   // Size of input delay line.
+  n2: number;   // Size of output delay line.
+  a: Array<number>;   // A coefficients, applied to output values (negative).
+  b: Array<number>;   // B coefficients, applied to input values.
+  
+  buf1: Array<number>;   // Input signal delay line (ring buffer).
+  buf2: Array<number>;   // Output signal delay line (ring buffer).
+  pos1 = 0;   // Current ring buffer position in buf1.
+  pos2 = 0;   // Current ring buffer position in buf2.
+  
+  /**
+  * Creates an IIR filter.
+  *
+  * @param coeffs
+  *    The A and B coefficients. a[0] must be 1.
+  **/
+  constructor(coeffsA: Array<number>, coeffsB: Array<number>) {
+    if (coeffsA.length < 1 || coeffsB.length < 1 || coeffsA[0] != 1.0) {
+      throw "Invalid coefficients.";
+    }
+    this.a = coeffsA;
+    this.b = coeffsB;
+    this.n1 = coeffsB.length - 1;
+    this.n2 = coeffsA.length - 1;
+    this.buf1 = new Array<number>(this.n1);
+    this.buf1.fill(0);
+    this.buf2 = new Array<number>(this.n2);
+    this.buf2.fill(0);
+  }
+  
+  public step(inputValue: number): number {
+    let acc = this.b[0] * inputValue;
+    for (let j = 1; j <= this.n1; j++) {
+      let p = this.pos1 + this.n1 - j;
+      // Efficient modulo.
+      while (p >= this.n1) {
+        p -= this.n1;
+      }
+      acc += this.b[j] * this.buf1[p];
     }
 
-
-    // At the end.
-    this.sampleIndex++;
-    return [inI, inQ, symbolSampled ? 1.0 : 0.0];
+    for (let j = 1; j <= this.n2; j++) {
+      let p = this.pos2 + this.n2 - j;
+      // Efficient modulo.
+      while (p >= this. n2) {
+        p -= this.n2;
+      }
+      acc -= this.a[j] * this.buf2[p];
+    }
+    
+    if (this.n1 > 0) {
+      this.buf1[this.pos1] = inputValue;
+      this.pos1 = (this.pos1 + 1) % this.n1;
+    }
+    if (this.n2 > 0) {
+      this.buf2[this.pos2] = acc;
+      this.pos2 = (this.pos2 + 1) % this.n2;
+    }
+    return acc;
   }
 }
 
-class Buffer {
-  private length: number;
-  private lastSamplesI: Float32Array;
-  private lastSamplesQ: Float32Array;
-  private index: number;
+// RDS carrier frequency.
+const FC_0 = 57000.0;
 
-  constructor(length: number) {
-    this.length = length;
-    this.lastSamplesI = new Float32Array(length);
-    this.lastSamplesQ = new Float32Array(length);
-    this.index = 0;
-  }
+/** 
+ * Tolerance of RDS subcarrier frequency.
+ * As per the specs, tolerance is +/- 6 Hz. We use twice the value to allow for some tolerance
+ * in the processing chain.
+ */
+const FC_TOLERANCE = 12.0;
 
-  public addSample(sampleI: number, sampleQ: number) {
-    this.lastSamplesI[this.index] = sampleI;
-    this.lastSamplesQ[this.index] = sampleQ;
-    // This could be written: this.index = (this.index + 1) % this.length;
-    // But that is much slower than the following:
-    this.index++;
-    if (this.index >= this.length) {
-      this.index = 0;
-    }
-  }
-
-  public applyFilter(coeffs: Float32Array): Array<number> {
-    let bufferIndex = this.index;
-    let valueI = 0;
-    let valueQ = 0;
-    // Convolve the filter and the last samples.
-    for (let i=0; i<this.length; i++) {
-      valueI += this.lastSamplesI[bufferIndex] * coeffs[i];
-      valueQ += this.lastSamplesQ[bufferIndex] * coeffs[i];
-      bufferIndex++;
-      // This could be written: bufferIndex = (bufferIndex + 1) % this.length;
-      // But that is much slower than the following:
-      if (bufferIndex >= this.length) {
-        bufferIndex = 0;
-      }
-    }
-    return [valueI, valueQ];
-  }
+function sign(a: number) {
+  return (a >= 0 ? 1 : 0);
 }
-
-// Output of scipy.signal.firwin(numtaps=101, cutoff=7.5e3, fs=250000).
-const LP_FILTER_COEFFS = new Float32Array([
-  1.86764843e-19,  9.83021736e-05,  2.03771919e-04,  3.19287123e-04,
-  4.46579244e-04,  5.85559941e-04,  7.33747418e-04,  8.85850463e-04,
-  1.03356064e-03,  1.16559182e-03,  1.26799156e-03,  1.32473211e-03,
-  1.31856985e-03,  1.23214349e-03,  1.04926278e-03,  7.56323340e-04,
-  3.43769689e-04, -1.92480664e-04, -8.49744309e-04, -1.61750179e-03,
-  -2.47663618e-03, -3.39905509e-03, -4.34775486e-03, -5.27736527e-03,
-  -6.13518948e-03, -6.86272804e-03, -7.39764943e-03, -7.67614329e-03,
-  -7.63556865e-03, -7.21728926e-03, -6.36957156e-03, -5.05041150e-03,
-  -3.23015196e-03, -8.93755943e-04,  1.95738909e-03,  5.30424418e-03,
-  9.10955444e-03,  1.33180050e-02,  1.78571240e-02,  2.26389244e-02,
-  2.75622448e-02,  3.25157116e-02,  3.73812192e-02,  4.20377958e-02,
-  4.63657021e-02,  5.02505966e-02,  5.35875964e-02,  5.62850612e-02,
-  5.82679412e-02,  5.94805436e-02,  5.98886000e-02,  5.94805436e-02,
-  5.82679412e-02,  5.62850612e-02,  5.35875964e-02,  5.02505966e-02,
-  4.63657021e-02,  4.20377958e-02,  3.73812192e-02,  3.25157116e-02,
-  2.75622448e-02,  2.26389244e-02,  1.78571240e-02,  1.33180050e-02,
-  9.10955444e-03,  5.30424418e-03,  1.95738909e-03, -8.93755943e-04,
-  -3.23015196e-03, -5.05041150e-03, -6.36957156e-03, -7.21728926e-03,
-  -7.63556865e-03, -7.67614329e-03, -7.39764943e-03, -6.86272804e-03,
-  -6.13518948e-03, -5.27736527e-03, -4.34775486e-03, -3.39905509e-03,
-  -2.47663618e-03, -1.61750179e-03, -8.49744309e-04, -1.92480664e-04,
-  3.43769689e-04,  7.56323340e-04,  1.04926278e-03,  1.23214349e-03,
-  1.31856985e-03,  1.32473211e-03,  1.26799156e-03,  1.16559182e-03,
-  1.03356064e-03,  8.85850463e-04,  7.33747418e-04,  5.85559941e-04,
-  4.46579244e-04,  3.19287123e-04,  2.03771919e-04,  9.83021736e-05,
-  1.86764843e-19]);
-
-// Number of out symbols kept (for drawing the constellation diagram).
-const SYNC_OUT_LENGTH = 100;
