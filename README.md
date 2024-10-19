@@ -1,11 +1,13 @@
 RDS Surveyor 2
 ==============
 
-This is the development repository for the upcoming RDS Surveyor version 2, a versatile Radio Data System decoder.
+This is the development repository for the RDS Surveyor version 2, a versatile Radio Data System decoder. The program is currently in beta.
 
-While the original [RDS Surveyor](https://rds-surveyor.jacquet.xyz/) runs as a local Java application, RDS Surveyor version 2 will run in the browser.
+While the original [RDS Surveyor](https://rds-surveyor.jacquet.xyz/) runs as a local Java application, RDS Surveyor version 2 runs in the browser.
 
-The program is currently under development and it is not (yet) usable. See below for a tentative list of milestones. Please use the original [RDS Surveyor](https://rds-surveyor.jacquet.xyz/) for the time being.
+Your can run RDS Surveyor 2 (beta) in your browser at [rds-surveyor-app.jacquet.xyz](https://rds-surveyor-app.jacquet.xyz).
+
+See the project website for more details: [rds-surveyor.jacquet.xyz](https://rds-surveyor.jacquet.xyz/).
 
 ## Milestones
 
@@ -38,10 +40,15 @@ The program is currently under development and it is not (yet) usable. See below
 * Groups 1A, 1B support.
 * Display the list of ODAs in use.
 
-### Milestone 5
+### Milestone 5 (Reached on 19 Oct 2024)
 
-* New input source: I/Q signal (in WAV file).
 * Traffic info and EON support (notably groups 14A, 14B, 15B).
+* RDS Surveyor is now installable as a Progressive Web App (PWA).
+* New tab with a log of group contents.
+* New tab with a log of traffic events (TA, EON).
+* Lots of UI polishing.
+* The various settings (RDS/RBDS, tuner frequency, etc.) are now remembered across sessions.
+* Lots of bugfixes.
 
 ### Milestone 6
 
@@ -54,9 +61,10 @@ The program is currently under development and it is not (yet) usable. See below
 
 ### Additional tasks
 
-* Display of groups breakdown, groups sequence.
+* Display of groups sequence.
 * Variant support for historical features.
 * RP support.
 * Broadcaster-specific TDC/IH data support: CATRADIO.
 * New input source: clock/data from sound card.
+* New input source: I/Q signal (in WAV file).
 * RDS2 upper streams and ODA support.
