@@ -173,8 +173,11 @@ export class StationImpl implements Station {
     }
   }
 
-  constructor() {
+  constructor(pi?: number) {
     this.reset();
+    if (pi != undefined) {
+      this.pi = pi;
+    }
   }
 
   /**
@@ -674,11 +677,15 @@ class OtherNetworkSwitch extends TrafficEvent {
       const msg = this.eventType == TrafficEventType.START ?
         "Switch now to Other Network" : "Switch back from Other Network";
       
-      const pi = this.otherNetwork.pi == undefined ?
+      const pi = this.otherNetwork.pi == undefined || this.otherNetwork.pi < 0 ?
         '----' : this.otherNetwork.pi.toString(16).toUpperCase().padStart(4, '0');
 
-
-      return `${msg}: PI=${pi} (${this.otherNetwork.getPS()}).`;
+      let eventStr = `${msg}: PI=${pi}`;
+      const onps = this.otherNetwork.getPS();
+      if (onps.length > 0) {
+        eventStr += ` (${this.otherNetwork.getPS()}).`;
+      }
+      return eventStr;
   }
 }
 

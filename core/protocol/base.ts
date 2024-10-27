@@ -660,7 +660,7 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 	if ((pi_on != null)) {
 		elt0 = station.other_networks.get(pi_on);
 		if (elt0 == undefined) {
-			elt0 = new StationImpl();
+			elt0 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt0);
 		}
 	}
@@ -671,7 +671,7 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 	if ((pi_on != null)) {
 		elt1 = station.other_networks.get(pi_on);
 		if (elt1 == undefined) {
-			elt1 = new StationImpl();
+			elt1 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt1);
 		}
 	}
@@ -743,7 +743,7 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], log: LogMe
 	if ((pi_on != null)) {
 		elt2 = station.other_networks.get(pi_on);
 		if (elt2 == undefined) {
-			elt2 = new StationImpl();
+			elt2 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt2);
 		}
 	}
@@ -780,7 +780,7 @@ export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], log: Log
 	if ((pi_on != null)) {
 		elt3 = station.other_networks.get(pi_on);
 		if (elt3 == undefined) {
-			elt3 = new StationImpl();
+			elt3 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt3);
 		}
 	}
@@ -812,7 +812,7 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], log
 	if ((pi_on != null)) {
 		elt4 = station.other_networks.get(pi_on);
 		if (elt4 == undefined) {
-			elt4 = new StationImpl();
+			elt4 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt4);
 		}
 	}
@@ -848,7 +848,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: L
 	if ((pi_on != null)) {
 		elt5 = station.other_networks.get(pi_on);
 		if (elt5 == undefined) {
-			elt5 = new StationImpl();
+			elt5 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt5);
 		}
 	}
@@ -859,7 +859,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: L
 	if ((pi_on != null)) {
 		elt6 = station.other_networks.get(pi_on);
 		if (elt6 == undefined) {
-			elt6 = new StationImpl();
+			elt6 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt6);
 		}
 	}
@@ -895,7 +895,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogM
 	if ((pi_on != null)) {
 		elt7 = station.other_networks.get(pi_on);
 		if (elt7 == undefined) {
-			elt7 = new StationImpl();
+			elt7 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt7);
 		}
 	}
@@ -906,7 +906,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogM
 	if ((pi_on != null)) {
 		elt8 = station.other_networks.get(pi_on);
 		if (elt8 == undefined) {
-			elt8 = new StationImpl();
+			elt8 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt8);
 		}
 	}
@@ -917,7 +917,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogM
 	if ((pi_on != null)) {
 		elt9 = station.other_networks.get(pi_on);
 		if (elt9 == undefined) {
-			elt9 = new StationImpl();
+			elt9 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt9);
 		}
 	}
@@ -951,7 +951,7 @@ export function parse_group_14B(block: Uint16Array, ok: boolean[], log: LogMessa
 	if ((pi_on != null)) {
 		elt10 = station.other_networks.get(pi_on);
 		if (elt10 == undefined) {
-			elt10 = new StationImpl();
+			elt10 = new StationImpl(pi_on);
 			station.other_networks.set(pi_on, elt10);
 		}
 	}

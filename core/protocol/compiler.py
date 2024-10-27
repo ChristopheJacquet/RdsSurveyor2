@@ -153,7 +153,7 @@ class CodeGenerator:
                     with self.guarded_block(eg) as new_elt_block:
                         new_elt_block.line(f'{v} = {m}.get({e});')
                         with new_elt_block.block(f'if ({v} == undefined) {{') as b:
-                            b.line(f'{v} = new StationImpl();')
+                            b.line(f'{v} = new StationImpl({e});')
                             b.line(f'{m}.set({e}, {v});')
                     guard_vars.add((v, 'undefined'))
 
