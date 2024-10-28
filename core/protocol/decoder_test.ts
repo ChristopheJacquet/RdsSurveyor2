@@ -142,3 +142,13 @@ describe('1A group with a language code', () => {
     expect(station.getLanguage()).toBe("French");
   });
 });
+
+// 14B group for an unknown Other Network.
+describe('14B group for an unknown Other Network', () => {
+  const station = new StationImpl();
+  send(`F202 EC10 F202 F222`, station);
+  it('should be handled gracefully', () => {
+    expect(station.trafficEvents.map((e) => e.toString()))
+      .toEqual(['Switch back from Other Network: PI=F222']);
+  });
+});
