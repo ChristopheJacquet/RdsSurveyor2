@@ -683,8 +683,9 @@ class OtherNetworkSwitch extends TrafficEvent {
       let eventStr = `${msg}: PI=${pi}`;
       const onps = this.otherNetwork.getPS();
       if (onps.length > 0) {
-        eventStr += ` (${this.otherNetwork.getPS()}).`;
+        eventStr += ` (${this.otherNetwork.getPS().trim()})`;
       }
+      eventStr += ".";
       return eventStr;
   }
 }

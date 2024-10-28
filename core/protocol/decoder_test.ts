@@ -143,12 +143,37 @@ describe('1A group with a language code', () => {
   });
 });
 
+// 14B group for an known Other Network with PS.
+describe('14B group for a known Other Network with PS', () => {
+  const station = new StationImpl();
+  send(`F202 E410 7220 F222
+        F202 E411 3130 F222
+        F202 E412 372E F222
+        F202 E413 3720 F222
+        F202 EC10 F202 F222`, station);
+  it('should be labeled with PS', () => {
+    expect(station.trafficEvents.map((e) => e.toString()))
+      .toEqual(['Switch back from Other Network: PI=F222 (r 107.7).']);
+  });
+});
+
+// 14B group for an known Other Network without PS.
+describe('14B group for a known Other Network without PS', () => {
+  const station = new StationImpl();
+  send(`F202 E415 0B97 F405
+        F202 EC10 F202 F222`, station);
+  it('should only have the PI code', () => {
+    expect(station.trafficEvents.map((e) => e.toString()))
+      .toEqual(['Switch back from Other Network: PI=F222.']);
+  });
+});
+
 // 14B group for an unknown Other Network.
 describe('14B group for an unknown Other Network', () => {
   const station = new StationImpl();
   send(`F202 EC10 F202 F222`, station);
   it('should be handled gracefully', () => {
     expect(station.trafficEvents.map((e) => e.toString()))
-      .toEqual(['Switch back from Other Network: PI=F222']);
+      .toEqual(['Switch back from Other Network: PI=F222.']);
   });
 });
