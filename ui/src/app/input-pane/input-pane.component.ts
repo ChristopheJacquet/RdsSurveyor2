@@ -472,7 +472,16 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       this.logFileStream.close();
     }
 
-    const logFileHandle = await this.logDirHandle.getFileHandle(pi.toString(16).toUpperCase().padStart(4, '0') + ' ' + Date.now() + '.txt', { create: true });
+    const date = new Date();
+    const fileName = pi.toString(16).toUpperCase().padStart(4, '0')
+      + ' ' + date.getFullYear().toString().padStart(4, '0')
+      + '-' + (date.getMonth() + 1).toString().padStart(2, '0')
+      + '-' + date.getDate().toString().padStart(2, '0')
+      + ' ' + date.getHours().toString().padStart(2, '0')
+      + '-' + date.getMinutes().toString().padStart(2, '0')
+      + '-' + date.getSeconds().toString().padStart(2, '0')
+      + '.txt'
+    const logFileHandle = await this.logDirHandle.getFileHandle(fileName, { create: true });
     this.logFileStream = await logFileHandle.createWritable();
     await this.logFileStream.write('% Log file\n');
   }
