@@ -5,6 +5,7 @@ load("@aspect_rules_jasmine//jasmine:defs.bzl", "jasmine_test")
 ts_project(
     name = "protocol",
     srcs = [
+        "af.ts",
         "base.ts",
         "dab_cross_ref.ts",
         "radio_text_plus.ts",

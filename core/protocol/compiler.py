@@ -638,7 +638,8 @@ def compile_struct(codegen, cc):
 def compile(codegen, t):
     codegen.line('// Generated file. DO NOT EDIT.')
     codegen.line()
-    codegen.line('import { RDS_CHARMAP, LogMessage, RdsString, StationImpl, channelToFrequency } from "./rds_types";')
+    codegen.line('import { channelToFrequency } from "./af";')
+    codegen.line('import { RDS_CHARMAP, LogMessage, RdsString, StationImpl } from "./rds_types";')
     codegen.line()
 
     for c in t.children:

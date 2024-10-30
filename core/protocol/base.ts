@@ -1,6 +1,7 @@
 // Generated file. DO NOT EDIT.
 
-import { RDS_CHARMAP, LogMessage, RdsString, StationImpl, channelToFrequency } from "./rds_types";
+import { channelToFrequency } from "./af";
+import { RDS_CHARMAP, LogMessage, RdsString, StationImpl } from "./rds_types";
 
 export interface Station {
 	pi?: number;
