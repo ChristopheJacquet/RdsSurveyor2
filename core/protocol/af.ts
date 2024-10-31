@@ -1,18 +1,50 @@
-export function isAfListLengthIndicator(af: number): boolean {
-  return af >= 224 && af <= 249;
+type AfListLength = {
+	kind: "AfListLength"
+	length: number
 }
 
+type AfFrequency = {
+	kind: "AfFrequency"
+	freq: number
+}
+
+type AfInvalid = {
+	kind: "AfInvalid"
+	code: number
+}
+
+type AfFiller = {
+	kind: "AfFiller"
+}
+
+type AfAmIndicator = {
+	kind: "AfAmIndicator"
+}
+
+type AfCode = AfFrequency | AfListLength | AfFiller | AfAmIndicator | AfInvalid;
+
 /**
- * @brief Converts an RDS channel code to a frequency.
+ * @brief Parse an RDS AF code.
  * 
- * @param channel The RDS channel (an integer in the 0–205 range, 205 being the filler code)
- * @return The frequency in multiples of 100 kHz, or -1 for the filler code, or 0 if an invalid
- * code was supplied
+ * @return The parsed AF code, as an object of type AfCode.
  */
-export function channelToFrequency(channel: number): number {
-  if (channel >= 0 && channel <= 204) return 875 + channel;
-  else if (channel == 205) return -1;     // -1 = filler code.
-  else return 0;
+export function parseAfCode(af: number): AfCode {
+  if (af >= 1 && af <= 204) return { kind: "AfFrequency", freq: 875 + af};
+  if (af == 205) return { kind: "AfFiller" };
+	if (af >= 224 && af <= 249) return { kind: "AfListLength", length: af - 224};
+	if (af == 250) return { kind: "AfAmIndicator" };
+  return { kind: "AfInvalid", code: af }
+}
+
+export function formatAf(af: number): string {
+	const afCode = parseAfCode(af);
+	switch (afCode.kind) {
+		case "AfAmIndicator": return "AM_Ind";
+		case "AfFiller": return "Filler";
+		case "AfFrequency": return (afCode.freq/10).toFixed(1);
+		case "AfInvalid": return `Invalid(${afCode.code})`;
+		case "AfListLength": return `ListLength(${afCode.length})`;
+	}
 }
 
 export class AFList {
@@ -21,22 +53,19 @@ export class AFList {
 	public method = '?';
 	
 	constructor(transmitterFrequency: number) {
-		this.transmitterFrequency = channelToFrequency(transmitterFrequency);
+		this.transmitterFrequency = transmitterFrequency;
 	}
 	
-	public addPair(a: number, b: number): boolean {
-		const fA = channelToFrequency(a);
-		const fB = channelToFrequency(b);
-		const typeIfB = fA < fB ? "same" : "variant"; 
-		if (fA == this.transmitterFrequency && fA > 0) {  // method B.
+	public addPair(a: AfCode, b: AfCode): boolean {
+		if (a.kind == "AfFrequency" && a.freq == this.transmitterFrequency) {  // method B.
 			this.method = 'B';
-			if (fB > 0) this.afs.add(fB);
+			if (b.kind == "AfFrequency") this.afs.add(b.freq);
 			return true;
-		} else if (fB == this.transmitterFrequency && fB > 0) {  // method B.
+		} else if (b.kind == "AfFrequency" && b.freq == this.transmitterFrequency) {  // method B.
 			this.method = 'B';
-			if (fA > 0) this.afs.add(fA);
+			if (a.kind == "AfFrequency") this.afs.add(a.freq);
 			return true;
-		} else if (fA > 0 || fB > 0){  // method A.
+		} else if (a.kind == "AfFrequency" || b.kind == "AfFrequency"){  // method A.
 			if (this.transmitterFrequency != 0) {
 				if (this.method == 'B') {
 					// If the two frequencies are transmitted
@@ -49,11 +78,11 @@ export class AFList {
 				} // else
 				this. method = 'A';
 			}
-			if (fA > 0) {
-				this.afs.add(fA);
+			if (a.kind == "AfFrequency") {
+				this.afs.add(a.freq);
 			}
-			if (fB > 0) {
-				this.afs.add(fB);
+			if (b.kind == "AfFrequency") {
+				this.afs.add(b.freq);
 			}
 			return true;
 		} else return true;

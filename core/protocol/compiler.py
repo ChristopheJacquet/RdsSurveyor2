@@ -638,7 +638,7 @@ def compile_struct(codegen, cc):
 def compile(codegen, t):
     codegen.line('// Generated file. DO NOT EDIT.')
     codegen.line()
-    codegen.line('import { channelToFrequency } from "./af";')
+    codegen.line('import { formatAf } from "./af";')
     codegen.line('import { RDS_CHARMAP, LogMessage, RdsString, StationImpl } from "./rds_types";')
     codegen.line()
 
@@ -663,11 +663,6 @@ def compile(codegen, t):
             for (rule_id, ts_func) in rules.items():
                 blk2.line(f'case "{rule_id}": return {ts_func};')
         blk2.line('throw new RangeError("Invalid rule: " + rule);')
-
-    codegen.line()
-    with codegen.block('function formatAf(af: number): string {') as blk1:
-        blk1.line('const freq = channelToFrequency(af);')
-        blk1.line('return freq > 0 ? (freq/10).toString() : "None";')
 
     codegen.line()
     with codegen.block('function formatRdsText(text: Array<number | null>): string {') as blk1:

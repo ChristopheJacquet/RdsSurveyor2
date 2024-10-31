@@ -1,6 +1,6 @@
 // Generated file. DO NOT EDIT.
 
-import { channelToFrequency } from "./af";
+import { formatAf } from "./af";
 import { RDS_CHARMAP, LogMessage, RdsString, StationImpl } from "./rds_types";
 
 export interface Station {
@@ -1144,11 +1144,6 @@ export function get_parse_function(rule: string) {
 		case "group_dabxref_service": return parse_group_dabxref_service;
 	}
 	throw new RangeError("Invalid rule: " + rule);
-}
-
-function formatAf(af: number): string {
-	const freq = channelToFrequency(af);
-	return freq > 0 ? (freq/10).toString() : "None";
 }
 
 function formatRdsText(text: Array<number | null>): string {

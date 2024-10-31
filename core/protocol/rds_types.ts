@@ -1,4 +1,4 @@
-import { AFList, channelToFrequency, isAfListLengthIndicator } from './af';
+import { AFList, parseAfCode } from './af';
 import { RtPlusApp, Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
 import { RtPlusAppImpl } from "./radio_text_plus";
@@ -236,31 +236,34 @@ export class StationImpl implements Station {
     this.log = [];
   }
 
-	public addAfPair(a: number, b: number) {
+	public addAfPair(codeA: number, codeB: number) {
+    const a = parseAfCode(codeA);
+    const b = parseAfCode(codeB);
     // If two filler codes, we cannot do anything.
-    if (a == 205 && b == 205) {
+    if (a.kind == "AfFiller" && b.kind == "AfFiller") {
       return;
     }
-		if (isAfListLengthIndicator(a)) {
-			if (b >= 0 && b < 205) {
-				const afList = this.afLists.get(b);
+		if (a.kind == "AfListLength") {
+			if (b.kind == "AfFrequency") {
+				const afList = this.afLists.get(b.freq);
 				if (afList == undefined) {
-					this.currentAfList = new AFList(b);
-					this.afLists.set(b, this.currentAfList);
+					this.currentAfList = new AFList(b.freq);
+					this.afLists.set(b.freq, this.currentAfList);
 				} else {
           this.currentAfList = afList;
         }
 			}
 		} else {
-			if (a >= 0 && a <= 205 && b >= 0 && b <= 205) {
+			if (a.kind == "AfFrequency" || b.kind == "AfFrequency") {
         if (this.currentAfList == null || !this.currentAfList.addPair(a, b)) {
 					// This means that the method addPair has determined that
 					// the new AF pair cannot belong to the existing list.
-					// So create a new list. Use one of (a, b) that is not 205 (the
-          // filler code). This is always the case, as the case where both a
-          // and b are the filler code has been proceeded at the beginning of
-          // the method.
-					this.currentAfList = new AFList(a == 205 ? b : a);
+					// So create a new list. Use one of (a, b) that is not the
+          // filler code. There is always one that is not the filler, as the
+          // case where both a and b are the filler code has been proceeded at
+          // the beginning of the method.
+					this.currentAfList = new AFList(
+            a.kind == "AfFrequency" ? a.freq : b.kind == "AfFrequency" ? b.freq : 0);
 					this.currentAfList.addPair(a, b);
 				}
 			}
@@ -275,21 +278,26 @@ export class StationImpl implements Station {
    * 
    * @return A textual representation of the mapping
    */
-  public addMappedAF(channel: number, mappedChannel: number) {
-    const freq = channelToFrequency(channel);
-    const mappedFreq = channelToFrequency(mappedChannel);
+  public addMappedAF(tunedCode: number, mappedCode: number) {
+    const tuned = parseAfCode(tunedCode);
+    const mapped = parseAfCode(mappedCode);
+
+    if (tuned.kind != "AfFrequency" || mapped.kind != "AfFrequency") {
+      // TODO: Report error.
+      return;
+    }
     
     // Get the set of AFs mapped to the frequency "freq".
-    let listOfMappedFreqs = this.mappedAFs.get(freq);
+    let listOfMappedFreqs = this.mappedAFs.get(tuned.freq);
 
     // If no such set, create it.
     if(listOfMappedFreqs == undefined) {
       listOfMappedFreqs = new Set<number>();
-      this.mappedAFs.set(freq, listOfMappedFreqs);
+      this.mappedAFs.set(tuned.freq, listOfMappedFreqs);
     }
     
     // Add the new mapped frequency.
-    listOfMappedFreqs.add(mappedFreq);
+    listOfMappedFreqs.add(mapped.freq);
   }
 
   public set ta(ta: boolean) {
