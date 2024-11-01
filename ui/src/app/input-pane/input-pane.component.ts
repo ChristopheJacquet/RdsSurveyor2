@@ -255,7 +255,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
-  async processBasebandWav(buffer: ArrayBuffer) {
+  async processMpx(buffer: ArrayBuffer) {
     const sampleRate = 250000;
     // Blocksize is chosen so that blockSize samples represent a bit less than
     // one group (so the UI is fluid). Since there are 11.4 groups per second,
@@ -273,8 +273,8 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     );
     const timing = new Timing();
     
-    const basebandBuffer = await context.decodeAudioData(buffer);
-    const samples = basebandBuffer.getChannelData(0);
+    const mpxBuffer = await context.decodeAudioData(buffer);
+    const samples = mpxBuffer.getChannelData(0);
 
     this.synchronizer = new BitStreamSynchronizer(this);
     this.demodulator = new Demodulator(this.synchronizer);
@@ -335,9 +335,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
           break;
         }
 
-        case FileType.BASEBAND_WAV: {
+        case FileType.MPX_FLAC:
+        case FileType.MPX_WAV: {
           const buffer = await f.arrayBuffer();
-          await this.processBasebandWav(buffer);
+          await this.processMpx(buffer);
           break;
         }
       }
@@ -557,25 +558,34 @@ class Timing {
 enum FileType {
   UNSYNCED_BINARY_RDS,
   HEX_GROUPS,
-  BASEBAND_WAV,
+  MPX_FLAC,
+  MPX_WAV,
 }
 
 function guessFileType(header: Uint8Array): FileType {
   if (
-    header[0] == 0x52 &&   // R
-    header[1] == 0x49 &&   // I
-    header[2] == 0x46 &&   // F
-    header[3] == 0x46 &&   // F
-    header[8] == 0x57 &&   // W
-    header[9] == 0x41 &&   // A
-    header[10] == 0x56 &&  // V
-    header[11] == 0x45 &&  // E
-    header[12] == 0x66 &&  // f
-    header[13] == 0x6D &&  // m
-    header[14] == 0x74 &&  // t
-    header[15] == 0x20) {  // ' '
-      return FileType.BASEBAND_WAV;
-    }
+      header[0] == 0x52 &&   // R
+      header[1] == 0x49 &&   // I
+      header[2] == 0x46 &&   // F
+      header[3] == 0x46 &&   // F
+      header[8] == 0x57 &&   // W
+      header[9] == 0x41 &&   // A
+      header[10] == 0x56 &&  // V
+      header[11] == 0x45 &&  // E
+      header[12] == 0x66 &&  // f
+      header[13] == 0x6D &&  // m
+      header[14] == 0x74 &&  // t
+      header[15] == 0x20) {  // ' '
+    return FileType.MPX_WAV;
+  }
+
+  if (
+      header[0] == 0x66 &&   // f
+      header[1] == 0x4C &&   // L
+      header[2] == 0x61 &&   // a
+      header[3] == 0x43) {   // C
+    return FileType.MPX_FLAC;
+  }
 
   let binary = false;
   for (let i=0; i<header.length; i++) {
