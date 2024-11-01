@@ -24,8 +24,8 @@ describe('Error-free bit stream', () => {
     expect(spy).toHaveBeenCalledTimes(3);
     expect(spy).toHaveBeenCalledWith({
       type: RdsReportEventType.GROUP,
-      ok: [false, false, true, true],
-      blocks: new Uint16Array([0x0000, 0x0000, 0xe5b4, 0x2020]),
+      ok: [true, true, true, true],
+      blocks: new Uint16Array([0xf206, 0x0403, 0xe5b4, 0x2020]),
       freq: 0,
       sourceInfo: "BitStreamSynchronizer",
     })
