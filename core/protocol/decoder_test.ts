@@ -177,3 +177,38 @@ describe('14B group for an unknown Other Network', () => {
       .toEqual(['Switch back from Other Network: PI=F222.']);
   });
 });
+
+// eRT encoded in UTF-8. Real sample from Järviradio.
+describe('eRT encoded in UTF-8', () => {
+  const station = new StationImpl();
+  send(`6255 3538 0001 6552
+        6255 C520 4AC3 A472
+        6255 C521 7669 7261
+        6255 C522 6469 6F20
+        6255 C523 5244 5332
+        6255 C524 2045 5254
+        6255 C525 0D0D 0D0D`, station);
+  it('should be detected', () => {
+    expect(station.ert_app.enabled).toBe(true);
+  });
+  it('should be decoded correctly', () => {
+    expect(station.ert_app.ert.getLatestCompleteOrPartialText())
+        .toBe('Järviradio RDS2 ERT');
+  });
+});
+
+// eRT encoded in UCS-2. Synthetic example inspired from Järviradio.
+describe('eRT encoded in UCS-2', () => {
+  const station = new StationImpl();
+  send(`6255 3538 0000 6552
+        6255 C520 4700 E900
+        6255 C521 6100 6E00
+        6255 C522 7400 0D00`, station);
+  it('should be detected', () => {
+    expect(station.ert_app.enabled).toBe(true);
+  });
+  it('should be decoded correctly', () => {
+    expect(station.ert_app.ert.getLatestCompleteOrPartialText())
+        .toBe('Géant');
+  });
+});

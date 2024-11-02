@@ -8,6 +8,7 @@ ts_project(
         "af.ts",
         "base.ts",
         "dab_cross_ref.ts",
+        "enhanced_radio_text.ts",
         "radio_text_plus.ts",
         "rbds_callsigns.ts",
         "rds_types.ts",

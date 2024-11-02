@@ -23,6 +23,7 @@ export interface Station {
 	app_mapping: Map<number, string>;
 	oda_3A_mapping: Map<number, string>;
 	rt_plus_app: RtPlusApp;
+	ert_app: ERtApp;
 	dab_cross_ref_app: DabCrossRefApp;
 	linkage_actuator?: boolean;
 	pin_day?: number;
@@ -1115,6 +1116,74 @@ export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], l
 	}
 }
 
+export interface ERtApp {
+	ert: RdsString;
+	utf8_encoding?: boolean;
+	enabled?: boolean;
+}
+
+export function parse_group_ert_declaration(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field group_3A_common: unparsed<32> at +0, width 32.
+	// Field rfu: unparsed<15> at +32, width 15.
+	// Field utf8_encoding: bool at +47, width 1.
+	let utf8_encoding = (ok[2]) ?
+		((block[2] & 0b1)) == 1
+		: null;
+	// Field ert_aid: unparsed<16> at +48, width 16.
+
+	// Actions.
+	if ((utf8_encoding != null)) {
+		log.add(`eRT utf8 encoding? ${utf8_encoding ? '1': '0'}`);
+	}
+	if ((utf8_encoding != null)) {
+		station.ert_app.utf8_encoding = utf8_encoding;
+	}
+	if ((true != null)) {
+		station.ert_app.enabled = true;
+	}
+}
+
+export function parse_group_ert(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field addr: uint<5> at +27, width 5.
+	let addr = (ok[1]) ?
+		((block[1] & 0b11111))
+		: null;
+	// Field ert_seg: byte<4> at +32, width 32.
+	let ert_seg__0 = (ok[2]) ?
+		((block[2] & 0b1111111100000000) >> 8)
+		: null;
+	let ert_seg__1 = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	let ert_seg__2 = (ok[3]) ?
+		((block[3] & 0b1111111100000000) >> 8)
+		: null;
+	let ert_seg__3 = (ok[3]) ?
+		((block[3] & 0b11111111))
+		: null;
+	const ert_seg = [ert_seg__0, ert_seg__1, ert_seg__2, ert_seg__3];
+
+	// Actions.
+	if ((addr != null) && (ert_seg != null)) {
+		log.add(`eRT seg @${addr} "${formatBytes(ert_seg)}"`);
+	}
+	if ((station != null)) {
+		if ((addr != null) && (ert_seg__0 != null)) {
+			station.ert_app.ert.setByte(addr*4 + 0, ert_seg__0);
+		}
+		if ((addr != null) && (ert_seg__1 != null)) {
+			station.ert_app.ert.setByte(addr*4 + 1, ert_seg__1);
+		}
+		if ((addr != null) && (ert_seg__2 != null)) {
+			station.ert_app.ert.setByte(addr*4 + 2, ert_seg__2);
+		}
+		if ((addr != null) && (ert_seg__3 != null)) {
+			station.ert_app.ert.setByte(addr*4 + 3, ert_seg__3);
+		}
+	}
+}
+
 export function get_parse_function(rule: string) {
 	switch (rule) {
 		case "group": return parse_group;
@@ -1142,6 +1211,8 @@ export function get_parse_function(rule: string) {
 		case "group_dabxref": return parse_group_dabxref;
 		case "group_dabxref_ensemble": return parse_group_dabxref_ensemble;
 		case "group_dabxref_service": return parse_group_dabxref_service;
+		case "group_ert_declaration": return parse_group_ert_declaration;
+		case "group_ert": return parse_group_ert;
 	}
 	throw new RangeError("Invalid rule: " + rule);
 }

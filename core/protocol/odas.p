@@ -85,3 +85,41 @@ bitstruct group_dabxref_service(station: Station) {
   "info={info:04x}"
   "sid={sid:04x}"
 }
+
+# Extended Radiotext (eRT).
+struct ERtApp {
+  ert: str<128>
+  utf8_encoding: bool
+  enabled: bool
+}
+
+bitstruct group_ert_declaration(station: Station) {
+  # Blocks A and B.
+  group_3A_common: unparsed<32>
+
+  # Block C.
+  rfu: unparsed<15>
+  utf8_encoding: bool
+
+  # Block D.
+  ert_aid: unparsed<16>
+} action {
+  station.ert_app.utf8_encoding = utf8_encoding
+  station.ert_app.enabled = true
+} log {
+  "eRT utf8 encoding? {utf8_encoding:bool}"
+}
+
+bitstruct group_ert(station: Station) {
+  group_common: unparsed<27>
+
+  # Rest of Block B.
+  addr: uint<5>
+  
+  # Blocks C and D.
+  ert_seg: byte<4>
+} action {
+  copy station.ert_app.ert, addr, 4, ert_seg
+} log {
+  "eRT seg @{addr:u} \"{ert_seg:bytes}\""
+}

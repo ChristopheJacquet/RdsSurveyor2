@@ -30,6 +30,7 @@ struct Station {
     app_mapping: map<uint<5>, tag>
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
+    ert_app: ERtApp
     dab_cross_ref_app: DabCrossRefApp
     linkage_actuator: bool
     pin_day: uint<5>

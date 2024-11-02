@@ -1,6 +1,7 @@
 import { AFList, parseAfCode } from './af';
-import { RtPlusApp, Station } from "./base";
+import { Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
+import { ERtAppImpl } from "./enhanced_radio_text";
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 
@@ -10,7 +11,7 @@ export class StationImpl implements Station {
   ptyn: RdsString = new RdsStringInRdsEncoding(8);
   tp?: boolean;
   ps: RdsString = new RdsStringInRdsEncoding(8);
-  lps: RdsString = new RdsStringInUtf8(32);
+  lps: RdsString = new RdsStringInUnicode(32);
   rt: RdsString = new RdsStringInRdsEncoding(64);
   rt_flag?: number;
 	music?: boolean;
@@ -24,9 +25,12 @@ export class StationImpl implements Station {
   odas: Map<number, string> = new Map<number, string>([
     [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
+    [0x6552, "group_ert"],
+  ]);
+  oda_3A_mapping: Map<number, string> = new Map<number, string>([
+    [0x6552, "group_ert_declaration"],
   ]);
 	transmitted_odas: Map<number, number> = new Map<number, number>();
-  oda_3A_mapping: Map<number, string> = new Map<number, string>();
   app_mapping: Map<number, string> = new Map<number, string>();
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
@@ -41,6 +45,7 @@ export class StationImpl implements Station {
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
+  ert_app: ERtAppImpl = new ERtAppImpl(this);
   dab_cross_ref_app: DabCrossRefAppImpl = new DabCrossRefAppImpl();
 
   private ta_?: boolean;
@@ -231,6 +236,7 @@ export class StationImpl implements Station {
 
     // Reset ODAs.
     this.rt_plus_app.reset();
+    this.ert_app.reset();
     this.dab_cross_ref_app.reset();
 
     this.log = [];
@@ -556,18 +562,23 @@ export class RdsStringInRdsEncoding extends RdsString {
   }
 }
 
-export class RdsStringInUtf8 extends RdsString {
-  public toString(): string {
-    let a = this.currentText;
-    // If there is a 0 byte, it marks the end of the string, so we need to cut
-    // it there.
-    const l = a.indexOf(0);
-    if (l >= 0) {
-      a = a.slice(0, l);
-    }
+export class RdsStringInUnicode extends RdsString {
+  public encoding = "utf-8";
 
-    const utf8decoder = new TextDecoder("utf-8");
-    return utf8decoder.decode(a);
+  public toString(): string {
+    const decoder = new TextDecoder(this.encoding);
+    let txt = decoder.decode(this.currentText);
+
+    // If there is a 0x0D or a 0x00 byte, it marks the end of the string, so we
+    // need to cut it there.
+    const end1 = txt.indexOf(String.fromCodePoint(0x0D));
+    const end2 = txt.indexOf(String.fromCodePoint(0x00));
+    const end = end1 >= 0 && end2 >= 0 ? Math.min(end1, end2) : Math.max(end1, end2);
+
+    if (end >= 0) {
+      txt = txt.slice(0, end);
+    }
+    return txt;
   }
 }
 
