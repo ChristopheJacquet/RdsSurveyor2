@@ -1,9 +1,12 @@
 import { DecimalPipe } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
-import {MatIconModule} from '@angular/material/icon'; 
+import {MatIconModule} from '@angular/material/icon';
+import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTabsModule} from '@angular/material/tabs';
 
 import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../../../../core/drivers/input";
@@ -11,6 +14,7 @@ import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator } from "../../../../core/signals/baseband";
 import { Pref } from '../prefs';
+import { catchError } from 'rxjs';
 
 @Component({
   selector: 'app-input-pane',
@@ -54,6 +58,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
 
+  private snackBar = inject(MatSnackBar);
+
+  constructor(private httpClient: HttpClient, private route: ActivatedRoute) {}
+
   public ngAfterViewInit() {
     // Initialize block error rate graph.
     const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
@@ -75,11 +83,37 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     return this.constellationDiagramCx;
   }
 
+  private async handleHttpError(error: HttpErrorResponse) {
+    console.log(error);
+    this.snackBar.open(
+      `Unable to load RDS sample file from ${error.url}.`
+      + 'The URL provided in the play_url parameter may be incorrect.',
+      'Dismiss');
+  }
+
   public ngOnInit() {
     this.prefPlaybackSpeed.init();
     this.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
 
     this.prefTunedFrequency.init();
+
+    // If a play_url param is provided, try to load a file from the provided URL.
+    const httpClient = this.httpClient;
+    const sub = this.route.queryParams.subscribe(params => {
+      if (!params['play_url']) {
+        return;
+      }
+      const url = params["play_url"];
+
+      httpClient.get(url, {responseType: 'blob'})
+        .pipe(catchError(err => this.handleHttpError(err)))
+        .subscribe(response => {
+          if (response) {
+            console.log("Contents", response);
+            this.playbackBlob(response);
+          }
+        });
+    });
   }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
@@ -312,6 +346,12 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   async handleFileDrop(files: FileList) {
+    for (let f of Array.from(files)) {
+      await this.playbackBlob(f);
+    }
+  }
+
+  async playbackBlob(f: Blob) {
     if (this.inputActive) {
       // Don't play a file back if input is already active.
       return;
@@ -320,29 +360,29 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     this.inputActive = true;
     this.stoppingPlayback = false;
     console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
-    for (let f of Array.from(files)) {
-      const header = await f.slice(0, 16).arrayBuffer();
-      switch (guessFileType(new Uint8Array(header))) {
-        case FileType.HEX_GROUPS: {
-          const text = await f.text();
-          await this.processTextualGroups(text);
-          break;
-        }
 
-        case FileType.UNSYNCED_BINARY_RDS: {
-          const bytes = await f.arrayBuffer();
-          await this.processBinaryGroups(new Uint8Array(bytes));
-          break;
-        }
+    const header = await f.slice(0, 16).arrayBuffer();
+    switch (guessFileType(new Uint8Array(header))) {
+      case FileType.HEX_GROUPS: {
+        const text = await f.text();
+        await this.processTextualGroups(text);
+        break;
+      }
 
-        case FileType.MPX_FLAC:
-        case FileType.MPX_WAV: {
-          const buffer = await f.arrayBuffer();
-          await this.processMpx(buffer);
-          break;
-        }
+      case FileType.UNSYNCED_BINARY_RDS: {
+        const bytes = await f.arrayBuffer();
+        await this.processBinaryGroups(new Uint8Array(bytes));
+        break;
+      }
+
+      case FileType.MPX_FLAC:
+      case FileType.MPX_WAV: {
+        const buffer = await f.arrayBuffer();
+        await this.processMpx(buffer);
+        break;
       }
     }
+
     this.inputActive = false;
     this.stoppingPlayback = true;
   }
