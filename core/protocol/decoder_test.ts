@@ -35,6 +35,21 @@ describe('France Inter', () => {
 
 });
 
+// Radio LoRa sample from 2024 (Switzerland, Zurich).
+// Tests PS via 0B groups.
+describe('Radio LoRa', () => {
+  let station = new StationImpl();
+  send(`4001 0D48 4001 4C4F
+        4001 0D49 4001 5241
+        4001 0D4A 4001 2020
+        4001 0D4F 4001 2020`, station);
+
+  it('should have PS "LORA    "', () => {
+    expect(station.getPS()).toBe("LORA    ");
+  });
+
+});
+
 // Radio Classique sample from 2023 (France, Montbeliard/Fort Lachaux transmitter).
 // Tests RT (via 2A groups).
 describe('Radio Classique', () => {
