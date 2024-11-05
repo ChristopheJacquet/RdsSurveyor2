@@ -88,6 +88,39 @@ describe('Radio Classique', () => {
   });
 });
 
+// Radio Campus example transmitting RT with non-ASCII characters, via 2B groups.
+describe('Radio Campus', () => {
+  let station = new StationImpl();
+  send(`FC3A 2C10 FC3A 3838 
+        FC3A 0408 E20D 2043 
+        FC3A 0409 95CD 414D 
+        FC3A 2C11 FC3A 2E38 
+        FC3A 040A E20D 5055 
+        FC3A 040F 95CD 5320 
+        FC3A 2C12 FC3A 206C 
+        FC3A 2C13 FC3A 6120 
+        FC3A 2C14 FC3A 6672 
+        FC3A 2C15 FC3A 8271 
+        FC3A 2C16 FC3A 7565 
+        FC3A 2C17 FC3A 6E63 
+        FC3A 2C18 FC3A 6520 
+        FC3A 2C19 FC3A 7374 
+        FC3A 2C1A FC3A 796C 
+        FC3A 2C1B FC3A 8265 
+        FC3A 2C1C FC3A 2020 
+        FC3A 2C1D FC3A 2020 
+        FC3A 2C1E FC3A 2020 
+        FC3A 2C1F FC3A 2020 `, station);
+
+  it('should have PS "  INTER "', () => {
+    expect(station.getPS()).toBe(" CAMPUS ");
+  });
+
+  it('should have expected RT', () => {
+    expect(station.getRT()).toBe("88.8 la fréquence stylée                                        ");
+  });
+});
+
 // BBC sample from 2017 transmitting Clock Time.
 describe('BBC Clock Time', () => {
   const station = new StationImpl();
