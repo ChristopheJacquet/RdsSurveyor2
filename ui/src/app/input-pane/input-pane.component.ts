@@ -12,7 +12,7 @@ import {MatTabsModule} from '@angular/material/tabs';
 import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../../../../core/drivers/input";
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
-import { Demodulator } from "../../../../core/signals/baseband";
+import { Demodulator } from "../../../../core/signals/mpx";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
 
