@@ -7,7 +7,7 @@ const SYNC_THRESHOLD = 2;
 const SYNC_CONFIRM_DURATION = 5;
 
 // Lose synchronization after that many groups without a good block.
-const SYNC_LOSS_DURATION = 10;
+const SYNC_LOSS_DURATION = 2;
 
 const MAT_H: number[] = [
   0x31B, 0x38F, 0x2A7, 0x0F7, 0x1EE, 0x3DC, 0x201, 0x1BB, 0x376, 0x355,
@@ -218,7 +218,7 @@ export class BitStreamSynchronizer {
           if (this.nbOk > 0) this.nbUnsync = 0; else this.nbUnsync++;
           
           // after a while without a correct block, decide we have lost synchronization
-          if (this.nbUnsync > SYNC_LOSS_DURATION) {
+          if (this.nbUnsync >= SYNC_LOSS_DURATION) {
             this.synced = false;
             console.log("Lost synchronization.");
             // TODO: Need to report status?
