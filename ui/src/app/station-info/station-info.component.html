@@ -146,8 +146,16 @@
     <div><!-- AFs -->
       <div *ngFor="let e of station.afLists | keyvalue">
         <strong>AF list, method {{ e.value.method }}:</strong>
+        <ng-container *ngIf="e.value.method == 'A'">
+          {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} 
+        </ng-container>
+        <ng-container *ngIf="e.value.method == 'B'">
         {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
+        </ng-container>
         <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
+        <ng-container *ngIf="e.value.method == 'A'">
+          (expected size {{ e.value.expectedSize }}, actual size {{ e.value.afs.size + 1 }})
+        </ng-container>  
       </div>
     </div>
   </mat-tab>

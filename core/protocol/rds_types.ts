@@ -253,7 +253,7 @@ export class StationImpl implements Station {
 			if (b.kind == "AfFrequency") {
 				const afList = this.afLists.get(b.freq);
 				if (afList == undefined) {
-					this.currentAfList = new AFList(b.freq);
+					this.currentAfList = new AFList(b.freq, a.length);
 					this.afLists.set(b.freq, this.currentAfList);
 				} else {
           this.currentAfList = afList;

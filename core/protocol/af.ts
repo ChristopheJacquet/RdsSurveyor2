@@ -50,10 +50,12 @@ export function formatAf(af: number): string {
 export class AFList {
 	public transmitterFrequency: number;
   public afs = new Set<number>();
-	public method = '?';
+	public method = 'A';
+	public expectedSize?: number;
 	
-	constructor(transmitterFrequency: number) {
+	constructor(transmitterFrequency: number, expectedSize?: number) {
 		this.transmitterFrequency = transmitterFrequency;
+		this.expectedSize = expectedSize;
 	}
 	
 	public addPair(a: AfCode, b: AfCode): boolean {
