@@ -19,15 +19,8 @@ const BLOCK_SIZE = 26;
 const BLOCKS_PER_GROUP = 4;
 const GROUP_SIZE = BLOCKS_PER_GROUP * BLOCK_SIZE;
 
-const SYNDROMES: number[][] = [[0x3D8, 0x3D8], [0x3D4, 0x3D4], [0x25C, 0x3CC], [0x258, 0x258]];
-
-enum BitInversion {
-  AUTO, INVERT, NOINVERT
-}
-
-enum Status {
-  NOT_SYNCED, SYNCED
-}
+const SYNDROMES = new Map<number, number>(
+  [[0x3D8, 0], [0x3D4, 1], [0x25C, 2], [0x3CC, 2], [0x258, 3]]);
 
 class SyncEntry {
   public constructor(public bitTime: number, public block: number) {}
@@ -47,8 +40,6 @@ function calcSyndrome(block: number): number {
 }
 
 export class BitStreamSynchronizer {
-	private inversion: BitInversion = BitInversion.AUTO;
-	
 	private block = 0;        // block contents
 	private blockCount = 0;   // block counter within group
 	private bitCount = 0;     // bit count within block
@@ -60,8 +51,7 @@ export class BitStreamSynchronizer {
 	private groupCount = 0;
 	private bitTime = 0;
   private unreportedUnsyncedBits = 0;
-	private negativePolarity = false;
-	private nbSyncAtOffset: SyncEntry[][][][] = [];
+	private nbSyncAtOffset: SyncEntry[][][] = [];
   private listener: RdsReportEventListener;
 	
 	public constructor(listener: RdsReportEventListener) {
@@ -74,10 +64,7 @@ export class BitStreamSynchronizer {
 		for (let i=0; i<this.nbSyncAtOffset.length; i++) {
       this.nbSyncAtOffset[i] = new Array(BLOCKS_PER_GROUP);
 			for (let j=0; j<this.nbSyncAtOffset[i].length; j++) {
-        this.nbSyncAtOffset[i][j] = new Array(2);
-				for (let k=0; k<this.nbSyncAtOffset[i][j].length; k++) {
-					this.nbSyncAtOffset[i][j][k] = [];
-        }
+        this.nbSyncAtOffset[i][j] = [];
       }
     }
 	}
@@ -87,97 +74,89 @@ export class BitStreamSynchronizer {
     if (bit) this.block |= 1;
     this.bitCount++;
     this.bitTime++;
-          
+    
+    try_sync:
     if (!this.synced) {
-      const synd: number[] = [ calcSyndrome(this.block), calcSyndrome(~this.block) ];
+      const synd = calcSyndrome(this.block);
       
-      outer_loop:
-      for (let i=0; i<BLOCKS_PER_GROUP; i++) {
-        for (let j=0; j<2; j++) {
-          if (j==0 && this.inversion == BitInversion.INVERT ||
-              j==1 && this.inversion == BitInversion.NOINVERT) continue;
-          if (synd[j] == SYNDROMES[i][0] || synd[j] == SYNDROMES[i][1]) {
-            const offset = this.bitTime % BLOCK_SIZE;
-            const pseudoBlock = (Math.floor(this.bitTime / BLOCK_SIZE) + BLOCKS_PER_GROUP - i) % BLOCKS_PER_GROUP;
+      const blockIndex = SYNDROMES.get(synd);
+      if (blockIndex == undefined) {    // The syndrome does not match one of the offset syndromes.
+        break try_sync;
+      }
 
-            console.log("[" + (j==0 ? "+" : "-") + (String.fromCharCode(65+i)) + ":" + offset + "/" + pseudoBlock + "]");
+      const offset = this.bitTime % BLOCK_SIZE;
+      const pseudoBlock = (Math.floor(this.bitTime / BLOCK_SIZE) + BLOCKS_PER_GROUP - blockIndex) % BLOCKS_PER_GROUP;
 
-            // Add current time and block to the list of syndrome hits.
-            const block = (this.block >> 10) & 0xFFFF;
-            this.nbSyncAtOffset[offset][pseudoBlock][j].push(
-              new SyncEntry(this.bitTime, block));
+      console.log("[" + (String.fromCharCode(65+blockIndex)) + ":" + offset + "/" + pseudoBlock + "]");
 
-            // Weed out out-of-time hits.
-            while (this.nbSyncAtOffset[offset][pseudoBlock][j][0].bitTime < this.bitTime - SYNC_CONFIRM_DURATION * GROUP_SIZE)
-              this.nbSyncAtOffset[offset][pseudoBlock][j].shift();
+      // Add current time and block to the list of syndrome hits.
+      const block = (this.block >> 10) & 0xFFFF;
+      this.nbSyncAtOffset[offset][pseudoBlock].push(
+        new SyncEntry(this.bitTime, block));
 
-            // Are we above threshold?
-            if (this.nbSyncAtOffset[offset][pseudoBlock][j].length > SYNC_THRESHOLD) {
-              this.synced = true;
-              this.unreportedUnsyncedBits = 0;
+      // Weed out out-of-time hits.
+      while (this.nbSyncAtOffset[offset][pseudoBlock][0].bitTime < this.bitTime - SYNC_CONFIRM_DURATION * GROUP_SIZE)
+        this.nbSyncAtOffset[offset][pseudoBlock].shift();
 
-              this.group[i] = block;
-              this.blockCount = (i+1) % BLOCKS_PER_GROUP;
-              this.bitCount = 0;
-              this.nbOk = 1;
-              for (let k=0; k<BLOCKS_PER_GROUP; k++) this.blocksOk[k] = (k == i);
-              this.negativePolarity = (j==1);
+      // Are we above threshold?
+      if (this.nbSyncAtOffset[offset][pseudoBlock].length > SYNC_THRESHOLD) {
+        this.synced = true;
+        this.unreportedUnsyncedBits = 0;
 
-              // Fill in the previous blocks.
-              {
-                const syncEntries = this.nbSyncAtOffset[offset][pseudoBlock][j];
-                let bt = syncEntries.pop()!.bitTime - BLOCK_SIZE;
-                let pastBlocks: number[] = [];
-                let pastOk: boolean[] = [];
+        this.group[blockIndex] = block;
+        this.blockCount = (blockIndex+1) % BLOCKS_PER_GROUP;
+        this.bitCount = 0;
+        this.nbOk = 1;
+        for (let k=0; k<BLOCKS_PER_GROUP; k++) this.blocksOk[k] = (k == blockIndex);
 
-                while (bt >= 0 && syncEntries.length > 0) {
-                  if (bt == syncEntries[syncEntries.length-1].bitTime) {
-                    const blk = syncEntries.pop()!.block;
-                    pastBlocks.unshift(this.negativePolarity ? ~blk : blk);
-                    pastOk.unshift(true);
-                  } else {
-                    pastBlocks.unshift(0);
-                    pastOk.unshift(false);
-                  }
-                  bt -= BLOCK_SIZE;
-                }
+        // Fill in the previous blocks.
+        {
+          const syncEntries = this.nbSyncAtOffset[offset][pseudoBlock];
+          let bt = syncEntries.pop()!.bitTime - BLOCK_SIZE;
+          let pastBlocks: number[] = [];
+          let pastOk: boolean[] = [];
 
-                // Pad pastGroups so that it start on a group boundary.
-                // Note: i contains the number of past blocks to add to the current group.
-                const targetBlockSize = i + Math.ceil((pastBlocks.length - i) / BLOCKS_PER_GROUP) * BLOCKS_PER_GROUP;
-                while (pastBlocks.length < targetBlockSize) {
-                  pastBlocks.unshift(0);
-                  pastOk.unshift(false);
-                }
-
-                // Now, emit groups.
-                while (pastBlocks.length >= BLOCKS_PER_GROUP) {
-                  this.emitGroup(
-                    new Uint16Array(pastBlocks.slice(0, BLOCKS_PER_GROUP)),
-                    pastOk.slice(0, BLOCKS_PER_GROUP)
-                  )
-                  pastBlocks = pastBlocks.slice(BLOCKS_PER_GROUP);
-                  pastOk = pastOk.slice(BLOCKS_PER_GROUP);
-                }
-
-                // Fill in the rest in the current group.
-                for (let k = 0; k < pastBlocks.length; k++) {
-                  this.group[k] = pastBlocks[k];
-                  this.blocksOk[k] = pastOk[k];
-                }
-              }
-              
-              if (this.negativePolarity) this.group[i] = ~ this.group[i];
-              
-              this.eraseSyncArray();
-
-              console.log("Got synchronization on block " + String.fromCharCode(65 + i) + "! (" + (j==0 ? "positive" : "negative") + " logic)");
-              // TODO: Need to report status?
+          while (bt >= 0 && syncEntries.length > 0) {
+            if (bt == syncEntries[syncEntries.length-1].bitTime) {
+              const blk = syncEntries.pop()!.block;
+              pastBlocks.unshift(blk);
+              pastOk.unshift(true);
+            } else {
+              pastBlocks.unshift(0);
+              pastOk.unshift(false);
             }
-            break outer_loop;
+            bt -= BLOCK_SIZE;
+          }
 
+          // Pad pastGroups so that it start on a group boundary.
+          // Note: i contains the number of past blocks to add to the current group.
+          const targetBlockSize = blockIndex + Math.ceil((pastBlocks.length - blockIndex) / BLOCKS_PER_GROUP) * BLOCKS_PER_GROUP;
+          while (pastBlocks.length < targetBlockSize) {
+            pastBlocks.unshift(0);
+            pastOk.unshift(false);
+          }
+
+          // Now, emit groups.
+          while (pastBlocks.length >= BLOCKS_PER_GROUP) {
+            this.emitGroup(
+              new Uint16Array(pastBlocks.slice(0, BLOCKS_PER_GROUP)),
+              pastOk.slice(0, BLOCKS_PER_GROUP)
+            )
+            pastBlocks = pastBlocks.slice(BLOCKS_PER_GROUP);
+            pastOk = pastOk.slice(BLOCKS_PER_GROUP);
+          }
+
+          // Fill in the rest in the current group.
+          for (let k = 0; k < pastBlocks.length; k++) {
+            this.group[k] = pastBlocks[k];
+            this.blocksOk[k] = pastOk[k];
           }
         }
+        
+        this.eraseSyncArray();
+
+        console.log("Got synchronization on block " + String.fromCharCode(65 + blockIndex) + "!");
+        // TODO: Need to report status?
       }
     }
 
@@ -194,11 +173,10 @@ export class BitStreamSynchronizer {
       }
     } else {   // If synced.
       if (this.bitCount == BLOCK_SIZE) {
-        if (this.negativePolarity) this.block = ~this.block;    // Invert block if polarity is negative.
         this.group[this.blockCount] = (this.block>>10) & 0xFFFF;
         const synd = calcSyndrome(this.block);
 
-        if (synd == SYNDROMES[this.blockCount][0] || synd == SYNDROMES[this.blockCount][1]) {
+        if (SYNDROMES.get(synd) == this.blockCount) {
           this.nbOk++;
           this.blocksOk[this.blockCount] = true;
         } else {
@@ -262,8 +240,4 @@ export class BitStreamSynchronizer {
       }
     }
   }
-	
-	public forceInversion(inversion: BitInversion) {
-		this.inversion = inversion;
-	}
 }
