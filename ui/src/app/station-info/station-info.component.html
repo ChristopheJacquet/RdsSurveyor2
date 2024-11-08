@@ -178,7 +178,7 @@
             <!-- The current station might have an EON entry for transmitting linkage information.
                  Do not display this. -->
             <td>{{ s.key | hex:4 }}</td>
-            <td>{{ s.value.getPS() }}</td>
+            <td class="mono">{{ s.value.getPS() }}</td>
             <td>{{ getPtyString(s.value) }}</td>
             <td>{{ getTrafficString(s.value) }}</td>
             <td>

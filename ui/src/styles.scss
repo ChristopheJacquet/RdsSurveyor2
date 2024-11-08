@@ -16,4 +16,9 @@ table.data-table {
   th {
     background: #e8ecf9;
   }
+
+  .mono {
+    font-family: "Roboto mono", monospace;
+    white-space: pre;
+  }
 }
