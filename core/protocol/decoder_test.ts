@@ -13,6 +13,7 @@ function send(s: string, station: Station) {
       [true, true, true, true],
       logMessage,
       station);
+    console.log(logMessage.text);
   }
 }
 
@@ -118,6 +119,21 @@ describe('Radio Campus', () => {
 
   it('should have expected RT', () => {
     expect(station.getRT()).toBe("88.8 la fréquence stylée                                        ");
+  });
+});
+
+// Synthetic example advertising an ODA without an associated group (group type
+// code 0). It must not override group decoder for group 0A.
+describe('ODA without an associated group', () => {
+  let station = new StationImpl();
+  send(`FFFF 3000 0000 1234 
+        FFFF 0408 E20D 2043 
+        FFFF 0409 95CD 414D 
+        FFFF 040A E20D 5055 
+        FFFF 040F 95CD 5320 `, station);
+
+  it('must not override group 0A decoder', () => {
+    expect(station.getPS()).toBe(" CAMPUS ");
   });
 });
 

@@ -249,7 +249,14 @@ bitstruct group_3A(station: Station) {
     aid: uint<16>
 } action {
     put station.transmitted_odas app_group_type aid
-    put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
+    switch app_group_type {
+        case 0, 31 {
+            # Do nothing: no associated group.
+        }
+        case _ {
+            put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
+        }
+    }
     parse app_data lookup(station.oda_3A_mapping, aid, "group_unknown")
 } log {
     "ODA AID={aid:04x} in group {app_group_type:grouptype}"

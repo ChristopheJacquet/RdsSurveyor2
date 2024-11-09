@@ -417,8 +417,19 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((aid != null) && (app_group_type != null)) {
 		station.transmitted_odas.set(app_group_type, aid);
 	}
-	if ((aid != null) && (app_group_type != null)) {
-		station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
+	if ((app_group_type != null)) {
+		switch (app_group_type) {
+			case 0:
+			case 31:
+				break;
+
+			default:
+				if ((aid != null) && (app_group_type != null)) {
+					station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
+				}
+				break;
+
+		}
 	}
 	if ((aid != null)) {
 		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, log, station);

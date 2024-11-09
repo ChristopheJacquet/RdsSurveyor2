@@ -75,7 +75,7 @@ put : "put" lvalue expr expr
 
 switch : "switch" expr "{" switch_case+ "}"
 
-switch_case : "case" INT ("," INT)* "{" action* "}"
+switch_case : "case" ((INT ("," INT)*) | ID) "{" action* "}"
 
 log_element: ESCAPED_STRING
 
@@ -450,8 +450,13 @@ def compile_action(codegen, st, arguments):
                                     match c:
                                         case lark.Token(type='INT') as i:
                                             values.append(i)
-                                for v in values:
-                                    cgn2.line(f'case {v}:')
+                                        case lark.Token(type='ID', value='_'):
+                                            values = None
+                                if values is None:
+                                    cgn2.line('default:')
+                                else:
+                                    for v in values:
+                                        cgn2.line(f'case {v}:')
                                 with cgn2.non_block_indent() as cgn3:
                                     for a in subtrees_of_type(cc, 'action'):
                                         compile_action(cgn3, a, arguments)
