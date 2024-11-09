@@ -244,6 +244,9 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessag
 
 			case 3:
 				if ((payload != null)) {
+					log.add(`Language code: ${payload}`);
+				}
+				if ((payload != null)) {
 					station.language_code = payload;
 				}
 				break;
@@ -411,8 +414,8 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessag
 		: null;
 
 	// Actions.
-	if ((aid != null) && (app_group_type != null)) {
-		log.add(`ODA AID=${aid.toString(16).toUpperCase().padStart(4, '0')} in group ${(app_group_type>>1).toString() + ((app_group_type & 1) == 0 ? 'A' : 'B')}`);
+	if ((aid != null)) {
+		log.add(`ODA AID=${aid.toString(16).toUpperCase().padStart(4, '0')}`);
 	}
 	if ((aid != null) && (app_group_type != null)) {
 		station.transmitted_odas.set(app_group_type, aid);
@@ -421,9 +424,13 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessag
 		switch (app_group_type) {
 			case 0:
 			case 31:
+				log.add(`no associated group`);
 				break;
 
 			default:
+				if ((app_group_type != null)) {
+					log.add(`in group ${(app_group_type>>1).toString() + ((app_group_type & 1) == 0 ? 'A' : 'B')}`);
+				}
 				if ((aid != null) && (app_group_type != null)) {
 					station.app_mapping.set(app_group_type, station.odas.get(aid) ?? "group_unknown");
 				}

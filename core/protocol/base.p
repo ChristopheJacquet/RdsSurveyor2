@@ -160,6 +160,7 @@ bitstruct group_1A(station: Station) {
         }
 
         case 3 {
+            log "Language code: {payload:u}"
             station.language_code = payload
         }
     }
@@ -248,14 +249,16 @@ bitstruct group_3A(station: Station) {
     # Block D.
     aid: uint<16>
 } action {
-    log "ODA AID={aid:04x} in group {app_group_type:grouptype}"
+    log "ODA AID={aid:04x}"
 
     put station.transmitted_odas app_group_type aid
     switch app_group_type {
         case 0, 31 {
+            log "no associated group"
             # Do nothing: no associated group.
         }
         case _ {
+            log "in group {app_group_type:grouptype}"
             put station.app_mapping app_group_type lookup(station.odas, aid, "group_unknown")
         }
     }
