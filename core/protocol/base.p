@@ -59,16 +59,16 @@ bitstruct group(station: Station) {
     # Group-specific.
     payload: unparsed<37>
 } action {
+    log "PI={pi:04x}"
+    log "Group {type:grouptype}"
+    log "TP={tp:bool}"
+    log "PTY={pty:u}"
+
     station.pi = pi
     station.tp = tp
     station.pty = pty
     station.addToGroupStats(type)
     parse payload lookup(station.app_mapping, type, "group_unknown")
-} log {
-    "PI={pi:04x}"
-    "Group {type:grouptype}"
-    "TP={tp:bool}"
-    "PTY={pty:u}"
 }
 
 bitstruct group_unknown(station: Station) {
@@ -91,10 +91,10 @@ bitstruct group_0A(station: Station) {
     # Block D.
     _: unparsed<16>
 } action {
+    log "AFs {af1:freq}, {af2:freq}"
+
     station.addAfPair(af1, af2)
     parse _ "group_0B_0_common"
-} log {
-    "AFs {af1:freq}, {af2:freq}"
 }
 
 bitstruct group_0B_0_common(station: Station) {
@@ -112,6 +112,9 @@ bitstruct group_0B_0_common(station: Station) {
     # Block D.
     ps_seg: byte<2>
 } action {
+    log "TA={ta:bool}"
+    log "PS seg @{addr:u} \"{ps_seg:rdstext}\""
+
     station.ta = ta
     station.music = music
     copy station.ps, addr, 2, ps_seg
@@ -130,9 +133,6 @@ bitstruct group_0B_0_common(station: Station) {
             station.di_stereo = di
         }
     }
-} log {
-    "TA={ta:bool}"
-    "PS seg @{addr:u} \"{ps_seg:rdstext}\""
 }
 
 bitstruct group_1A(station: Station) {
@@ -149,6 +149,9 @@ bitstruct group_1A(station: Station) {
     # Block D.
     pin: unparsed<16>
 } action {
+    log "LA={linkage_actuator:bool}"
+    log "v={variant:u}"
+
     station.linkage_actuator = linkage_actuator
     parse _ "group_1B_1_common"
     switch variant {
@@ -160,9 +163,6 @@ bitstruct group_1A(station: Station) {
             station.language_code = payload
         }
     }
-} log {
-    "LA={linkage_actuator:bool}"
-    "v={variant:u}"
 }
 
 bitstruct group_1A_ecc(station: Station) {
@@ -173,9 +173,9 @@ bitstruct group_1A_ecc(station: Station) {
     ecc: uint<8>
     pin: unparsed<16>
 } action {
+    log "ECC={ecc:02x}"
+
     station.ecc = ecc
-} log {
-    "ECC={ecc:02x}"
 }
 
 bitstruct group_1B_1_common(station: Station) {
@@ -192,11 +192,11 @@ bitstruct group_1B_1_common(station: Station) {
     pin_hour: uint<5>
     pin_minute: uint<6>
 } action {
+    log "PIN=(D={pin_day:u}, {pin_hour:02u}:{pin_minute:02u})"
+
     station.pin_day = pin_day
     station.pin_hour = pin_hour
     station.pin_minute = pin_minute
-} log {
-    "PIN=(D={pin_day:u}, {pin_hour:02u}:{pin_minute:02u})"
 }
 
 bitstruct group_2A(station: Station) {
@@ -209,11 +209,11 @@ bitstruct group_2A(station: Station) {
     # Blocks C and D.
     rt_seg: byte<4>
 } action {
+    log "RT flag={flag:letter}"
+    log "RT seg @{addr:u} \"{rt_seg:rdstext}\""
+
     copy station.rt, addr, 4, rt_seg
     station.rt_flag = flag
-} log {
-    "RT flag={flag:letter}"
-    "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_2B(station: Station) {
@@ -229,11 +229,11 @@ bitstruct group_2B(station: Station) {
     # Block D.
     rt_seg: byte<2>
 } action {
+    log "RT flag={flag:letter}"
+    log "RT seg @{addr:u} \"{rt_seg:rdstext}\""
+
     copy station.rt, addr, 2, rt_seg
     station.rt_flag = flag
-} log {
-    "RT flag={flag:letter}"
-    "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 }
 
 bitstruct group_3A(station: Station) {
@@ -248,6 +248,8 @@ bitstruct group_3A(station: Station) {
     # Block D.
     aid: uint<16>
 } action {
+    log "ODA AID={aid:04x} in group {app_group_type:grouptype}"
+
     put station.transmitted_odas app_group_type aid
     switch app_group_type {
         case 0, 31 {
@@ -258,8 +260,6 @@ bitstruct group_3A(station: Station) {
         }
     }
     parse app_data lookup(station.oda_3A_mapping, aid, "group_unknown")
-} log {
-    "ODA AID={aid:04x} in group {app_group_type:grouptype}"
 }
 
 # Clock time.
@@ -276,12 +276,12 @@ bitstruct group_4A(station: Station) {
     tz_sign: bool
     tz_offset: uint<5>
 } action {
+    log "MJD={mjd:u}"
+    log "Hour={hour:02u}"
+    log "Minute={minute:02u}"
+    log "TZ={tz_sign:sign}{tz_offset:u}"
+
     station.setClockTime(mjd, hour, minute, tz_sign, tz_offset)
-} log {
-    "MJD={mjd:u}"
-    "Hour={hour:02u}"
-    "Minute={minute:02u}"
-    "TZ={tz_sign:sign}{tz_offset:u}"
 }
 
 # PTYN.
@@ -296,10 +296,10 @@ bitstruct group_10A(station: Station) {
     # Blocks C and D.
     ptyn_seg: byte<4>
 } action {
+    log "PTYN flag={flag_ab:letter}"
+    log "PTYN seg @{addr:u} \"{ptyn_seg:rdstext}\""
+
     copy station.ptyn, addr, 4, ptyn_seg
-} log {
-    "PTYN flag={flag_ab:letter}"
-    "PTYN seg @{addr:u} \"{ptyn_seg:rdstext}\""
 }
 
 # Long PS.
@@ -312,10 +312,10 @@ bitstruct group_15A(station: Station) {
     addr: uint<3>
     lps_seg: byte<4>
 } action {
+    log "TA={ta:bool}"
+    log "Long PS seg @{addr:u} {lps_seg:bytes}"
+
     copy station.lps, addr, 4, lps_seg
-} log {
-    "TA={ta:bool}"
-    "Long PS seg @{addr:u} {lps_seg:bytes}"
 }
 
 bitstruct group_15B(station: Station) {
@@ -333,6 +333,9 @@ bitstruct group_15B(station: Station) {
     # Block D.
     repeat: unparsed<16>
 } action {
+    log "TA={ta:bool}"
+    log "PI={pi:u}"
+
     station.ta = ta
     station.music = music
 
@@ -350,9 +353,6 @@ bitstruct group_15B(station: Station) {
             station.di_stereo = di
         }
     }
-} log {
-    "TA={ta:bool}"
-    "PI={pi:u}"
 }
 
 #include eon.p

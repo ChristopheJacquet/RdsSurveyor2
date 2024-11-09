@@ -26,7 +26,7 @@ simplevartype: ID ("<" INT ">")?
 
 maptype: "map" "<" simplevartype "," simplevartype ">"
 
-bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")? ("log" "{" log_element* "}")?
+bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" action* "}")?
 
 arg: ID ":" type
 
@@ -41,6 +41,7 @@ action:
     | copy
     | put
     | switch
+    | log_element
 
 expr: lvalue
     | function_call
@@ -77,7 +78,7 @@ switch : "switch" expr "{" switch_case+ "}"
 
 switch_case : "case" ((INT ("," INT)*) | ID) "{" action* "}"
 
-log_element: ESCAPED_STRING
+log_element: "log" ESCAPED_STRING
 
 // imports WORD from library
 %import common.WORD   
@@ -463,6 +464,9 @@ def compile_action(codegen, st, arguments):
                                     cgn3.line('break;')
                                     cgn3.line()
 
+        case lark.Tree(data='log_element') as st:
+            compile_log_element(codegen, st)
+
         case _:
             codegen.line(f'// Unhandled action: {action}')
 
@@ -582,8 +586,6 @@ def compile_bitstruct(codegen, cc):
 
         cgn.line()
         cgn.line('// Actions.')
-        for st in subtrees_of_type(cc, 'log_element'):
-            compile_log_element(cgn, st)
         for st in subtrees_of_type(cc, 'action'):
             compile_action(cgn, st, arguments)
         

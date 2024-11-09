@@ -20,12 +20,12 @@ bitstruct group_rtplus(station: Station) {
   start_2: uint<6>
   length_2: uint<5>
 } action {
+  log "RT+ item_toggle={item_toggle:bool} item_running={item_running:bool}"
+  log "Tag 1: type={content_type_1:u}, start={start_1:u}, length={length_1:u}"
+  log "Tag 2: type={content_type_2:u}, start={start_2:u}, length={length_2:u}"
+
   station.rt_plus_app.setTag(content_type_1, start_1, length_1)
   station.rt_plus_app.setTag(content_type_2, start_2, length_2)
-} log {
-  "RT+ item_toggle={item_toggle:bool} item_running={item_running:bool}"
-  "Tag 1: type={content_type_1:u}, start={start_1:u}, length={length_1:u}"
-  "Tag 2: type={content_type_2:u}, start={start_2:u}, length={length_2:u}"
 }
 
 # ETSI standard EN 301700 describes a way to cross-reference DAB (aka Eureka
@@ -71,6 +71,11 @@ bitstruct group_dabxref_service(station: Station) {
   info: uint<16>
   sid: uint<16>
 } action {
+  log "DAB xref"
+  log "v={variant:u}"
+  log "info={info:04x}"
+  log "sid={sid:04x}"
+
   switch variant {
     case 0 {
       station.dab_cross_ref_app.addServiceEnsembleInfo(info, sid)
@@ -79,11 +84,6 @@ bitstruct group_dabxref_service(station: Station) {
       station.dab_cross_ref_app.addServiceLinkageInfo(info, sid)
     }
   }
-} log {
-  "DAB xref"
-  "v={variant:u}"
-  "info={info:04x}"
-  "sid={sid:04x}"
 }
 
 # Extended Radiotext (eRT).
@@ -104,10 +104,10 @@ bitstruct group_ert_declaration(station: Station) {
   # Block D.
   ert_aid: unparsed<16>
 } action {
+  log "eRT utf8 encoding? {utf8_encoding:bool}"
+
   station.ert_app.utf8_encoding = utf8_encoding
   station.ert_app.enabled = true
-} log {
-  "eRT utf8 encoding? {utf8_encoding:bool}"
 }
 
 bitstruct group_ert(station: Station) {
@@ -119,7 +119,7 @@ bitstruct group_ert(station: Station) {
   # Blocks C and D.
   ert_seg: byte<4>
 } action {
+  log "eRT seg @{addr:u} \"{ert_seg:bytes}\""
+
   copy station.ert_app.ert, addr, 4, ert_seg
-} log {
-  "eRT seg @{addr:u} \"{ert_seg:bytes}\""
 }
