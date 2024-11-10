@@ -282,7 +282,6 @@ export class StationImpl implements Station {
 				}
 			}
 		}
-    console.log(`End: ${a} ${b}`);
     // If we reach this point, then the pair could not be processed.
     this.diagnostics.addFinding(`Invalid AF pair: ${formatAf(codeA)}, ${formatAf(codeB)}`, GROUP_0A);
 	}
