@@ -1,6 +1,7 @@
-import { AFList, parseAfCode } from './af';
+import { AFList, parseAfCode, formatAf } from './af';
 import { Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
+import { Diagnostics } from "./diagnostics";
 import { ERtAppImpl } from "./enhanced_radio_text";
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
@@ -52,6 +53,8 @@ export class StationImpl implements Station {
   public trafficEvents = new Array<TrafficEvent>();
 
   private date: Date | null = null;
+
+  readonly diagnostics = new Diagnostics();
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {
@@ -240,6 +243,7 @@ export class StationImpl implements Station {
     this.dab_cross_ref_app.reset();
 
     this.log = [];
+    this.diagnostics.reset();
   }
 
 	public addAfPair(codeA: number, codeB: number) {
@@ -247,6 +251,8 @@ export class StationImpl implements Station {
     const b = parseAfCode(codeB);
     // If two filler codes, we cannot do anything.
     if (a.kind == "AfFiller" && b.kind == "AfFiller") {
+      this.diagnostics.addFinding(
+        "Waste of capacity by transmitting groups with two AF fillers.", GROUP_0A);
       return;
     }
 		if (a.kind == "AfListLength") {
@@ -258,6 +264,7 @@ export class StationImpl implements Station {
 				} else {
           this.currentAfList = afList;
         }
+        return;
 			}
 		} else {
 			if (a.kind == "AfFrequency" || b.kind == "AfFrequency") {
@@ -271,9 +278,13 @@ export class StationImpl implements Station {
 					this.currentAfList = new AFList(
             a.kind == "AfFrequency" ? a.freq : b.kind == "AfFrequency" ? b.freq : 0);
 					this.currentAfList.addPair(a, b);
+          return;
 				}
 			}
 		}
+    console.log(`End: ${a} ${b}`);
+    // If we reach this point, then the pair could not be processed.
+    this.diagnostics.addFinding(`Invalid AF pair: ${formatAf(codeA)}, ${formatAf(codeB)}`, GROUP_0A);
 	}
 
   /**

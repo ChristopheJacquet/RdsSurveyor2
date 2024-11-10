@@ -226,7 +226,7 @@
       <mat-list-item role="listitem" class="rt-item" *ngFor="let msg of station.ert_app.ert.getPastMessages(true)">
         <div>{{ msg.message }}</div>
       </mat-list-item>
-    </mat-list>    
+    </mat-list>
   </mat-tab>
   <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
     <table class="data-table">
@@ -244,5 +244,12 @@
         {{ m.toString() }}
       </div>
     </div>
+  </mat-tab>
+  <mat-tab label="Diagnostics">
+    <mat-list role="list">
+      <mat-list-item role="listitem" *ngFor="let f of station.diagnostics.findings | keyvalue">
+        <div>{{ f.key }}</div>
+      </mat-list-item>
+    </mat-list>
   </mat-tab>
 </mat-tab-group>
