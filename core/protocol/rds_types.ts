@@ -278,8 +278,8 @@ export class StationImpl implements Station {
 					this.currentAfList = new AFList(
             a.kind == "AfFrequency" ? a.freq : b.kind == "AfFrequency" ? b.freq : 0);
 					this.currentAfList.addPair(a, b);
-          return;
 				}
+        return;
 			}
 		}
     // If we reach this point, then the pair could not be processed.
