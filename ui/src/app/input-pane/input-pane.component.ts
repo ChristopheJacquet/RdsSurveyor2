@@ -13,6 +13,7 @@ import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../.
 import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator } from "../../../../core/signals/mpx";
+import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
 
@@ -26,14 +27,10 @@ import { catchError } from 'rxjs';
 export class InputPaneComponent implements AfterViewInit, RdsReportEventListener  {
   @ViewChild('blerGraph') public blerGraph!: ElementRef;
   @ViewChild('constellationDiagram') public constellationDiagram!: ElementRef;
-  @Output() groupReceived = new EventEmitter<GroupEvent | NewStationEvent>();
+  @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
-  // For station change detection.
-  lastPi: number = -1;
-  toBeConfirmedPi: number = -1;
-  tuningState: TuningState = TuningState.INITIALIZING;
-  pendingGroupEvents = Array<GroupEvent>();
+  stationChangeDetector = new StationChangeDetector(evt => this.handleReceiverEvent(evt));
   realtimePlayback: boolean = false;
   si470xDongle: Si470x | null = null;
   si470xActive = false;
@@ -119,53 +116,20 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
     this.updateBlerGraph(true, ok);
 
-    // Station change detection.
-    const pi = blocks[0];
-    if (ok[0]) {
-      switch (this.tuningState) {
-        case TuningState.INITIALIZING:
-          this.lastPi = pi;
-          this.tuningState = TuningState.TUNED;
-          this.startNewLogFile(pi);
-          break;
-        case TuningState.TUNED:
-          if (pi != this.lastPi) {
-            this.tuningState = TuningState.CONFIRMING;
-            this.toBeConfirmedPi = pi;
-          }
-          break;
-        case TuningState.CONFIRMING:
-          if (pi == this.toBeConfirmedPi) {
-            // New station confirmed.
-            this.lastPi = pi;
-            this.tuningState = TuningState.TUNED;
-            await this.startNewLogFile(pi);
-            this.groupReceived.emit(new NewStationEvent());
-            for (let evt of this.pendingGroupEvents) {
-              await this.logGroupEvent(evt);
-              this.groupReceived.emit(evt);
-            }
-            this.pendingGroupEvents = [];
-          } else if (pi == this.lastPi) {
-            // Back to original PI. Flush pending groups.
-            this.tuningState = TuningState.TUNED;
-            this.pendingGroupEvents = [];
-          } else {
-            // Yet another PI. Remain in CONFIRMING state but flush pending groups.
-            this.toBeConfirmedPi = pi;
-            this.pendingGroupEvents = [];
-          }
-          break;
-      }
-    }
+    this.stationChangeDetector.processGroup(blocks, ok);
+  }
 
-    const evt = new GroupEvent(blocks, ok);
-    if (this.tuningState != TuningState.CONFIRMING) {
-      await this.logGroupEvent(evt);
-      this.groupReceived.emit(evt);
-    } else {
-      this.pendingGroupEvents.push(evt);
+  async handleReceiverEvent(event: ReceiverEvent) {
+    switch (event.kind) {
+      case ReceiverEventKind.NewStationEvent:
+        await this.startNewLogFile(event.pi);
+        break;
+      
+      case ReceiverEventKind.GroupEvent:
+        await this.logGroupEvent(event);
+        break;
     }
+    this.groupReceived.emit(event);
   }
 
   updateBlerGraph(synced: boolean, ok: boolean[]) {
@@ -539,32 +503,6 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
     await this.logFileStream.write(str + "\n");
   }
-}
-
-export class GroupEvent {
-  public blocks: Uint16Array;
-  public ok: boolean[];
-
-  constructor(blocks: Uint16Array, ok: boolean[]) {
-    this.blocks = blocks;
-    this.ok = ok;
-  }
-
-  public hexDump(): string {
-    return [...this.blocks].map(
-      (b, i) => this.ok[i] ? b.toString(16).toUpperCase().padStart(4, "0") : "----"
-    ).join(" ");
-  }
-}
-
-export class NewStationEvent {
-}
-
-// Tuning state used for station change detection.
-enum TuningState {
-  INITIALIZING,
-  TUNED,
-  CONFIRMING,
 }
 
 async function sleep(duration_msec: number) {

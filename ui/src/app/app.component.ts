@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { GroupEvent, NewStationEvent, InputPaneComponent } from './input-pane/input-pane.component';
+import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
 import { parse_group } from '../../../core/protocol/base';
 import { LogMessage, StationImpl } from '../../../core/protocol/rds_types';
+import { ReceiverEvent, ReceiverEventKind } from "../../../core/protocol/station_change";
 
 @Component({
   selector: 'app-root',
@@ -17,15 +18,18 @@ export class AppComponent {
 
   station: StationImpl;
 
-  receiveGroup(evt: GroupEvent | NewStationEvent) {
-    if (evt instanceof GroupEvent) {
-      const log = new LogMessage();
-      log.add('[' + evt.hexDump() + '] ', false)
-      parse_group(evt.blocks, evt.ok, log, this.station);
-      this.station.addLogMessage(log);
-      this.station.tickGroupDuration();
-    } else if (evt instanceof NewStationEvent) {
-      this.station.reset();
+  receiveGroup(evt: ReceiverEvent) {
+    switch (evt.kind) {
+      case ReceiverEventKind.GroupEvent:
+        const log = new LogMessage();
+        log.add('[' + evt.hexDump() + '] ', false)
+        parse_group(evt.blocks, evt.ok, log, this.station);
+        this.station.addLogMessage(log);
+        this.station.tickGroupDuration();
+        break;
+      case ReceiverEventKind.NewStationEvent:
+        this.station.reset();
+        break;
     }
   }
 
