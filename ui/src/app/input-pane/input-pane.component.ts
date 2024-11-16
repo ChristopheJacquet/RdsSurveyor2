@@ -30,7 +30,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
-  stationChangeDetector = new StationChangeDetector(evt => this.handleReceiverEvent(evt));
+  stationChangeDetector = new StationChangeDetector();
   realtimePlayback: boolean = false;
   si470xDongle: Si470x | null = null;
   si470xActive = false;
@@ -116,20 +116,19 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
     this.updateBlerGraph(true, ok);
 
-    this.stationChangeDetector.processGroup(blocks, ok);
-  }
-
-  async handleReceiverEvent(event: ReceiverEvent) {
-    switch (event.kind) {
-      case ReceiverEventKind.NewStationEvent:
-        await this.startNewLogFile(event.pi);
-        break;
-      
-      case ReceiverEventKind.GroupEvent:
-        await this.logGroupEvent(event);
-        break;
+    const events = this.stationChangeDetector.processGroup(blocks, ok);
+    for (let event of events) {
+      switch (event.kind) {
+        case ReceiverEventKind.NewStationEvent:
+          await this.startNewLogFile(event.pi);
+          break;
+        
+        case ReceiverEventKind.GroupEvent:
+          await this.logGroupEvent(event);
+          break;
+      }
+      this.groupReceived.emit(event);
     }
-    this.groupReceived.emit(event);
   }
 
   updateBlerGraph(synced: boolean, ok: boolean[]) {

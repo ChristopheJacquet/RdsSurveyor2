@@ -40,13 +40,10 @@ export class StationChangeDetector {
   toBeConfirmedPi: number = -1;
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
-  eventHandler: (event: ReceiverEvent) => Promise<void>;
 
-  constructor(eventHandler: (event: ReceiverEvent) => Promise<void>) {
-    this.eventHandler = eventHandler;
-  }
+  processGroup(blocks: Uint16Array, ok: boolean[]): Array<ReceiverEvent> {
+    const result = new Array<ReceiverEvent>();
 
-  async processGroup(blocks: Uint16Array, ok: boolean[]) {
     // Station change detection.
     const pi = blocks[0];
     if (ok[0]) {
@@ -54,7 +51,7 @@ export class StationChangeDetector {
         case TuningState.INITIALIZING:
           this.lastPi = pi;
           this.tuningState = TuningState.TUNED;
-          await this.eventHandler(new NewStationEvent(pi));
+          result.push(new NewStationEvent(pi));
           break;
         case TuningState.TUNED:
           if (pi != this.lastPi) {
@@ -67,9 +64,9 @@ export class StationChangeDetector {
             // New station confirmed.
             this.lastPi = pi;
             this.tuningState = TuningState.TUNED;
-            await this.eventHandler(new NewStationEvent(pi));
+            result.push(new NewStationEvent(pi));
             for (let evt of this.pendingGroupEvents) {
-              this.eventHandler(evt);
+              result.push(evt);
             }
             this.pendingGroupEvents = [];
           } else if (pi == this.lastPi) {
@@ -87,9 +84,11 @@ export class StationChangeDetector {
 
     const evt = new GroupEvent(blocks, ok);
     if (this.tuningState == TuningState.TUNED) {
-      await this.eventHandler(evt);
+      result.push(evt);
     } else {
       this.pendingGroupEvents.push(evt);
     }
+
+    return result;
   }
 }
