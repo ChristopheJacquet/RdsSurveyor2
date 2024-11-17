@@ -55,7 +55,11 @@ export class StationChangeDetector {
           break;
         case TuningState.TUNED:
           if (pi != this.lastPi) {
+            // If a new PI is detected, wait for confirmation, but already
+            // flush any pending PI-less group, as we don't know if they belong
+            // to the previous or the potential new station.
             this.tuningState = TuningState.CONFIRMING;
+            this.pendingGroupEvents = [];
             this.toBeConfirmedPi = pi;
           }
           break;
@@ -65,10 +69,6 @@ export class StationChangeDetector {
             this.lastPi = pi;
             this.tuningState = TuningState.TUNED;
             result.push(new NewStationEvent(pi));
-            for (let evt of this.pendingGroupEvents) {
-              result.push(evt);
-            }
-            this.pendingGroupEvents = [];
           } else if (pi == this.lastPi) {
             // Back to original PI. Flush pending groups.
             this.tuningState = TuningState.TUNED;
@@ -83,12 +83,20 @@ export class StationChangeDetector {
     }
 
     const evt = new GroupEvent(blocks, ok);
-    if (this.tuningState == TuningState.TUNED) {
+    if (this.tuningState == TuningState.TUNED && ok[0]) {
+      this.emitAllPendingEvents(result);
       result.push(evt);
     } else {
       this.pendingGroupEvents.push(evt);
     }
 
     return result;
+  }
+
+  private emitAllPendingEvents(result: Array<ReceiverEvent>) {
+    for (let evt of this.pendingGroupEvents) {
+      result.push(evt);
+    }
+    this.pendingGroupEvents = [];
   }
 }
