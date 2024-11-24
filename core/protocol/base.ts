@@ -612,7 +612,7 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessa
 		log.add(`TA=${ta ? '1': '0'}`);
 	}
 	if ((pi != null)) {
-		log.add(`PI=${pi}`);
+		log.add(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
 	}
 	if ((ta != null)) {
 		station.ta = ta;

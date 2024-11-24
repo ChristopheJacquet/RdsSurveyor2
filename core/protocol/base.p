@@ -337,7 +337,7 @@ bitstruct group_15B(station: Station) {
     repeat: unparsed<16>
 } action {
     log "TA={ta:bool}"
-    log "PI={pi:u}"
+    log "PI={pi:04x}"
 
     station.ta = ta
     station.music = music
