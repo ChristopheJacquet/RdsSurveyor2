@@ -496,6 +496,8 @@ def format_expr(var, fmt):
             return f"{var}.toString(16).toUpperCase().padStart(2, '0')"
         case '04x':
             return f"{var}.toString(16).toUpperCase().padStart(4, '0')"
+        case 'bcd':
+            return f"formatBcd({var})"
         case 'grouptype':
             return f"({var}>>1).toString() + (({var} & 1) == 0 ? 'A' : 'B')"
         case 'freq':
@@ -678,6 +680,10 @@ def compile(codegen, t):
     codegen.line()
     with codegen.block('function formatBytes(bytes: Array<number | null>): string {') as blk1:
         blk1.line('return bytes.map((b) => b == null ? ".." : b.toString(16).toUpperCase().padStart(2, "0")).join(" ");')
+
+    codegen.line()
+    with codegen.block('function formatBcd(digit: number): string {') as blk1:
+        blk1.line('return (digit >= 0 && digit <= 9) ? digit.toString() : " ";')
 
 l = Lark(grammar)
 

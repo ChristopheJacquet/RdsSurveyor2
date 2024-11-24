@@ -650,6 +650,270 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessa
 	}
 }
 
+export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field group_common: unparsed<27> at +0, width 27.
+	// Field flag_ab: bool at +27, width 1.
+	let flag_ab = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field addr: uint<4> at +28, width 4.
+	let addr = (ok[1]) ?
+		((block[1] & 0b1111))
+		: null;
+	// Field paging_data: unparsed<32> at +32, width 32.
+
+	// Actions.
+	if ((flag_ab != null)) {
+		log.add(`Paging [flag=${flag_ab ? 'A' : 'B'}]`);
+	}
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				log.add(`Beep`);
+				get_parse_function("group_7A_address")(block, ok, log, station);
+				break;
+
+			case 1:
+				log.add(`Functions`);
+				break;
+
+			case 2:
+			case 3:
+				log.add(`10-digit`);
+				get_parse_function("group_7A_numeric_10")(block, ok, log, station);
+				break;
+
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				log.add(`18-digit`);
+				get_parse_function("group_7A_numeric_18")(block, ok, log, station);
+				break;
+
+			case 8:
+			case 9:
+			case 10:
+			case 11:
+			case 12:
+			case 13:
+			case 14:
+			case 15:
+				log.add(`Alphanumeric`);
+				get_parse_function("group_7A_alphanumeric")(block, ok, log, station);
+				break;
+
+		}
+	}
+}
+
+export function parse_group_7A_address(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field rp_common: unparsed<32> at +0, width 32.
+	// Field y1: uint<4> at +32, width 4.
+	let y1 = (ok[2]) ?
+		((block[2] & 0b1111000000000000) >> 12)
+		: null;
+	// Field y2: uint<4> at +36, width 4.
+	let y2 = (ok[2]) ?
+		((block[2] & 0b111100000000) >> 8)
+		: null;
+	// Field z1: uint<4> at +40, width 4.
+	let z1 = (ok[2]) ?
+		((block[2] & 0b11110000) >> 4)
+		: null;
+	// Field z2: uint<4> at +44, width 4.
+	let z2 = (ok[2]) ?
+		((block[2] & 0b1111))
+		: null;
+	// Field z3: uint<4> at +48, width 4.
+	let z3 = (ok[3]) ?
+		((block[3] & 0b1111000000000000) >> 12)
+		: null;
+	// Field z4: uint<4> at +52, width 4.
+	let z4 = (ok[3]) ?
+		((block[3] & 0b111100000000) >> 8)
+		: null;
+	// Field _: unparsed<8> at +56, width 8.
+
+	// Actions.
+	if ((y1 != null) && (y2 != null) && (z1 != null) && (z2 != null) && (z3 != null) && (z4 != null)) {
+		log.add(`Address: ${formatBcd(y1)}${formatBcd(y2)}/${formatBcd(z1)}${formatBcd(z2)}${formatBcd(z3)}${formatBcd(z4)}`);
+	}
+}
+
+export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field rp_common: unparsed<31> at +0, width 31.
+	// Field addr: uint<1> at +31, width 1.
+	let addr = (ok[1]) ?
+		((block[1] & 0b1))
+		: null;
+	// Field a1: uint<4> at +32, width 4.
+	let a1 = (ok[2]) ?
+		((block[2] & 0b1111000000000000) >> 12)
+		: null;
+	// Field a2: uint<4> at +36, width 4.
+	let a2 = (ok[2]) ?
+		((block[2] & 0b111100000000) >> 8)
+		: null;
+	// Field a3: uint<4> at +40, width 4.
+	let a3 = (ok[2]) ?
+		((block[2] & 0b11110000) >> 4)
+		: null;
+	// Field a4: uint<4> at +44, width 4.
+	let a4 = (ok[2]) ?
+		((block[2] & 0b1111))
+		: null;
+	// Field a5: uint<4> at +48, width 4.
+	let a5 = (ok[3]) ?
+		((block[3] & 0b1111000000000000) >> 12)
+		: null;
+	// Field a6: uint<4> at +52, width 4.
+	let a6 = (ok[3]) ?
+		((block[3] & 0b111100000000) >> 8)
+		: null;
+	// Field a7: uint<4> at +56, width 4.
+	let a7 = (ok[3]) ?
+		((block[3] & 0b11110000) >> 4)
+		: null;
+	// Field a8: uint<4> at +60, width 4.
+	let a8 = (ok[3]) ?
+		((block[3] & 0b1111))
+		: null;
+
+	// Actions.
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				get_parse_function("group_7A_address")(block, ok, log, station);
+				if ((a7 != null) && (a8 != null)) {
+					log.add(`Part 1/2: ${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				break;
+
+			case 1:
+				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
+					log.add(`Part 2/2: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				break;
+
+		}
+	}
+}
+
+export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field rp_common: unparsed<30> at +0, width 30.
+	// Field addr: uint<2> at +30, width 2.
+	let addr = (ok[1]) ?
+		((block[1] & 0b11))
+		: null;
+	// Field a1: uint<4> at +32, width 4.
+	let a1 = (ok[2]) ?
+		((block[2] & 0b1111000000000000) >> 12)
+		: null;
+	// Field a2: uint<4> at +36, width 4.
+	let a2 = (ok[2]) ?
+		((block[2] & 0b111100000000) >> 8)
+		: null;
+	// Field a3: uint<4> at +40, width 4.
+	let a3 = (ok[2]) ?
+		((block[2] & 0b11110000) >> 4)
+		: null;
+	// Field a4: uint<4> at +44, width 4.
+	let a4 = (ok[2]) ?
+		((block[2] & 0b1111))
+		: null;
+	// Field a5: uint<4> at +48, width 4.
+	let a5 = (ok[3]) ?
+		((block[3] & 0b1111000000000000) >> 12)
+		: null;
+	// Field a6: uint<4> at +52, width 4.
+	let a6 = (ok[3]) ?
+		((block[3] & 0b111100000000) >> 8)
+		: null;
+	// Field a7: uint<4> at +56, width 4.
+	let a7 = (ok[3]) ?
+		((block[3] & 0b11110000) >> 4)
+		: null;
+	// Field a8: uint<4> at +60, width 4.
+	let a8 = (ok[3]) ?
+		((block[3] & 0b1111))
+		: null;
+
+	// Actions.
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				get_parse_function("group_7A_address")(block, ok, log, station);
+				if ((a7 != null) && (a8 != null)) {
+					log.add(`Part 1/3: ${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				break;
+
+			case 1:
+				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
+					log.add(`Part 2/3: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				break;
+
+			case 2:
+				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
+					log.add(`Part 3/3: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				break;
+
+		}
+	}
+}
+
+export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field rp_common: unparsed<29> at +0, width 29.
+	// Field addr: uint<3> at +29, width 3.
+	let addr = (ok[1]) ?
+		((block[1] & 0b111))
+		: null;
+	// Field text_seg: byte<4> at +32, width 32.
+	let text_seg__0 = (ok[2]) ?
+		((block[2] & 0b1111111100000000) >> 8)
+		: null;
+	let text_seg__1 = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	let text_seg__2 = (ok[3]) ?
+		((block[3] & 0b1111111100000000) >> 8)
+		: null;
+	let text_seg__3 = (ok[3]) ?
+		((block[3] & 0b11111111))
+		: null;
+	const text_seg = [text_seg__0, text_seg__1, text_seg__2, text_seg__3];
+
+	// Actions.
+	if ((addr != null)) {
+		switch (addr) {
+			case 0:
+				get_parse_function("group_7A_address")(block, ok, log, station);
+				break;
+
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+				if ((addr != null) && (text_seg != null)) {
+					log.add(`Part (${addr} + 6k)/n: "${formatRdsText(text_seg)}"`);
+				}
+				break;
+
+			case 7:
+				if ((text_seg != null)) {
+					log.add(`Part n/n: "${formatRdsText(text_seg)}"`);
+				}
+				break;
+
+		}
+	}
+}
+
 export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
@@ -1218,6 +1482,11 @@ export function get_parse_function(rule: string) {
 		case "group_10A": return parse_group_10A;
 		case "group_15A": return parse_group_15A;
 		case "group_15B": return parse_group_15B;
+		case "group_7A": return parse_group_7A;
+		case "group_7A_address": return parse_group_7A_address;
+		case "group_7A_numeric_10": return parse_group_7A_numeric_10;
+		case "group_7A_numeric_18": return parse_group_7A_numeric_18;
+		case "group_7A_alphanumeric": return parse_group_7A_alphanumeric;
 		case "group_14A": return parse_group_14A;
 		case "group_14A_ps": return parse_group_14A_ps;
 		case "group_14A_af_a": return parse_group_14A_af_a;
@@ -1241,4 +1510,8 @@ function formatRdsText(text: Array<number | null>): string {
 
 function formatBytes(bytes: Array<number | null>): string {
 	return bytes.map((b) => b == null ? ".." : b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
+}
+
+function formatBcd(digit: number): string {
+	return (digit >= 0 && digit <= 9) ? digit.toString() : " ";
 }

@@ -358,5 +358,6 @@ bitstruct group_15B(station: Station) {
     }
 }
 
+#include rp.p
 #include eon.p
 #include odas.p
