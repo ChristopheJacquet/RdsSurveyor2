@@ -174,6 +174,7 @@ const WELL_KNOWN_ODAS = new Map<number, string>([
 	[0x4BD7, "RadioText Plus (RT+)"],
 	[0x4BD8, "RadioText Plus (RT+) for eRT"],
 	[0x6552, "Enhanced RadioText (eRT)"],
+	[0xABCE, "Fleximax"],
 	[0xC3B0, "iTunes Tagging"],
 	[0xCD46, "TMC/Alert-C"],
 ]);
