@@ -201,6 +201,25 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
+  parseHexBlock(s: string): [boolean, number] {
+    if (s.match(/^[0-9A-Z]{4}$/)) {
+      console.log(`Legacy: ${s}`);
+      const val = parseInt(s, 16);
+      return [!Number.isNaN(val), val];
+    }
+
+    const m = s.match(/^(?<value>[0-9A-Z]{4})\/(?<errors>\d)$/);
+    if (m) {
+      const value = parseInt(m[1], 16);
+      const errors = parseInt(m[2]);
+      console.log(`With errors: ${value} / ${errors}`);
+      return [errors == 0, value];
+    }
+
+    // Placeholder for any unrecognized block.
+    return [false, 0];
+  }
+
   async processTextualGroups(s: string) {
     this.demodulator = null;
     this.synchronizer = null;
@@ -216,9 +235,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
       const bl: number[] = [];
       const ok: boolean[] = [];
       for (let i = 0; i<4; i++) {
-        const val = parseInt(blocks[i], 16);
+        const [is_ok, val] = this.parseHexBlock(blocks[i]);
         bl.push(val);
-        ok.push(!Number.isNaN(val));
+        ok.push(is_ok);
+          
       }
       this.emitGroup(Uint16Array.from(bl), ok);
       if (this.stoppingPlayback) {
