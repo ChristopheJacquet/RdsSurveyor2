@@ -2,7 +2,6 @@ export class RdsReportEvent {
   public type: RdsReportEventType = RdsReportEventType.GROUP;
   public blocks?: Uint16Array;
   public ok?: boolean[];
-  public freq!: number;
   public sourceInfo!: string;
 }
 
@@ -12,6 +11,25 @@ export enum RdsReportEventType {
   INFO_REPORT
 }
 
-export interface RdsReportEventListener {
+export interface RdsPipeline {
+  processMpxSamples(samples: Float32Array): void;
+  processBits(bytes: Uint8Array): void;
   processRdsReportEvent(event: RdsReportEvent): void;
+  reportFrequency(frequencyKhz: number): void;
+  // Reports when the source "ended", i.e. completed the work (for example:
+  // file playback complete).
+  reportSourceEnd(): void;
+}
+
+export enum SeekDirection {
+  UP,
+  DOWN
+}
+
+export interface RdsSource {
+  name: string;
+  seek(direction: SeekDirection): Promise<void>;
+  tune(frequencyKhz: number): Promise<void>;
+  start(): Promise<boolean>;
+  stop(): Promise<void>;
 }

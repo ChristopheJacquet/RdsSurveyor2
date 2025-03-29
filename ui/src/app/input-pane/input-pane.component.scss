@@ -49,9 +49,24 @@ input {
   display: none;
 }
 
-.usb-connect-pane, .logging-pane {
+.radio-sources-list {
+  display: flex;
+  flex-direction: column;
+  margin: 15px 0;
+  align-items: flex-start;
+}
+
+.source-radio-button {
+  margin: 0;
+}
+
+.radio-connect-pane, .logging-pane {
   text-align: center;
   padding: 20px 10px;
+}
+
+.radio-connect-pane button {
+  margin: 5px;
 }
 
 .tuner-pane {
@@ -74,7 +89,7 @@ input {
   text-align: center;
 }
 
-.processingChain > div:not(:last-child) {
+.processingChain > div:not(:last-child), .radio-connect-pane, .logging-pane {
   padding-bottom: 20px;
   border-bottom: 1px solid #666;
   margin-bottom: 20px;

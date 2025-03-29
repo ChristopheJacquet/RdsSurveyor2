@@ -8,9 +8,14 @@ import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTabsModule} from '@angular/material/tabs';
+import {FormsModule} from '@angular/forms';
+import {MatRadioModule} from '@angular/material/radio';
 
-import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../../../../core/drivers/input";
-import { Band, ChannelSpacing, Si470x, supportedDevices } from "../../../../core/drivers/si470x";
+
+import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
+import { Si470x } from "../../../../core/drivers/si470x";
+import { RtlSdr } from "../../../../core/drivers/rtlsdr";
+import { FileSource } from "../../../../core/drivers/file";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
@@ -20,29 +25,27 @@ import { catchError } from 'rxjs';
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule],
+  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
-export class InputPaneComponent implements AfterViewInit, RdsReportEventListener  {
+export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   @ViewChild('blerGraph') public blerGraph!: ElementRef;
   @ViewChild('constellationDiagram') public constellationDiagram!: ElementRef;
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
   stationChangeDetector = new StationChangeDetector();
-  realtimePlayback: boolean = false;
-  si470xDongle: Si470x | null = null;
-  si470xActive = false;
-  // True if any input source is active. Disable the others until it stops.
-  inputActive = false;
-  // Normally set to true, except during file playback. Set to true to request stopping playback.
-  stoppingPlayback = true;
+  private currentSource?: RdsSource;
+  radioSources = [new Si470x(this), new RtlSdr(this)];
+  selectedRadioSource?: RdsSource;
+  fileSource = new FileSource(this);
+  sourceActive = false;
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
-  synchronizer: BitStreamSynchronizer | null = null;
-  demodulator: Demodulator | null = null;
+  synchronizer: BitStreamSynchronizer;
+  demodulator: Demodulator;
 
   blerGraphCx: CanvasRenderingContext2D | null = null;
   blerGraphWidth: number = 0;
@@ -57,7 +60,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   private snackBar = inject(MatSnackBar);
 
-  constructor(private httpClient: HttpClient, private route: ActivatedRoute) {}
+  constructor(private httpClient: HttpClient, private route: ActivatedRoute) {
+    this.synchronizer = new BitStreamSynchronizer(this);
+    this.demodulator = new Demodulator(this.synchronizer);
+  }
 
   public ngAfterViewInit() {
     // Initialize block error rate graph.
@@ -90,7 +96,7 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   public ngOnInit() {
     this.prefPlaybackSpeed.init();
-    this.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
+    this.fileSource.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
 
     this.prefTunedFrequency.init();
 
@@ -107,7 +113,10 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
         .subscribe(response => {
           if (response) {
             console.log("Contents", response);
-            this.playbackBlob(response);
+            this.fileSource.setBlob(response);
+            this.currentSource = this.fileSource;
+            this.sourceActive = true;
+            this.fileSource.start();
           }
         });
     });
@@ -201,113 +210,15 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
-  parseHexBlock(s: string): [boolean, number] {
-    if (s.match(/^[0-9A-Z]{4}$/)) {
-      console.log(`Legacy: ${s}`);
-      const val = parseInt(s, 16);
-      return [!Number.isNaN(val), val];
-    }
-
-    const m = s.match(/^(?<value>[0-9A-Z]{4})\/(?<errors>\d)$/);
-    if (m) {
-      const value = parseInt(m[1], 16);
-      const errors = parseInt(m[2]);
-      console.log(`With errors: ${value} / ${errors}`);
-      return [errors == 0, value];
-    }
-
-    // Placeholder for any unrecognized block.
-    return [false, 0];
-  }
-
-  async processTextualGroups(s: string) {
-    this.demodulator = null;
-    this.synchronizer = null;
-
-    const timing = new Timing();
-    for (let l of s.split('\n')) {
-      l = l.split(/[@%]/)[0];
-      const blocks = l.trim().split(' ');
-      if (blocks.length != 4) {
-        console.log("Unrecognized line: ", l);
-        continue;
-      }
-      const bl: number[] = [];
-      const ok: boolean[] = [];
-      for (let i = 0; i<4; i++) {
-        const [is_ok, val] = this.parseHexBlock(blocks[i]);
-        bl.push(val);
-        ok.push(is_ok);
-          
-      }
-      this.emitGroup(Uint16Array.from(bl), ok);
-      if (this.stoppingPlayback) {
-        return;
-      }
-      // Duration of a group (1000 ms / (1187.5/104)).
-      await timing.enforceInterval(this.realtimePlayback ? 87 : 0);
-    }
-  }
-
-  async processBinaryGroups(data: Uint8Array) {
-    this.demodulator = null;
-    this.synchronizer = new BitStreamSynchronizer(this);
-
-    let remainingLength = data.length;
-    let pos = 0;
-
-    const timing = new Timing();
-    while (remainingLength > 0) {
-      const l = Math.min(remainingLength, 8);
-      const dataSlice = data.slice(pos, pos+l);
-      pos += 8;
-      remainingLength -= 8;
-      this.synchronizer.addBits(dataSlice);
-
-      if (this.stoppingPlayback) {
-        return;
-      }
-      // Duration of a slice of 8*8 bits.
-      await timing.enforceInterval(this.realtimePlayback ? 1000 / (1187.5/(8*8)) : 0);
-    }
-  }
-
-  async processMpx(buffer: ArrayBuffer) {
-    const sampleRate = 250000;
-    // Blocksize is chosen so that blockSize samples represent a bit less than
-    // one group (so the UI is fluid). Since there are 11.4 groups per second,
-    // we want sampleRate / blockSize to be 11.4, or a bit more. In addition,
-    // we want blockSize to be a power of 2 (so that computing the modulo is
-    // cheap). Therefore, it's the greatest power of 2 such that
-    // sampleRate / blockSize >= 11.4.
-    const blockSize = 16384;
-    const delayBetweenBlocks = blockSize * 1000 / sampleRate;
-
-    const context = new OfflineAudioContext(
-      1,        // Number of channels.
-      1000000,  // Length.
-      sampleRate
-    );
-    const timing = new Timing();
-    
-    const mpxBuffer = await context.decodeAudioData(buffer);
-    const samples = mpxBuffer.getChannelData(0);
-
-    this.synchronizer = new BitStreamSynchronizer(this);
-    this.demodulator = new Demodulator(this.synchronizer);
-
+  async processMpxSamples(samples: Float32Array) {
     for (let i=0; i<samples.length; i++) {
       this.demodulator.addSample(samples[i]);
-
-      if (this.stoppingPlayback) {
-        return;
-      }
-
-      if (i % blockSize == 0) {
-        await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
-        this.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
-      }
     }
+    this.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
+  }
+
+  async processBits(bytes: Uint8Array) {
+    this.synchronizer.addBits(bytes);
   }
 
   onDrop(e: any) {
@@ -330,44 +241,11 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
 
   async handleFileDrop(files: FileList) {
     for (let f of Array.from(files)) {
-      await this.playbackBlob(f);
+      this.fileSource.setBlob(f);
+      this.currentSource = this.fileSource;
+      this.sourceActive = true;
+      this.fileSource.start();
     }
-  }
-
-  async playbackBlob(f: Blob) {
-    if (this.inputActive) {
-      // Don't play a file back if input is already active.
-      return;
-    }
-
-    this.inputActive = true;
-    this.stoppingPlayback = false;
-    console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
-
-    const header = await f.slice(0, 16).arrayBuffer();
-    switch (guessFileType(new Uint8Array(header))) {
-      case FileType.HEX_GROUPS: {
-        const text = await f.text();
-        await this.processTextualGroups(text);
-        break;
-      }
-
-      case FileType.UNSYNCED_BINARY_RDS: {
-        const bytes = await f.arrayBuffer();
-        await this.processBinaryGroups(new Uint8Array(bytes));
-        break;
-      }
-
-      case FileType.MPX_FLAC:
-      case FileType.MPX_WAV: {
-        const buffer = await f.arrayBuffer();
-        await this.processMpx(buffer);
-        break;
-      }
-    }
-
-    this.inputActive = false;
-    this.stoppingPlayback = true;
   }
 
   onFileSelect(event: any) {
@@ -375,70 +253,36 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
   }
 
   setPlaybackSpeed(event: any) {
-    this.realtimePlayback = event.value == "realtime";
+    this.fileSource.realtimePlayback = event.value == "realtime";
     this.prefPlaybackSpeed.setValue(event.value);
   }
 
-  stopPlayback() {
-    this.stoppingPlayback = true;
-  }
+  async startSelectedRadioSource() {
+    console.log(this.selectedRadioSource);
 
-  sendDemoGroups() {
-    this.processTextualGroups(
-      `F201 0408 2037 2020
-      F201 0409 383B 494E
-      F201 040A 3D45 5445
-      F201 040F 474E 5220`);
-  }
-
-  async connectOrCloseSi470x() {
-    console.log(`inputActive: ${this.inputActive}, si470xActive: ${this.si470xActive}`);
-    if (this.inputActive && !this.si470xActive) {
-      console.log("Another input source is active, not connecting or deconnecting the Si470x dongle.");
+    if (this.selectedRadioSource == undefined) {
       return;
     }
-
-    if (this.si470xActive) {
-      // Already running: close it.
-      if (this.si470xDongle != null) {
-        await this.si470xDongle.close();
-      }
-      this.si470xActive = false;
-      this.inputActive = false;
-      this.frequency = -1;
+    const success = await this.selectedRadioSource.start();
+    if (!success) {
+      console.log("Cannot start source " + this.selectedRadioSource.name);
       return;
     }
+    this.sourceActive = true;
+    this.currentSource = this.selectedRadioSource;
+    await this.currentSource.tune(this.prefTunedFrequency.value);
+  }
 
-    // If dongle not initialized yet, try to do so.
-    if (this.si470xDongle == null && "hid" in navigator) {
-      console.log("WebHID API is supported.");
-
-      const devices = await navigator.hid.getDevices();
-      let device: HIDDevice;
-      if (devices.length == 1) {
-        device = devices[0];
-        console.log("Re-using previously selected device", device);
-      } else {
-        [device] = await navigator.hid.requestDevice({ filters: supportedDevices });
-        console.log("Selected device", device);
-      }
-  
-      this.synchronizer = null;
-      this.si470xDongle = new Si470x(device, Band.BAND_87_108, ChannelSpacing.CHANNEL_SPACING_100_KHZ, this);
+  async stopSource() {
+    if (this.currentSource == undefined) {
+      return;
     }
-
-    if (this.si470xDongle != null) {
-      await this.si470xDongle.init();
-      await this.si470xDongle.tune(this.prefTunedFrequency.value);
-
-      this.si470xActive = true;
-      this.inputActive = true;
-    }
+    await this.currentSource.stop();
+    this.sourceActive = false;
+    this.currentSource = undefined;
   }
 
   async processRdsReportEvent(event: RdsReportEvent) {
-    this.prefTunedFrequency.setValue(event.freq);
-    this.frequency = event.freq;
     if (event.type == RdsReportEventType.GROUP 
       && event.ok != undefined && event.blocks != undefined) {
       this.emitGroup(event.blocks, event.ok);
@@ -448,35 +292,45 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
   }
 
+  reportFrequency(frequencyKhz: number) {
+    this.prefTunedFrequency.setValue(frequencyKhz);
+    this.frequency = frequencyKhz;
+  }
+
+  reportSourceEnd(): void {
+    this.currentSource = undefined;
+    this.sourceActive = false;
+  }
+
   seekUp() {
-    if (this.si470xDongle != null) {
-      this.si470xDongle.seek(false, 1);
+    if (this.currentSource != undefined) {
+      this.currentSource.seek(SeekDirection.UP);
     }
   }
   
   seekDown() {
-    if (this.si470xDongle != null) {
-      this.si470xDongle.seek(false, 0);
+    if (this.currentSource != undefined) {
+      this.currentSource.seek(SeekDirection.DOWN);
     }
   }
 
   tuneBy(frequencyDiff: number) {
-    if (this.si470xDongle != null) {
+    if (this.currentSource != undefined) {
       let newFreq = this.frequency + frequencyDiff;
       if(newFreq > 108000) newFreq = 87500;
       if(newFreq < 87500) newFreq = 108000;
-      this.si470xDongle.tune(newFreq);
+      this.currentSource.tune(newFreq);
       this.frequency = newFreq;
       this.prefTunedFrequency.setValue(newFreq);
     }
   }
 
   tuneUp() {
-    this.tuneBy(100);
+    this.tuneBy(50);
   }
 
   tuneDown() {
-    this.tuneBy(-100);
+    this.tuneBy(-50);
   }
 
   async selectLogDir() {
@@ -521,81 +375,5 @@ export class InputPaneComponent implements AfterViewInit, RdsReportEventListener
     }
 
     await this.logFileStream.write(str + "\n");
-  }
-}
-
-async function sleep(duration_msec: number) {
-  return new Promise(resolve => setTimeout(resolve, duration_msec));
-}
-
-class Timing {
-  lastTimestamp = 0;
-
-  async enforceInterval(duration_msec: number) {
-    if (this.lastTimestamp == 0) {
-      this.lastTimestamp = Date.now();  // Milliseconds since epoch.
-      return;
-    }
-
-    // If we're not actually waiting (duration_msec = 0), then ensure we don't
-    // call sleep more than 10x per second (i.e. with intervals shorter than 100
-    // ms). The purpose is to be fast when we need to.
-    const timestamp = Date.now();
-
-    if (duration_msec == 0 && timestamp - this.lastTimestamp < 100) {
-      return;
-    }
-
-    const sleepDuration = this.lastTimestamp + duration_msec - timestamp;
-    await sleep(sleepDuration > 0 ? sleepDuration : 0);
-    this.lastTimestamp = Date.now();
-  }
-}
-
-enum FileType {
-  UNSYNCED_BINARY_RDS,
-  HEX_GROUPS,
-  MPX_FLAC,
-  MPX_WAV,
-}
-
-function guessFileType(header: Uint8Array): FileType {
-  if (
-      header[0] == 0x52 &&   // R
-      header[1] == 0x49 &&   // I
-      header[2] == 0x46 &&   // F
-      header[3] == 0x46 &&   // F
-      header[8] == 0x57 &&   // W
-      header[9] == 0x41 &&   // A
-      header[10] == 0x56 &&  // V
-      header[11] == 0x45 &&  // E
-      header[12] == 0x66 &&  // f
-      header[13] == 0x6D &&  // m
-      header[14] == 0x74 &&  // t
-      header[15] == 0x20) {  // ' '
-    return FileType.MPX_WAV;
-  }
-
-  if (
-      header[0] == 0x66 &&   // f
-      header[1] == 0x4C &&   // L
-      header[2] == 0x61 &&   // a
-      header[3] == 0x43) {   // C
-    return FileType.MPX_FLAC;
-  }
-
-  let binary = false;
-  for (let i=0; i<header.length; i++) {
-    const b = header[i];
-    if (! ((b >= 32 && b<127) || b==10 || b==13)) {
-      binary = true;
-      break;
-    }
-  }
-
-  if (binary) {
-    return FileType.UNSYNCED_BINARY_RDS;
-  } else {
-    return FileType.HEX_GROUPS;
   }
 }

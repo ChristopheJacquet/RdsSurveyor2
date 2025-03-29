@@ -7,18 +7,18 @@
         <mat-button-toggle value="realtime">Real time</mat-button-toggle>
       </mat-button-toggle-group>
       <div class="playback-speed-expander"></div>
-      <button mat-icon-button [disabled]="stoppingPlayback" title="Stop playback" (click)="stopPlayback()">
-        <mat-icon>stop_circle</mat-icon>
+      <button mat-stroked-button [disabled]="!sourceActive" (click)="stopSource()">
+        Stop <mat-icon>stop_circle</mat-icon>
       </button>
     </div>
     <div
       class="dropzone"
-      [class.dragging]="isDragging && !inputActive"
-      [class.disabled]="inputActive"
-      (click)="inputActive ? '' : fileInput.click()"
-      (drop)="inputActive ? '' : onDrop($event)"
-      (dragover)="inputActive ? '' : onDragOver($event)">
-        <ng-content *ngIf="inputActive; else dropPrompt">
+      [class.dragging]="isDragging && !sourceActive"
+      [class.disabled]="sourceActive"
+      (click)="sourceActive ? '' : fileInput.click()"
+      (drop)="sourceActive ? '' : onDrop($event)"
+      (dragover)="sourceActive ? '' : onDragOver($event)">
+        <ng-content *ngIf="sourceActive; else dropPrompt">
           Wait for current input to complete.
         </ng-content>
         <ng-template #dropPrompt>
@@ -27,13 +27,20 @@
         <input #fileInput type="file" (change)="onFileSelect($event);">
     </div>
   </mat-tab>
-  <mat-tab label="USB dongle">
-    <div class="usb-connect-pane">
-      <button
-        mat-stroked-button
-        [disabled]="inputActive && !si470xActive"
-        (click)="connectOrCloseSi470x()">
-          {{ si470xActive ? "Disconnect" : "Connect" }} Si 470x
+  <mat-tab label="Radio source">
+    <div class="radio-connect-pane">
+      <mat-radio-group
+        class="radio-sources-list"
+        [(ngModel)]="selectedRadioSource">
+        @for (s of radioSources; track s) {
+          <mat-radio-button class="source-radio-button" [value]="s">{{s.name}}</mat-radio-button>
+        }
+      </mat-radio-group>
+      <button mat-stroked-button [disabled]="sourceActive || selectedRadioSource == undefined" (click)="startSelectedRadioSource()">
+        Start selected source <mat-icon>play_circle</mat-icon>
+      </button>
+      <button mat-stroked-button [disabled]="!sourceActive" (click)="stopSource()">
+        Stop <mat-icon>stop_circle</mat-icon>
       </button>
     </div>
 
@@ -44,7 +51,7 @@
       <button mat-icon-button (click)="tuneDown()">
         <mat-icon>keyboard_arrow_left</mat-icon>
       </button>
-      <span class="frequency">{{ frequency > 0 ? (frequency / 1000 | number:'1.1-1':'en-US') : "" }}</span>
+      <span class="frequency">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</span>
       <button mat-icon-button (click)="tuneUp()">
         <mat-icon>keyboard_arrow_right</mat-icon>
       </button>

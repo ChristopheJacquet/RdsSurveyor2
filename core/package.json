@@ -7,6 +7,7 @@
     "typescript": "4.9.5"
   },
   "dependencies": {
+    "@jtarrio/webrtlsdr": "^0.1.0",
     "@types/w3c-web-hid": "^1.0.6",
     "typescript": "4.9.5"
   }

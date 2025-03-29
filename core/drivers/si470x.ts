@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "./input";
+import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "./input";
 
 /**************************************************************************
  * Register Definitions
@@ -125,9 +125,9 @@ const MIN_CHIP_FIRMWARE_REV_FOR_VERBOSE_MODE = 13;
 /* 1: 100 kHz (Europe, Japan) */
 /* 2:  50 kHz */
 export enum ChannelSpacing {
-  CHANNEL_SPACING_50_KHZ = 0,
+  CHANNEL_SPACING_200_KHZ = 0,
   CHANNEL_SPACING_100_KHZ = 1,
-  CHANNEL_SPACING_200_KHZ = 2,
+  CHANNEL_SPACING_50_KHZ = 2,
 }
 
 /* Bottom of Band (MHz) */
@@ -181,23 +181,22 @@ export const supportedDevices = [
   { vendorId: 0x10c5, productId: 0x819a },  // Sanei Electric FM USB Radio (DealExtreme.com PCear).
 ];
 
-export class Si470x {
+export class Si470x implements RdsSource {
   private oldRegs = new Uint16Array(6);
-  private device: HIDDevice;
-  private band: Band;
-  private channelSpacing: ChannelSpacing;
+  private device?: HIDDevice;
+  private band: Band = Band.BAND_87_108;
+  private channelSpacing: ChannelSpacing = ChannelSpacing.CHANNEL_SPACING_50_KHZ;
   channelSpacingKhz: number;
   bandBottom: number;
   firmware: number = 0;
-  private rdsEventListener: RdsReportEventListener;
+  private rdsEventListener: RdsPipeline;
 
-  constructor(device: HIDDevice, band: Band, channelSpacing: ChannelSpacing, rdsEventListener: RdsReportEventListener) {
-    this.device = device;
-    this.band = band;
-    this.channelSpacing = channelSpacing;
+  public name = "Si470x USB dongle";
+
+  constructor(rdsEventListener: RdsPipeline) {
     this.rdsEventListener = rdsEventListener;
 
-    switch (band) {
+    switch (this.band) {
       case Band.BAND_76_90:
       case Band.BAND_76_108:
         this.bandBottom = 76000;
@@ -208,29 +207,27 @@ export class Si470x {
         this.bandBottom = 87500;
     }
 
-    switch (channelSpacing) {
+    switch (this.channelSpacing) {
       case ChannelSpacing.CHANNEL_SPACING_50_KHZ: this.channelSpacingKhz = 50; break;
       case ChannelSpacing.CHANNEL_SPACING_200_KHZ: this.channelSpacingKhz = 200; break;
       default:
       case ChannelSpacing.CHANNEL_SPACING_100_KHZ: this.channelSpacingKhz = 100; break;
     }
-
-    // The event listener is added in the constructor, otherwise it could get
-    // added several times, leading to groups being processed multiple times.
-    this.device.addEventListener(
-      "inputreport",
-      (event: HIDInputReportEvent) => this.processRdsReport(event));
   }
 
-  channelToFrequency(channel: number) {
+  private channelToFrequency(channel: number) {
     return this.bandBottom + this.channelSpacingKhz * channel;
   }
   
-  frequencyToChannel(frequency: number) {
+  private frequencyToChannel(frequency: number) {
     return Math.floor((frequency - this.bandBottom) / this.channelSpacingKhz);
   }
 
-  async init() {
+  private async init() {
+    if (this.device == undefined) {
+      throw new Error("si470x: Trying to reference undefined device.");
+    }
+
     await this.device.open();
 
     const deviceIdReg = await this.getRegister(DEVICEID);
@@ -252,30 +249,84 @@ export class Si470x {
       10);        // bits 03..00: Seek FM Impulse Detection Threshold
   }
 
-  async close() {
-    await this.device.close();
-    this.device.removeEventListener("inputreport", this.processRdsReport);
+  public async start(): Promise<boolean> {
+    // If already initialized, we don't have anything to do.
+    if (this.device != null) {
+      return true;
+    }
+
+    // If dongle not initialized yet, try to do so.
+    if (!("hid" in navigator)) {
+      return false;
+    }
+
+    console.log("WebHID API is supported.");
+
+    const devices = await navigator.hid.getDevices();
+    let device: HIDDevice;
+    if (devices.length == 1) {
+      device = devices[0];
+      console.log("Re-using previously selected device", device);
+    } else {
+      [device] = await navigator.hid.requestDevice({ filters: supportedDevices });
+    }
+
+    if (device == undefined) {
+      console.log("Si470x: no device selected.");
+      return false;
+    }
+    console.log("Selected device", device);
+
+    this.device = device;
+    this.device.addEventListener(
+      "inputreport",
+      (event: HIDInputReportEvent) => this.processRdsReport(event));
+    await this.init();
+
+    return true;
   }
 
-  async setRegister(regNum: number, regVal: number) {
+  public async stop() {
+    if (this.device == undefined) {
+      throw new Error("si470x: Trying to reference undefined device.")
+    }
+
+    await this.device.close();
+    this.device.removeEventListener("inputreport", this.processRdsReport);
+    this.device = undefined;
+  }
+
+
+
+  private async setRegister(regNum: number, regVal: number) {
+    if (this.device == undefined) {
+      throw new Error("si470x: Trying to reference undefined device.")
+    }
+
     const dataView = new DataView(new ArrayBuffer(2));
     dataView.setUint16(0, regVal, /* Big Endian */ false);
     await this.device.sendFeatureReport(REGISTER_REPORT(regNum), dataView);
   }
 
-  async getRegister(regNum: number) {
+  private async getRegister(regNum: number) {
+    if (this.device == undefined) {
+      throw new Error("si470x: Trying to reference undefined device.")
+    }
+
     const data = await this.device.receiveFeatureReport(REGISTER_REPORT(regNum));
     return data.getUint16(1, false);
   }
 
-  async tune(freq: number) {
+  public async tune(frequencyKhz: number) {
     // This starts tuning, the main event loop will ack the tune complete event.
-    const chan = this.frequencyToChannel(freq);
+    const chan = this.frequencyToChannel(frequencyKhz);
     await this.setRegister(CHANNEL, CHANNEL_TUNE | (CHANNEL_CHAN & chan));
   }
 
-  async seek(wrapAround: boolean, seekUpward: number) {
+  public async seek(direction: SeekDirection) {
     // This starts seeking, the main event loop will ack the seek complete/fail event.
+    const wrapAround = false;
+
     let powerCfg = await this.getRegister(POWERCFG);
 
     powerCfg |= POWERCFG_SEEK;
@@ -285,20 +336,24 @@ export class Si470x {
     else
       powerCfg |= POWERCFG_SKMODE;
 
-    if (seekUpward)
-      powerCfg |= POWERCFG_SEEKUP;
-    else
-      powerCfg &= ~POWERCFG_SEEKUP;
+    switch (direction) {
+      case SeekDirection.UP: powerCfg |= POWERCFG_SEEKUP; break;
+      case SeekDirection.DOWN: powerCfg &= ~POWERCFG_SEEKUP; break
+    }
 
     await this.setRegister(POWERCFG, powerCfg);
   }
 
-  sendRdsEvent(event: RdsReportEvent) {
+  private sendRdsEvent(event: RdsReportEvent) {
     if (this.rdsEventListener == null) return;
     this.rdsEventListener.processRdsReportEvent(event);
   }
 
-  async processRdsReport(event: HIDInputReportEvent) {
+  private async processRdsReport(event: HIDInputReportEvent) {
+    if (this.device == undefined) {
+      throw new Error("si470x: Trying to reference undefined device.")
+    }
+
     const { data, device, reportId } = event;
 
     if (reportId != RDS_REPORT) {
@@ -339,13 +394,10 @@ export class Si470x {
 
     const dongleInfo = this.device.productName;
 
+    this.rdsEventListener.reportFrequency(freq);
+
     if ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSR) == 0) {
       // Do nothing if no new RDS data is ready.
-      this.sendRdsEvent({
-        type: RdsReportEventType.INFO_REPORT,
-        sourceInfo: dongleInfo,
-        freq: freq,
-      });
       return;
     }
 
@@ -367,7 +419,6 @@ export class Si470x {
     this.sendRdsEvent({
       type: RdsReportEventType.GROUP,
       sourceInfo: dongleInfo,
-      freq: freq,
       ok: ok,
       blocks: block,
     })

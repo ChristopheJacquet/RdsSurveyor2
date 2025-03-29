@@ -1,4 +1,4 @@
-import { RdsReportEventListener, RdsReportEventType } from "../drivers/input";
+import { RdsPipeline, RdsReportEventType } from "../drivers/input";
 
 // Number of good blocks needed after initial block to confirm synchronization.
 const SYNC_THRESHOLD = 2;
@@ -52,9 +52,9 @@ export class BitStreamSynchronizer {
 	private bitTime = 0;
   private unreportedUnsyncedBits = 0;
 	private nbSyncAtOffset: SyncEntry[][][] = [];
-  private listener: RdsReportEventListener;
+  private listener: RdsPipeline;
 	
-	public constructor(listener: RdsReportEventListener) {
+	public constructor(listener: RdsPipeline) {
     this.listener = listener;
 		this.eraseSyncArray();
 	}
@@ -166,7 +166,6 @@ export class BitStreamSynchronizer {
       if (this.unreportedUnsyncedBits >= GROUP_SIZE) {
         this.listener.processRdsReportEvent({
           type: RdsReportEventType.UNSYNCED_GROUP_DURATION,
-          freq: 0,
           sourceInfo: "BitStreamSynchronizer"
         })
         this.unreportedUnsyncedBits -= GROUP_SIZE;
@@ -225,7 +224,6 @@ export class BitStreamSynchronizer {
       type: RdsReportEventType.GROUP,
       ok: ok,
       blocks: blocks,
-      freq: 0,
       sourceInfo: "BitStreamSynchronizer",
     });
 }
