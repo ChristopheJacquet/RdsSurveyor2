@@ -3,7 +3,7 @@ RDS Surveyor 2
 
 This is the development repository for the RDS Surveyor version 2, a versatile Radio Data System decoder. The program is currently in beta.
 
-While the original [RDS Surveyor](https://rds-surveyor.jacquet.xyz/) runs as a local Java application, RDS Surveyor version 2 runs in the browser.
+While the original [RDS Surveyor](https://rds-surveyor.jacquet.xyz/) runs as a local Java application, RDS Surveyor version 2 runs in the browser. It aims to support all RDS features and a large selection of ODAs. It supports popular radio front-ends (RTL-SDR and Si470x USB dongles) and can play back sample files.
 
 Your can run RDS Surveyor 2 (beta) in your browser at [rds-surveyor-app.jacquet.xyz](https://rds-surveyor-app.jacquet.xyz).
 
@@ -50,21 +50,29 @@ See the project website for more details: [rds-surveyor.jacquet.xyz](https://rds
 * The various settings (RDS/RBDS, tuner frequency, etc.) are now remembered across sessions.
 * Lots of bugfixes.
 
-### Milestone 6
+### Milestone 6 (Reached on 29 Mar 2025)
 
-* New input source: RTL-SDR USB dongles.
-* Audio out?
+* New input source: RTL-SDR USB dongles (with audio out).
+* FLAC format support for MPX file playback.
+* Faster synchronization.
+* eRT ODA support.
+* New `play_url` parameter allows linking to an RDS-Surveyor instance directly playing a sample file.
+* Preliminary support for Radio Paging (RP): information visible in log tab; no dedicated RP tab yet.
 
 ### Milestone 7
 
+* RDS2 upper streams and ODA support.
+
+### Milestone 8
+
 * TMC support.
 
-### Additional tasks
+### Other planned features
 
 * Display of groups sequence.
 * Variant support for historical features.
-* RP support.
+* RP support (with own tab in UI).
 * Broadcaster-specific TDC/IH data support: CATRADIO.
 * New input source: clock/data from sound card.
 * New input source: I/Q signal (in WAV file).
-* RDS2 upper streams and ODA support.
+* Audio out support in playback mode.
