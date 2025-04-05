@@ -40,7 +40,6 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   radioSources = [new Si470x(this), new RtlSdr(this)];
   selectedRadioSource?: RdsSource;
   fileSource = new FileSource(this);
-  sourceActive = false;
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
@@ -114,12 +113,25 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
           if (response) {
             console.log("Contents", response);
             this.fileSource.setBlob(response);
-            this.currentSource = this.fileSource;
-            this.sourceActive = true;
+            this.setSource(this.fileSource);
             this.fileSource.start();
           }
         });
     });
+  }
+
+  private setSource(source: RdsSource) {
+    this.currentSource = source;
+    // Clear constellation diagram.
+    this.updateConstellationDiagram([], []);
+  }
+
+  private unsetSource() {
+    this.currentSource = undefined;
+  }
+
+  get sourceActive(): boolean {
+    return this.currentSource != undefined;
   }
 
   async emitGroup(blocks: Uint16Array, ok: boolean[]) {
@@ -242,8 +254,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   async handleFileDrop(files: FileList) {
     for (let f of Array.from(files)) {
       this.fileSource.setBlob(f);
-      this.currentSource = this.fileSource;
-      this.sourceActive = true;
+      this.setSource(this.fileSource);
       this.fileSource.start();
     }
   }
@@ -268,9 +279,8 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
       console.log("Cannot start source " + this.selectedRadioSource.name);
       return;
     }
-    this.sourceActive = true;
-    this.currentSource = this.selectedRadioSource;
-    await this.currentSource.tune(this.prefTunedFrequency.value);
+    this.setSource(this.selectedRadioSource);
+    await this.selectedRadioSource.tune(this.prefTunedFrequency.value);
   }
 
   async stopSource() {
@@ -278,8 +288,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
       return;
     }
     await this.currentSource.stop();
-    this.sourceActive = false;
-    this.currentSource = undefined;
+    this.unsetSource();
   }
 
   async processRdsReportEvent(event: RdsReportEvent) {
@@ -298,8 +307,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   }
 
   reportSourceEnd(): void {
-    this.currentSource = undefined;
-    this.sourceActive = false;
+    this.unsetSource();
   }
 
   seekUp() {
