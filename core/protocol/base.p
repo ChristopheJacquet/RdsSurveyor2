@@ -47,7 +47,7 @@ struct Station {
     reportOtherNetworkSwitch(pi: uint<16>, ta: boolean)
 }
 
-bitstruct group(station: Station) {
+bitstruct group_ab(station: Station) {
     # Block A.
     pi: uint<16>
     
@@ -358,6 +358,7 @@ bitstruct group_15B(station: Station) {
     }
 }
 
+#include group_c.p
 #include rp.p
 #include eon.p
 #include odas.p

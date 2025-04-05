@@ -134,10 +134,10 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
     return this.currentSource != undefined;
   }
 
-  async emitGroup(blocks: Uint16Array, ok: boolean[]) {
+  async emitGroup(stream: number, blocks: Uint16Array, ok: boolean[]) {
     this.updateBlerGraph(true, ok);
 
-    const events = this.stationChangeDetector.processGroup(blocks, ok);
+    const events = this.stationChangeDetector.processGroup(stream, blocks, ok);
     for (let event of events) {
       switch (event.kind) {
         case ReceiverEventKind.NewStationEvent:
@@ -294,7 +294,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   async processRdsReportEvent(event: RdsReportEvent) {
     if (event.type == RdsReportEventType.GROUP 
       && event.ok != undefined && event.blocks != undefined) {
-      this.emitGroup(event.blocks, event.ok);
+      this.emitGroup(event.stream || 0, event.blocks, event.ok);
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
       this.updateBlerGraph(false, []);

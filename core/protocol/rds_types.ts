@@ -1,10 +1,18 @@
 import { AFList, parseAfCode, formatAf } from './af';
-import { Station } from "./base";
+import { parse_group_ab, parse_group_c, Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
 import { Diagnostics } from "./diagnostics";
 import { ERtAppImpl } from "./enhanced_radio_text";
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
+
+export function parse_group(stream: number, block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+  if (stream == 0) {
+    parse_group_ab(block, ok, log, station);
+  } else {
+    parse_group_c(block, ok, log, station);
+  }
+}
 
 export class StationImpl implements Station {
   pi?: number;

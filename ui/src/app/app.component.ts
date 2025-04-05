@@ -2,8 +2,7 @@ import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
-import { parse_group } from '../../../core/protocol/base';
-import { LogMessage, StationImpl } from '../../../core/protocol/rds_types';
+import { LogMessage, parse_group, StationImpl } from '../../../core/protocol/rds_types';
 import { ReceiverEvent, ReceiverEventKind } from "../../../core/protocol/station_change";
 
 @Component({
@@ -22,8 +21,8 @@ export class AppComponent {
     switch (evt.kind) {
       case ReceiverEventKind.GroupEvent:
         const log = new LogMessage();
-        log.add('[' + evt.hexDump() + '] ', false)
-        parse_group(evt.blocks, evt.ok, log, this.station);
+        log.add(evt.stream + ':[' + evt.hexDump() + '] ', false);
+        parse_group(evt.stream, evt.blocks, evt.ok, log, this.station);
         this.station.addLogMessage(log);
         this.station.tickGroupDuration();
         break;

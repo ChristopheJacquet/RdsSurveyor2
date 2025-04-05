@@ -9,10 +9,12 @@ export enum ReceiverEventKind { "GroupEvent", "NewStationEvent"};
 
 export class GroupEvent {
   readonly kind = ReceiverEventKind.GroupEvent
+  public stream: number;
   public blocks: Uint16Array;
   public ok: boolean[];
 
-  constructor(blocks: Uint16Array, ok: boolean[]) {
+  constructor(stream: number, blocks: Uint16Array, ok: boolean[]) {
+    this.stream = stream;
     this.blocks = blocks;
     this.ok = ok;
   }
@@ -41,12 +43,13 @@ export class StationChangeDetector {
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
 
-  processGroup(blocks: Uint16Array, ok: boolean[]): Array<ReceiverEvent> {
+  processGroup(stream: number, blocks: Uint16Array, ok: boolean[]): Array<ReceiverEvent> {
     const result = new Array<ReceiverEvent>();
 
-    // Station change detection.
-    const pi = blocks[0];
-    if (ok[0]) {
+    // Station change detection (for stream 0 groups; for other streams state
+    // does not change).
+    if (stream == 0 && ok[0]) {
+      const pi = blocks[0];
       switch (this.tuningState) {
         case TuningState.INITIALIZING:
           this.lastPi = pi;
@@ -82,7 +85,7 @@ export class StationChangeDetector {
       }
     }
 
-    const evt = new GroupEvent(blocks, ok);
+    const evt = new GroupEvent(stream, blocks, ok);
     if (this.tuningState == TuningState.TUNED && ok[0]) {
       this.emitAllPendingEvents(result);
       result.push(evt);

@@ -1,4 +1,4 @@
-import { RdsPipeline, RdsReportEventType, RdsSource, SeekDirection } from "./input";
+import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "./input";
 
 export class FileSource implements RdsSource {
   public name = "File";
@@ -55,31 +55,13 @@ export class FileSource implements RdsSource {
   }
 
   async processTextualGroups(s: string) {
-    //this.demodulator = null;
-    //this.synchronizer = null;
-
     const timing = new Timing();
     for (let l of s.split('\n')) {
-      l = l.split(/[@%]/)[0];
-      const blocks = l.trim().split(' ');
-      if (blocks.length != 4) {
-        console.log("Unrecognized line: ", l);
+      const event = parseHexGroup(l);
+      if (event == undefined) {
         continue;
       }
-      const bl: number[] = [];
-      const ok: boolean[] = [];
-      for (let i = 0; i<4; i++) {
-        const [is_ok, val] = parseHexBlock(blocks[i]);
-        bl.push(val);
-        ok.push(is_ok);
-          
-      }
-      this.pipeline.processRdsReportEvent({
-        type: RdsReportEventType.GROUP,
-        ok: ok,
-        blocks: Uint16Array.from(bl),
-        sourceInfo: "file"
-      });
+      this.pipeline.processRdsReportEvent(event);
       if (this.stoppingPlayback) {
         return;
       }
@@ -235,4 +217,38 @@ function parseHexBlock(s: string): [boolean, number] {
 
   // Placeholder for any unrecognized block.
   return [false, 0];
+}
+
+function parseHexGroup(l: string): RdsReportEvent | undefined {
+  let stream = 0;
+
+  // First, remove the optional timestamp on the right.
+  l = l.split(/[@%]/)[0];
+
+  // Does it contain a stream marker?
+  const m = l.match(/^#S(\d) /);
+  if (m) {
+    stream = Number.parseInt(m[1]);
+    l = l.substring(4);
+  }
+
+  const blocks = l.trim().split(' ');
+  if (blocks.length != 4) {
+    console.log("Unrecognized line: ", l);
+    return undefined;
+  }
+  const bl: number[] = [];
+  const ok: boolean[] = [];
+  for (let i = 0; i<4; i++) {
+    const [is_ok, val] = parseHexBlock(blocks[i]);
+    bl.push(val);
+    ok.push(is_ok);
+  }
+  return {
+    type: RdsReportEventType.GROUP,
+    stream: stream,
+    ok: ok,
+    blocks: Uint16Array.from(bl),
+    sourceInfo: "file"
+  };
 }

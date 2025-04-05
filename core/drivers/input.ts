@@ -1,5 +1,6 @@
 export class RdsReportEvent {
   public type: RdsReportEventType = RdsReportEventType.GROUP;
+  public stream?: number = 0;
   public blocks?: Uint16Array;
   public ok?: boolean[];
   public sourceInfo!: string;

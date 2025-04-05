@@ -39,7 +39,7 @@ export interface Station {
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
 }
 
-export function parse_group(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field pi: uint<16> at +0, width 16.
 	let pi = (ok[0]) ?
 		((block[0]))
@@ -647,6 +647,295 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessa
 				break;
 
 		}
+	}
+}
+
+export function parse_group_c(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field fid: uint<2> at +0, width 2.
+	let fid = (ok[0]) ?
+		((block[0] & 0b1100000000000000) >> 14)
+		: null;
+	// Field fn: uint<6> at +2, width 6.
+	let fn = (ok[0]) ?
+		((block[0] & 0b11111100000000) >> 8)
+		: null;
+	// Field payload: unparsed<56> at +8, width 56.
+
+	// Actions.
+	if ((fid != null)) {
+		log.add(`FID=${fid}`);
+	}
+	if ((fn != null)) {
+		log.add(`FN=${fn}`);
+	}
+	if ((fid != null)) {
+		switch (fid) {
+			case 0:
+				get_parse_function("group_c_fid_0")(block, ok, log, station);
+				break;
+
+			case 1:
+				get_parse_function("group_c_oda")(block, ok, log, station);
+				break;
+
+			case 2:
+				get_parse_function("group_c_oda_assignment")(block, ok, log, station);
+				break;
+
+			case 3:
+				break;
+
+		}
+	}
+}
+
+export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field fid: unparsed<2> at +0, width 2.
+	// Field type: uint<2> at +2, width 2.
+	let type = (ok[0]) ?
+		((block[0] & 0b11000000000000) >> 12)
+		: null;
+	// Field _: unparsed<4> at +4, width 4.
+	// Field _: unparsed<56> at +8, width 56.
+
+	// Actions.
+	if ((type != null)) {
+		switch (type) {
+			case 0:
+				get_parse_function("group_c_ab_tunnelling")(block, ok, log, station);
+				break;
+
+			case 2:
+				get_parse_function("group_c_rft")(block, ok, log, station);
+				break;
+
+		}
+	}
+}
+
+export function parse_group_c_ab_tunnelling(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field _: unparsed<64> at +0, width 64.
+
+	// Actions.
+}
+
+export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field fid: unparsed<2> at +0, width 2.
+	// Field type: unparsed<2> at +2, width 2.
+	// Field pipe: uint<4> at +4, width 4.
+	let pipe = (ok[0]) ?
+		((block[0] & 0b111100000000) >> 8)
+		: null;
+	// Field toggle: uint<1> at +8, width 1.
+	let toggle = (ok[0]) ?
+		((block[0] & 0b10000000) >> 7)
+		: null;
+	// Field addr: uint<15> at +9, width 15.
+	let addr = (ok[0] && ok[1]) ?
+		((block[0] & 0b1111111) << 8) | ((block[1] & 0b1111111100000000) >> 8)
+		: null;
+	// Field byte1: uint<8> at +24, width 8.
+	let byte1 = (ok[1]) ?
+		((block[1] & 0b11111111))
+		: null;
+	// Field byte2: uint<8> at +32, width 8.
+	let byte2 = (ok[2]) ?
+		((block[2] & 0b1111111100000000) >> 8)
+		: null;
+	// Field byte3: uint<8> at +40, width 8.
+	let byte3 = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	// Field byte4: uint<8> at +48, width 8.
+	let byte4 = (ok[3]) ?
+		((block[3] & 0b1111111100000000) >> 8)
+		: null;
+	// Field byte5: uint<8> at +56, width 8.
+	let byte5 = (ok[3]) ?
+		((block[3] & 0b11111111))
+		: null;
+
+	// Actions.
+	if ((pipe != null)) {
+		log.add(`RFT pipe ${pipe}`);
+	}
+	if ((toggle != null)) {
+		log.add(`toggle ${toggle}`);
+	}
+	if ((addr != null)) {
+		log.add(`addr ${addr}`);
+	}
+}
+
+export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field _: unparsed<64> at +0, width 64.
+
+	// Actions.
+}
+
+export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field variant: uint<2> at +8, width 2.
+	let variant = (ok[0]) ?
+		((block[0] & 0b11000000) >> 6)
+		: null;
+	// Field channel: uint<6> at +10, width 6.
+	let channel = (ok[0]) ?
+		((block[0] & 0b111111))
+		: null;
+	// Field aid1: uint<16> at +16, width 16.
+	let aid1 = (ok[1]) ?
+		((block[1]))
+		: null;
+	// Field block_c: uint<16> at +32, width 16.
+	let block_c = (ok[2]) ?
+		((block[2]))
+		: null;
+	// Field block_d: uint<16> at +48, width 16.
+	let block_d = (ok[3]) ?
+		((block[3]))
+		: null;
+
+	// Actions.
+	if ((variant != null)) {
+		switch (variant) {
+			case 0:
+				log.add(`ODA assignment`);
+				if ((aid1 != null) && (channel != null)) {
+					log.add(`Channel ${channel} -> AID ${aid1.toString(16).toUpperCase().padStart(4, '0')}`);
+				}
+				if ((channel != null)) {
+					switch (channel) {
+						case 0:
+						case 1:
+						case 2:
+						case 3:
+						case 4:
+						case 5:
+						case 6:
+						case 7:
+						case 8:
+						case 9:
+						case 10:
+						case 11:
+						case 12:
+						case 13:
+						case 14:
+						case 15:
+							get_parse_function("group_c_oda_rft_assignment")(block, ok, log, station);
+							break;
+
+					}
+				}
+				break;
+
+			case 1:
+			case 2:
+			case 3:
+				if ((variant != null)) {
+					log.add(`Variant ${variant} not implemented.`);
+				}
+				break;
+
+		}
+	}
+}
+
+export function parse_group_c_oda_rft_assignment(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field zero: unparsed<4> at +8, width 4.
+	// Field pipe: unparsed<4> at +12, width 4.
+	// Field aid: unparsed<16> at +16, width 16.
+	// Field variant: uint<4> at +32, width 4.
+	let variant = (ok[2]) ?
+		((block[2] & 0b1111000000000000) >> 12)
+		: null;
+	// Field _: unparsed<28> at +36, width 28.
+
+	// Actions.
+	if ((variant != null)) {
+		log.add(`Variant ${variant}`);
+	}
+	if ((variant != null)) {
+		switch (variant) {
+			case 0:
+				get_parse_function("group_c_oda_rft_assignment_v0")(block, ok, log, station);
+				break;
+
+			case 1:
+				get_parse_function("group_c_oda_rft_assignment_v1")(block, ok, log, station);
+				break;
+
+		}
+	}
+}
+
+export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field zero: unparsed<4> at +8, width 4.
+	// Field pipe: unparsed<4> at +12, width 4.
+	// Field aid: unparsed<16> at +16, width 16.
+	// Field variant: unparsed<4> at +32, width 4.
+	// Field crc_present: bool at +36, width 1.
+	let crc_present = (ok[2]) ?
+		((block[2] & 0b100000000000) >> 11) == 1
+		: null;
+	// Field file_version: uint<3> at +37, width 3.
+	let file_version = (ok[2]) ?
+		((block[2] & 0b11100000000) >> 8)
+		: null;
+	// Field file_id: uint<6> at +40, width 6.
+	let file_id = (ok[2]) ?
+		((block[2] & 0b11111100) >> 2)
+		: null;
+	// Field file_size: uint<18> at +46, width 18.
+	let file_size = (ok[2] && ok[3]) ?
+		((block[2] & 0b11) << 16) | ((block[3]))
+		: null;
+
+	// Actions.
+	if ((crc_present != null)) {
+		log.add(`CRC? ${crc_present ? '1': '0'}`);
+	}
+	if ((file_version != null)) {
+		log.add(`File version: ${file_version}`);
+	}
+	if ((file_id != null)) {
+		log.add(`File id: ${file_id}`);
+	}
+	if ((file_size != null)) {
+		log.add(`File size: ${file_size}`);
+	}
+}
+
+export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field zero: unparsed<4> at +8, width 4.
+	// Field pipe: unparsed<4> at +12, width 4.
+	// Field aid: unparsed<16> at +16, width 16.
+	// Field variant: unparsed<4> at +32, width 4.
+	// Field mode: uint<3> at +36, width 3.
+	let mode = (ok[2]) ?
+		((block[2] & 0b111000000000) >> 9)
+		: null;
+	// Field chunk_address: uint<9> at +39, width 9.
+	let chunk_address = (ok[2]) ?
+		((block[2] & 0b111111111))
+		: null;
+	// Field crc: uint<16> at +48, width 16.
+	let crc = (ok[3]) ?
+		((block[3]))
+		: null;
+
+	// Actions.
+	if ((mode != null)) {
+		log.add(`CRC mode: ${mode}`);
+	}
+	if ((chunk_address != null)) {
+		log.add(`Chunk addr: ${chunk_address}`);
+	}
+	if ((crc != null)) {
+		log.add(`CRC: ${crc.toString(16).toUpperCase().padStart(4, '0')}`);
 	}
 }
 
@@ -1468,7 +1757,7 @@ export function parse_group_ert(block: Uint16Array, ok: boolean[], log: LogMessa
 
 export function get_parse_function(rule: string) {
 	switch (rule) {
-		case "group": return parse_group;
+		case "group_ab": return parse_group_ab;
 		case "group_unknown": return parse_group_unknown;
 		case "group_0A": return parse_group_0A;
 		case "group_0B_0_common": return parse_group_0B_0_common;
@@ -1482,6 +1771,15 @@ export function get_parse_function(rule: string) {
 		case "group_10A": return parse_group_10A;
 		case "group_15A": return parse_group_15A;
 		case "group_15B": return parse_group_15B;
+		case "group_c": return parse_group_c;
+		case "group_c_fid_0": return parse_group_c_fid_0;
+		case "group_c_ab_tunnelling": return parse_group_c_ab_tunnelling;
+		case "group_c_rft": return parse_group_c_rft;
+		case "group_c_oda": return parse_group_c_oda;
+		case "group_c_oda_assignment": return parse_group_c_oda_assignment;
+		case "group_c_oda_rft_assignment": return parse_group_c_oda_rft_assignment;
+		case "group_c_oda_rft_assignment_v0": return parse_group_c_oda_rft_assignment_v0;
+		case "group_c_oda_rft_assignment_v1": return parse_group_c_oda_rft_assignment_v1;
 		case "group_7A": return parse_group_7A;
 		case "group_7A_address": return parse_group_7A_address;
 		case "group_7A_numeric_10": return parse_group_7A_numeric_10;
