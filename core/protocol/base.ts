@@ -20,7 +20,9 @@ export interface Station {
 	di_stereo?: boolean;
 	odas: Map<number, string>;
 	transmitted_odas: Map<number, number>;
+	transmitted_channel_odas: Map<number, number>;
 	app_mapping: Map<number, string>;
+	channel_app_mapping: Map<number, string>;
 	oda_3A_mapping: Map<number, string>;
 	rt_plus_app: RtPlusApp;
 	ert_app: ERtApp;
@@ -37,6 +39,9 @@ export interface Station {
 	addAfPair(af1: number, af2: number): void;
 	addMappedAF(channel: number, mapped_channel: number): void;
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
+	reportRftData(pipe: number, addr: number, byte1: number, byte2: number, byte3: number, byte4: number, byte5: number): void;
+	reportRftCrc(pipe: number, mode: number, chunkAddr: number, crc: number): void;
+	reportRftMetadata(pipe: number, fileSize: number, file_id: number, file_version: number, crc_present: boolean): void;
 }
 
 export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
@@ -765,6 +770,9 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 	if ((addr != null)) {
 		log.add(`addr ${addr}`);
 	}
+	if ((addr != null) && (byte1 != null) && (byte2 != null) && (byte3 != null) && (byte4 != null) && (byte5 != null) && (pipe != null) && (station != null)) {
+		station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5);
+	}
 }
 
 export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
@@ -803,6 +811,9 @@ export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], 
 				log.add(`ODA assignment`);
 				if ((aid1 != null) && (channel != null)) {
 					log.add(`Channel ${channel} -> AID ${aid1.toString(16).toUpperCase().padStart(4, '0')}`);
+				}
+				if ((aid1 != null) && (channel != null)) {
+					station.transmitted_channel_odas.set(channel, aid1);
 				}
 				if ((channel != null)) {
 					switch (channel) {
@@ -873,7 +884,10 @@ export function parse_group_c_oda_rft_assignment(block: Uint16Array, ok: boolean
 export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field zero: unparsed<4> at +8, width 4.
-	// Field pipe: unparsed<4> at +12, width 4.
+	// Field pipe: uint<4> at +12, width 4.
+	let pipe = (ok[0]) ?
+		((block[0] & 0b1111))
+		: null;
 	// Field aid: unparsed<16> at +16, width 16.
 	// Field variant: unparsed<4> at +32, width 4.
 	// Field crc_present: bool at +36, width 1.
@@ -906,12 +920,18 @@ export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: bool
 	if ((file_size != null)) {
 		log.add(`File size: ${file_size}`);
 	}
+	if ((crc_present != null) && (file_id != null) && (file_size != null) && (file_version != null) && (pipe != null) && (station != null)) {
+		station.reportRftMetadata(pipe, file_size, file_id, file_version, crc_present);
+	}
 }
 
 export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field zero: unparsed<4> at +8, width 4.
-	// Field pipe: unparsed<4> at +12, width 4.
+	// Field pipe: uint<4> at +12, width 4.
+	let pipe = (ok[0]) ?
+		((block[0] & 0b1111))
+		: null;
 	// Field aid: unparsed<16> at +16, width 16.
 	// Field variant: unparsed<4> at +32, width 4.
 	// Field mode: uint<3> at +36, width 3.
@@ -936,6 +956,9 @@ export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: bool
 	}
 	if ((crc != null)) {
 		log.add(`CRC: ${crc.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
+	if ((chunk_address != null) && (crc != null) && (mode != null) && (pipe != null) && (station != null)) {
+		station.reportRftCrc(pipe, mode, chunk_address, crc);
 	}
 }
 

@@ -5,6 +5,7 @@ import { Diagnostics } from "./diagnostics";
 import { ERtAppImpl } from "./enhanced_radio_text";
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
+import { RftPipe } from "./rft";
 
 export function parse_group(stream: number, block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
   if (stream == 0) {
@@ -41,6 +42,8 @@ export class StationImpl implements Station {
   ]);
 	transmitted_odas: Map<number, number> = new Map<number, number>();
   app_mapping: Map<number, string> = new Map<number, string>();
+  channel_app_mapping: Map<number, string> = new Map<number, string>();
+  transmitted_channel_odas: Map<number, number> = new Map<number, number>();
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
 	linkage_actuator?: boolean;
@@ -50,6 +53,9 @@ export class StationImpl implements Station {
   ecc?: number;
   language_code?: number;
   other_networks = new Map<number, StationImpl>();
+  rftPipes = new Map<number, RftPipe>();
+  stationLogoPipe: RftPipe | null = null;
+  stationLogoUrl: string | null = null;
   log = new Array<LogMessage>();
 
   // ODAs.
@@ -225,6 +231,9 @@ export class StationImpl implements Station {
     this.ecc = undefined;
     this.language_code = undefined;
     this.transmitted_odas.clear();
+    this.rftPipes.clear();
+    this.stationLogoPipe = null;
+    this.stationLogoUrl = null;
     this.other_networks.clear();
 
     this.app_mapping = new Map<number, string>([
@@ -420,6 +429,53 @@ export class StationImpl implements Station {
     }
 
     this.trafficEvents.push(event);
+  }
+
+  private getRftPipe(pipe: number): RftPipe {
+    let p = this.rftPipes.get(pipe);
+    if (p == undefined) {
+      const p = new RftPipe();
+      this.rftPipes.set(pipe, p);
+      return p;
+    } else {
+      return p;
+    }
+  }
+
+  reportRftData(pipe: number, addr: number, byte1: number, byte2: number, byte3: number, byte4: number, byte5: number) {
+    if (this.stationLogoUrl != null) {
+      // TODO: Handle changing station logos.
+      return;
+    }
+
+    // Is this pipe associated with the station logo ODA?
+    if (this.transmitted_channel_odas.get(0) != STATION_LOGO_AID) {
+      return;
+    }
+
+    const p = this.getRftPipe(pipe);
+    this.stationLogoPipe = p;
+    const complete = p.addGroup(addr, new Uint8Array([byte1, byte2, byte3, byte4, byte5]));
+    if (!complete) {
+      return;
+    }
+
+    const blob = p.getData();
+    if (blob != null) {
+      this.stationLogoUrl = URL.createObjectURL(blob);
+    }
+  }
+
+  reportRftCrc(pipe: number, mode: number, chunkAddr: number, crc: number) {
+    this.getRftPipe(pipe).addCrc(mode, chunkAddr, crc);
+  }
+
+  reportRftMetadata(pipe: number, fileSize: number, fileId: number, fileVersion: number, crcPresent: boolean) {
+    const p = this.getRftPipe(pipe);
+    p.size = fileSize;
+    p.fileId = fileId;
+    p.fileVersion = fileVersion;
+    p.crcPresent = crcPresent;
   }
 
   public addLogMessage(logMessage: LogMessage) {
@@ -722,6 +778,8 @@ const GROUP_14A = 0b11100;
 const GROUP_14B = 0b11101;
 const GROUP_15A = 0b11110;
 const GROUP_15B = 0b11111;
+
+const STATION_LOGO_AID = 0xFF7F;
 
 const CTRLCHAR = '\u2423';
   

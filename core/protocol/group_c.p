@@ -66,6 +66,7 @@ bitstruct group_c_rft(station: Station) {
   log "RFT pipe {pipe:u}"
   log "toggle {toggle:u}"
   log "addr {addr:u}"
+  station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5)
 }
 
 bitstruct group_c_oda(station: Station) {
@@ -90,6 +91,7 @@ bitstruct group_c_oda_assignment(station: Station) {
       log "Channel {channel:u} -> AID {aid1:04x}"
       #log "Data_1={block_c:04x}"
       #log "Data_2={block_d:04x}"
+      put station.transmitted_channel_odas channel aid1
       switch channel {
         case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 {
           parse _ "group_c_oda_rft_assignment"
@@ -135,7 +137,7 @@ bitstruct group_c_oda_rft_assignment_v0(station: Station) {
   # Block A.
   header: unparsed<8>
   zero: unparsed<4>
-  pipe: unparsed<4>
+  pipe: uint<4>
 
   # Block B.
   aid: unparsed<16>
@@ -151,13 +153,14 @@ bitstruct group_c_oda_rft_assignment_v0(station: Station) {
   log "File version: {file_version:u}"
   log "File id: {file_id:u}"
   log "File size: {file_size:u}"
+  station.reportRftMetadata(pipe, file_size, file_id, file_version, crc_present)
 }
 
 bitstruct group_c_oda_rft_assignment_v1(station: Station) {
   # Block A.
   header: unparsed<8>
   zero: unparsed<4>
-  pipe: unparsed<4>
+  pipe: uint<4>
 
   # Block B.
   aid: unparsed<16>
@@ -173,4 +176,5 @@ bitstruct group_c_oda_rft_assignment_v1(station: Station) {
   log "CRC mode: {mode:u}"
   log "Chunk addr: {chunk_address:u}"
   log "CRC: {crc:04x}"
+  station.reportRftCrc(pipe, mode, chunk_address, crc)
 }

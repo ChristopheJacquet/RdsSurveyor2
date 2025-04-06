@@ -177,4 +177,8 @@ const WELL_KNOWN_ODAS = new Map<number, string>([
 	[0xABCE, "Fleximax"],
 	[0xC3B0, "iTunes Tagging"],
 	[0xCD46, "TMC/Alert-C"],
+	[0xFF70, "Internet connection"],
+	[0xFF7F, "RFT: Station logo"],
+	[0xFF80, "RFT: Slideshow"],
+	[0xFF81, "RFT: Journaline"],
 ]);

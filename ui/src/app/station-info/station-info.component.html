@@ -44,6 +44,8 @@
     </div>
   </div>
 
+  <img *ngIf="station.stationLogoUrl != null" class="infogrid-logo" [src]="station.stationLogoUrl">
+
   <div class="infogrid-row">
     <div class="infogrid-cell infogrid-cell-limited">
       <div class="infogrid-title dynamic-ps-title">Dynamic PS</div>
@@ -213,9 +215,14 @@
   </mat-tab>
   <mat-tab label="ODA">
     <table class="data-table">
-      <tr><th>Group</th><th>AID</th><th>ODA name</th></tr>
+      <tr><th>Group or channel</th><th>AID</th><th>ODA name</th></tr>
       <tr *ngFor="let e of station.transmitted_odas | keyvalue">
-        <td>{{ formatGroupType(e.key) }}</td>
+        <td>Group {{ formatGroupType(e.key) }}</td>
+        <td>{{ e.value | hex:4 }}</td>
+        <td>{{ getOdaName(e.value) }}</td>
+      </tr>
+      <tr *ngFor="let e of station.transmitted_channel_odas | keyvalue">
+        <td>Channel {{ e.key }}</td>
         <td>{{ e.value | hex:4 }}</td>
         <td>{{ getOdaName(e.value) }}</td>
       </tr>
@@ -237,6 +244,30 @@
         <td>{{ e.eid | hex:4 }}</td>
       </tr>
     </table>
+  </mat-tab>
+  <mat-tab label="Station logo" *ngIf="station.stationLogoPipe != null">
+    <div class="infogrid">
+      <div class="infogrid-row">
+        <div class="infogrid-cell">
+          <div class="infogrid-title">File size (bytes)</div>
+          <div class="infogrid-value">{{ station.stationLogoPipe.size }} </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">File id</div>
+          <div class="infogrid-value">{{ station.stationLogoPipe.fileId }} </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">File version</div>
+          <div class="infogrid-value">{{ station.stationLogoPipe.fileVersion }} </div>
+        </div>
+        <div class="infogrid-cell">
+          <div class="infogrid-title">CRC</div>
+          <div class="infogrid-value">{{ station.stationLogoPipe.crcPresent ? "Transmitted" : "Not transmitted" }} </div>
+        </div>
+      </div>
+    </div>
+
+    <img *ngIf="station.stationLogoUrl != null" [src]="station.stationLogoUrl">
   </mat-tab>
   <mat-tab label="Group log">
     <div class="group-log">

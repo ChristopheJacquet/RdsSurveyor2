@@ -19,6 +19,14 @@
   margin: 12px 0;
 }
 
+.infogrid-logo {
+  float: right;
+  width: 140px;
+  margin-left: 20px;
+  margin-top: 10px;
+  display: block;
+}
+
 .infogrid-cell {
   flex-grow: 1;
   overflow: hidden;

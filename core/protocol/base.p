@@ -27,7 +27,9 @@ struct Station {
     di_stereo: bool
     odas: map<uint<16>, tag>
     transmitted_odas: map<uint<5>, uint<16>>
+    transmitted_channel_odas: map<uint<5>, uint<16>>
     app_mapping: map<uint<5>, tag>
+    channel_app_mapping: map<uint<6>, tag>
     oda_3A_mapping: map<uint<16>, tag>
     rt_plus_app: RtPlusApp
     ert_app: ERtApp
@@ -45,6 +47,9 @@ struct Station {
     addAfPair(af1: uint<8>, af2: uint<8>)
     addMappedAF(channel: uint<8>, mapped_channel: uint<8>)
     reportOtherNetworkSwitch(pi: uint<16>, ta: boolean)
+    reportRftData(pipe: uint<4>, addr: uint<15>, byte1: uint<8>, byte2: uint<8>, byte3: uint<8>, byte4: uint<8>, byte5: uint<8>)
+    reportRftCrc(pipe: uint<4>, mode: uint<3>, chunkAddr: uint<9>, crc: uint<16>)
+    reportRftMetadata(pipe: uint<4>, fileSize: uint<18>, file_id: uint<6>, file_version: uint<3>, crc_present: bool)
 }
 
 bitstruct group_ab(station: Station) {
