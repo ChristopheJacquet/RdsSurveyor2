@@ -230,12 +230,13 @@ export class StationImpl implements Station {
     this.pin_minute = undefined;
     this.ecc = undefined;
     this.language_code = undefined;
-    this.transmitted_odas.clear();
     this.rftPipes.clear();
     this.stationLogoPipe = null;
     this.stationLogoUrl = null;
     this.other_networks.clear();
 
+    // Reset ODAs and group mappings.
+    this.transmitted_odas.clear();
     this.app_mapping = new Map<number, string>([
       [GROUP_0A, "group_0A"],
       [GROUP_0B, "group_0B_0_common"],
@@ -251,6 +252,9 @@ export class StationImpl implements Station {
       [GROUP_14B, "group_14B"],
       [GROUP_15A, "group_15A"],
       [GROUP_15B, "group_15B"]]);
+    this.transmitted_channel_odas.clear();
+    this.channel_app_mapping.clear();
+
     this.datetime = "";
     this.date = null;
     this.group_stats.fill(0);
