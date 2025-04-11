@@ -41,17 +41,13 @@ bitstruct group_c_fid_0(station: Station) {
 } action {
   switch type {
     case 0 {
-      parse _ "group_c_ab_tunnelling"
+      log "Tunnelled A/B group"
+      parse _ "group_ab_without_pi"
     }
     case 2 {
       parse _ "group_c_rft"
     }
   }
-}
-
-bitstruct group_c_ab_tunnelling(station: Station) {
-  # TODO.
-  _: unparsed<64>
 }
 
 bitstruct group_c_rft(station: Station) {

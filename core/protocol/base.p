@@ -57,6 +57,19 @@ bitstruct group_ab(station: Station) {
     # Block A.
     pi: uint<16>
     
+    # Rest.
+    _: unparsed<48>
+} action {
+    log "PI={pi:04x}"
+    station.pi = pi
+    parse _ "group_ab_without_pi"
+}
+
+# Used to parse RDS-1 groups as well as tunnelled groups in RDS-2.
+bitstruct group_ab_without_pi(station: Station) {
+    # Block A.
+    _: unparsed<16>
+    
     # Block B.
     type: uint<5>
     tp: bool
@@ -65,12 +78,10 @@ bitstruct group_ab(station: Station) {
     # Group-specific.
     payload: unparsed<37>
 } action {
-    log "PI={pi:04x}"
     log "Group {type:grouptype}"
     log "TP={tp:bool}"
     log "PTY={pty:u}"
 
-    station.pi = pi
     station.tp = tp
     station.pty = pty
     station.addToGroupStats(type)

@@ -50,6 +50,20 @@ export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessag
 	let pi = (ok[0]) ?
 		((block[0]))
 		: null;
+	// Field _: unparsed<48> at +16, width 48.
+
+	// Actions.
+	if ((pi != null)) {
+		log.add(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
+	}
+	if ((pi != null)) {
+		station.pi = pi;
+	}
+	get_parse_function("group_ab_without_pi")(block, ok, log, station);
+}
+
+export function parse_group_ab_without_pi(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field _: unparsed<16> at +0, width 16.
 	// Field type: uint<5> at +16, width 5.
 	let type = (ok[1]) ?
 		((block[1] & 0b1111100000000000) >> 11)
@@ -65,9 +79,6 @@ export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessag
 	// Field payload: unparsed<37> at +27, width 37.
 
 	// Actions.
-	if ((pi != null)) {
-		log.add(`PI=${pi.toString(16).toUpperCase().padStart(4, '0')}`);
-	}
 	if ((type != null)) {
 		log.add(`Group ${(type>>1).toString() + ((type & 1) == 0 ? 'A' : 'B')}`);
 	}
@@ -76,9 +87,6 @@ export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessag
 	}
 	if ((pty != null)) {
 		log.add(`PTY=${pty}`);
-	}
-	if ((pi != null)) {
-		station.pi = pi;
 	}
 	if ((tp != null)) {
 		station.tp = tp;
@@ -715,7 +723,8 @@ export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], log: LogM
 	if ((type != null)) {
 		switch (type) {
 			case 0:
-				get_parse_function("group_c_ab_tunnelling")(block, ok, log, station);
+				log.add(`Tunnelled A/B group`);
+				get_parse_function("group_ab_without_pi")(block, ok, log, station);
 				break;
 
 			case 2:
@@ -724,12 +733,6 @@ export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], log: LogM
 
 		}
 	}
-}
-
-export function parse_group_c_ab_tunnelling(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field _: unparsed<64> at +0, width 64.
-
-	// Actions.
 }
 
 export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
@@ -1886,6 +1889,7 @@ export function parse_group_internet_connection_url(block: Uint16Array, ok: bool
 export function get_parse_function(rule: string) {
 	switch (rule) {
 		case "group_ab": return parse_group_ab;
+		case "group_ab_without_pi": return parse_group_ab_without_pi;
 		case "group_unknown": return parse_group_unknown;
 		case "group_0A": return parse_group_0A;
 		case "group_0B_0_common": return parse_group_0B_0_common;
@@ -1901,7 +1905,6 @@ export function get_parse_function(rule: string) {
 		case "group_15B": return parse_group_15B;
 		case "group_c": return parse_group_c;
 		case "group_c_fid_0": return parse_group_c_fid_0;
-		case "group_c_ab_tunnelling": return parse_group_c_ab_tunnelling;
 		case "group_c_rft": return parse_group_c_rft;
 		case "group_c_oda": return parse_group_c_oda;
 		case "group_c_oda_assignment": return parse_group_c_oda_assignment;

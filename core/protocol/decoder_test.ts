@@ -297,3 +297,15 @@ describe('Internet Connection', () => {
         .toBe('00https://jarviradio.radiotaajuus.fi:9000/jr');
   });
 });
+
+// RDS-2 tunnelling of A/B groups in group C. Here we tunnel 0A groups with PS.
+describe('RDS-2 tunnelling of PS', () => {
+  const station = new StationImpl();
+  send(`#S1 0000 0408 CDCD 5244
+        #S2 0000 0409 CDCD 5332
+        #S1 0000 040A CDCD 2050
+        #S2 0000 040F CDCD 5321`, station);
+  it('should transmit PS "RDS2 PS!"', () => {
+    expect(station.getPS()).toBe("RDS2 PS!");
+  });
+});
