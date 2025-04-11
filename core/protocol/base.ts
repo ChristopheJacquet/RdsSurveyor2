@@ -27,6 +27,7 @@ export interface Station {
 	rt_plus_app: RtPlusApp;
 	ert_app: ERtApp;
 	dab_cross_ref_app: DabCrossRefApp;
+	internet_connection_app: InternetConnectionApp;
 	linkage_actuator?: boolean;
 	pin_day?: number;
 	pin_hour?: number;
@@ -783,9 +784,20 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 }
 
 export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field _: unparsed<64> at +0, width 64.
+	// Field fid: unparsed<2> at +0, width 2.
+	// Field channel: uint<6> at +2, width 6.
+	let channel = (ok[0]) ?
+		((block[0] & 0b11111100000000) >> 8)
+		: null;
+	// Field app_data: unparsed<56> at +8, width 56.
 
 	// Actions.
+	if ((channel != null)) {
+		log.add(`ODA channel ${channel}`);
+	}
+	if ((channel != null)) {
+		get_parse_function(station.channel_app_mapping.get(channel) ?? "group_unknown")(block, ok, log, station);
+	}
 }
 
 export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
@@ -821,6 +833,9 @@ export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], 
 				}
 				if ((aid1 != null) && (channel != null)) {
 					station.transmitted_channel_odas.set(channel, aid1);
+				}
+				if ((aid1 != null) && (channel != null)) {
+					station.channel_app_mapping.set(channel, station.odas.get(aid1) ?? "group_unknown");
 				}
 				if ((channel != null)) {
 					switch (channel) {
@@ -1785,6 +1800,89 @@ export function parse_group_ert(block: Uint16Array, ok: boolean[], log: LogMessa
 	}
 }
 
+export interface InternetConnectionApp {
+	url: RdsString;
+	enabled?: boolean;
+}
+
+export function parse_group_internet_connection(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field type: uint<1> at +8, width 1.
+	let type = (ok[0]) ?
+		((block[0] & 0b10000000) >> 7)
+		: null;
+	// Field _: unparsed<55> at +9, width 55.
+
+	// Actions.
+	log.add(`Internet connection`);
+	if ((type != null)) {
+		switch (type) {
+			case 0:
+			case 1:
+				get_parse_function("group_internet_connection_url")(block, ok, log, station);
+				break;
+
+		}
+	}
+	if ((true != null)) {
+		station.internet_connection_app.enabled = true;
+	}
+}
+
+export function parse_group_internet_connection_url(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+	// Field header: unparsed<8> at +0, width 8.
+	// Field type: unparsed<1> at +8, width 1.
+	// Field addr: uint<7> at +9, width 7.
+	let addr = (ok[0]) ?
+		((block[0] & 0b1111111))
+		: null;
+	// Field url_seg: byte<6> at +16, width 48.
+	let url_seg__0 = (ok[1]) ?
+		((block[1] & 0b1111111100000000) >> 8)
+		: null;
+	let url_seg__1 = (ok[1]) ?
+		((block[1] & 0b11111111))
+		: null;
+	let url_seg__2 = (ok[2]) ?
+		((block[2] & 0b1111111100000000) >> 8)
+		: null;
+	let url_seg__3 = (ok[2]) ?
+		((block[2] & 0b11111111))
+		: null;
+	let url_seg__4 = (ok[3]) ?
+		((block[3] & 0b1111111100000000) >> 8)
+		: null;
+	let url_seg__5 = (ok[3]) ?
+		((block[3] & 0b11111111))
+		: null;
+	const url_seg = [url_seg__0, url_seg__1, url_seg__2, url_seg__3, url_seg__4, url_seg__5];
+
+	// Actions.
+	if ((addr != null) && (url_seg != null)) {
+		log.add(`URL seg @${addr} "${formatBytes(url_seg)}"`);
+	}
+	if ((station != null)) {
+		if ((addr != null) && (url_seg__0 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 0, url_seg__0);
+		}
+		if ((addr != null) && (url_seg__1 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 1, url_seg__1);
+		}
+		if ((addr != null) && (url_seg__2 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 2, url_seg__2);
+		}
+		if ((addr != null) && (url_seg__3 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 3, url_seg__3);
+		}
+		if ((addr != null) && (url_seg__4 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 4, url_seg__4);
+		}
+		if ((addr != null) && (url_seg__5 != null)) {
+			station.internet_connection_app.url.setByte(addr*6 + 5, url_seg__5);
+		}
+	}
+}
+
 export function get_parse_function(rule: string) {
 	switch (rule) {
 		case "group_ab": return parse_group_ab;
@@ -1828,6 +1926,8 @@ export function get_parse_function(rule: string) {
 		case "group_dabxref_service": return parse_group_dabxref_service;
 		case "group_ert_declaration": return parse_group_ert_declaration;
 		case "group_ert": return parse_group_ert;
+		case "group_internet_connection": return parse_group_internet_connection;
+		case "group_internet_connection_url": return parse_group_internet_connection_url;
 	}
 	throw new RangeError("Invalid rule: " + rule);
 }

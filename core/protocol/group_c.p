@@ -75,8 +75,14 @@ bitstruct group_c_rft(station: Station) {
 }
 
 bitstruct group_c_oda(station: Station) {
-  # TODO.
-  _: unparsed<64>
+  fid: unparsed<2>    # Function Id
+  channel: uint<6>
+
+  # The rest (7 bytes) depends on the ODA.
+  app_data: unparsed<56>
+} action {
+  log "ODA channel {channel:u}"
+  parse _ lookup(station.channel_app_mapping, channel, "group_unknown")
 }
 
 bitstruct group_c_oda_assignment(station: Station) {
@@ -97,6 +103,7 @@ bitstruct group_c_oda_assignment(station: Station) {
       #log "Data_1={block_c:04x}"
       #log "Data_2={block_d:04x}"
       put station.transmitted_channel_odas channel aid1
+      put station.channel_app_mapping channel lookup(station.odas, aid1, "group_unknown")
       switch channel {
         case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 {
           parse _ "group_c_oda_rft_assignment"

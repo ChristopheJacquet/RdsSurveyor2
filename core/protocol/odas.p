@@ -123,3 +123,41 @@ bitstruct group_ert(station: Station) {
 
   copy station.ert_app.ert, addr, 4, ert_seg
 }
+
+# Internet Connection.
+struct InternetConnectionApp {
+  url: str<128>
+  enabled: bool
+}
+
+bitstruct group_internet_connection(station: Station) {
+  # Block A.
+  header: unparsed<8>
+  type: uint<1>
+  
+  # The rest depends on the type.
+  _: unparsed<55>
+} action {
+  log "Internet connection"
+
+  switch type {
+    case 0, 1 {
+      parse _ "group_internet_connection_url"
+    }
+  }
+  station.internet_connection_app.enabled = true
+}
+
+bitstruct group_internet_connection_url(station: Station) {
+  # Block A.
+  header: unparsed<8>
+  type: unparsed<1>
+  addr: uint<7>
+
+  # Blocks B, C, D.
+  url_seg: byte<6>
+} action {
+  log "URL seg @{addr:u} \"{url_seg:bytes}\""
+
+  copy station.internet_connection_app.url, addr, 6, url_seg
+}

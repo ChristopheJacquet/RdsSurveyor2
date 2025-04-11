@@ -269,6 +269,13 @@
 
     <img *ngIf="station.stationLogoUrl != null" [src]="station.stationLogoUrl">
   </mat-tab>
+  <mat-tab label="Internet Connection" *ngIf="station.internet_connection_app.enabled">
+    <mat-list role="list">
+      <mat-list-item role="listitem" class="rt-item" *ngFor="let url of station.internet_connection_app.url.getPastMessages(true)">
+        <div>{{ humanReadableUrl(url.message) }}</div>
+      </mat-list-item>
+    </mat-list>
+  </mat-tab>
   <mat-tab label="Group log">
     <div class="group-log">
       <div *ngFor="let m of station.log">

@@ -3,6 +3,7 @@ import { parse_group_ab, parse_group_c, Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
 import { Diagnostics } from "./diagnostics";
 import { ERtAppImpl } from "./enhanced_radio_text";
+import { InternetConnectionAppImpl } from './internet_connection';
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 import { RftPipe } from "./rft";
@@ -36,6 +37,7 @@ export class StationImpl implements Station {
     [0x0093, "group_dabxref"],
     [0x4BD7, "group_rtplus"],
     [0x6552, "group_ert"],
+    [0xFF70, "group_internet_connection"]
   ]);
   oda_3A_mapping: Map<number, string> = new Map<number, string>([
     [0x6552, "group_ert_declaration"],
@@ -62,6 +64,7 @@ export class StationImpl implements Station {
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
   ert_app: ERtAppImpl = new ERtAppImpl(this);
   dab_cross_ref_app: DabCrossRefAppImpl = new DabCrossRefAppImpl();
+  internet_connection_app: InternetConnectionAppImpl = new InternetConnectionAppImpl(this);
 
   private ta_?: boolean;
   public trafficEvents = new Array<TrafficEvent>();

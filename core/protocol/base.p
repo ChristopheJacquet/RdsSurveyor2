@@ -34,6 +34,7 @@ struct Station {
     rt_plus_app: RtPlusApp
     ert_app: ERtApp
     dab_cross_ref_app: DabCrossRefApp
+    internet_connection_app: InternetConnectionApp
     linkage_actuator: bool
     pin_day: uint<5>
     pin_hour: uint<5>

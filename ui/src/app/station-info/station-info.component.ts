@@ -8,6 +8,7 @@ import { HexPipe } from '../hex.pipe';
 import { Pref } from '../prefs';
 import { StationImpl } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
+import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
 
 @Component({
   selector: 'app-station-info',
@@ -152,6 +153,10 @@ export class StationInfoComponent {
 	showAbout() {
 		const dialog = this.aboutDialog.open(AboutComponent);
 		return false;
+	}
+
+	humanReadableUrl(url: string) {
+		return humanReadableUrl(url);
 	}
 }
 
