@@ -1,12 +1,12 @@
 import { LogMessage, StationImpl } from './rds_types';
-import { Station, parse_group } from './base';
+import { Station, parse_group_ab } from './base';
 
 
 function send(s: string, station: Station) {
   for (let l of s.split('\n')) {
     let groups = l.trim().split(' ');
     const logMessage = new LogMessage();
-    parse_group(
+    parse_group_ab(
       Uint16Array.from([
         parseInt(groups[0], 16), parseInt(groups[1], 16),
         parseInt(groups[2], 16), parseInt(groups[3], 16)]),

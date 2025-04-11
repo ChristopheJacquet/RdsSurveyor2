@@ -10,9 +10,11 @@ ts_project(
         "dab_cross_ref.ts",
         "diagnostics.ts",
         "enhanced_radio_text.ts",
+        "internet_connection.ts",
         "radio_text_plus.ts",
         "rbds_callsigns.ts",
         "rds_types.ts",
+        "rft.ts",
     ],
     transpiler = "tsc",
     declaration = True,  # Needed to be able to reference target in deps.

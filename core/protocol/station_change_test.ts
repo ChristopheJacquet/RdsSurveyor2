@@ -8,6 +8,7 @@ function send(s: string, detector: StationChangeDetector): Array<ReceiverEvent> 
     let b = [
       parseInt(g[0], 16), parseInt(g[1], 16), parseInt(g[2], 16), parseInt(g[3], 16)];
     const evts = detector.processGroup(
+      /* stream= */ 0,
       Uint16Array.from(b),
       [!Number.isNaN(b[0]), !Number.isNaN(b[1]), !Number.isNaN(b[2]), !Number.isNaN(b[3])]);
     events.push(...evts);
