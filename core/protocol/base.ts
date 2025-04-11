@@ -684,7 +684,14 @@ export function parse_group_c(block: Uint16Array, ok: boolean[], log: LogMessage
 				break;
 
 			case 2:
-				get_parse_function("group_c_oda_assignment")(block, ok, log, station);
+				if ((fn != null)) {
+					switch (fn) {
+						case 0:
+							get_parse_function("group_c_oda_assignment")(block, ok, log, station);
+							break;
+
+					}
+				}
 				break;
 
 			case 3:

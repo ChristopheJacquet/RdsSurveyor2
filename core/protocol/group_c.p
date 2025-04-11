@@ -17,7 +17,12 @@ bitstruct group_c(station: Station) {
       parse _ "group_c_oda"
     }
     case 2 {
-      parse _ "group_c_oda_assignment"
+      switch fn {
+        case 0 {
+          parse _ "group_c_oda_assignment"
+        }
+        # Ignore other FN values, notably used by the obsolete RPP protocol.
+      }
     }
     case 3 {
       # RFU.
