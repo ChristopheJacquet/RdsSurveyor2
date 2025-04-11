@@ -1,18 +1,17 @@
-import { LogMessage, StationImpl } from './rds_types';
-import { Station, parse_group_ab } from './base';
+import { LogMessage, StationImpl, parse_group } from './rds_types';
+import { Station } from './base';
+import { parseHexGroup, RdsReportEventType } from '../drivers/input';
 
 
 function send(s: string, station: Station) {
   for (let l of s.split('\n')) {
-    let groups = l.trim().split(' ');
+    const evt = parseHexGroup(l);
+    if (evt == undefined || evt.type != RdsReportEventType.GROUP
+        || evt.stream == undefined || evt.blocks == undefined || evt.ok == undefined) {
+      continue;
+    }
     const logMessage = new LogMessage();
-    parse_group_ab(
-      Uint16Array.from([
-        parseInt(groups[0], 16), parseInt(groups[1], 16),
-        parseInt(groups[2], 16), parseInt(groups[3], 16)]),
-      [true, true, true, true],
-      logMessage,
-      station);
+    parse_group(evt.stream, evt.blocks, evt.ok, logMessage, station);
     console.log(logMessage.text);
   }
 }
@@ -274,5 +273,27 @@ describe('eRT encoded in UCS-2', () => {
   it('should be decoded correctly', () => {
     expect(station.ert_app.ert.getLatestCompleteOrPartialText())
         .toBe('Géant');
+  });
+});
+
+// RDS-2 ODA Internet Connection. Almost real sample from Järviradio.
+// The only change is the type bit that is set to 0 instead of 1 for a URL.
+describe('Internet Connection', () => {
+  const station = new StationImpl();
+  send(`#S1 8010 FF70 0000 0000
+        #S1 5000 3030 6874 7470
+        #S1 5001 733A 2F2F 6A61
+        #S1 5002 7276 6972 6164
+        #S1 5003 696F 2E72 6164
+        #S1 5004 696F 7461 616A
+        #S1 5005 7575 732E 6669
+        #S1 5006 3A39 3030 302F
+        #S1 5007 6A72 0000 0000`, station);
+  it('should be detected', () => {
+    expect(station.internet_connection_app.enabled).toBe(true);
+  });
+  it('should be decoded correctly', () => {
+    expect(station.internet_connection_app.url.toString())
+        .toBe('00https://jarviradio.radiotaajuus.fi:9000/jr');
   });
 });

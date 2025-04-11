@@ -33,6 +33,7 @@ ts_project(
     tsconfig = "//:tsconfig",
     deps = [
         ":protocol",
+        "//drivers:input",
         "//:node_modules/@types/jasmine",
     ],
 )
