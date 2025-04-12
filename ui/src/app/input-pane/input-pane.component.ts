@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -21,17 +21,19 @@ import { Demodulator } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
+import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
+import { ConstellationDiagramComponent } from "../constellation-diagram/constellation-diagram.component";
 
 @Component({
   selector: 'app-input-pane',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule],
+  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
   templateUrl: './input-pane.component.html',
   styleUrl: './input-pane.component.scss'
 })
-export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
-  @ViewChild('blerGraph') public blerGraph!: ElementRef;
-  @ViewChild('constellationDiagram') public constellationDiagram!: ElementRef;
+export class InputPaneComponent implements RdsPipeline  {
+  @ViewChild('blerGraph') public blerGraph!: BlerGraphComponent;
+  @ViewChild('constellationDiagram') public constellationDiagram!: ConstellationDiagramComponent;
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
@@ -46,14 +48,6 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   synchronizer: BitStreamSynchronizer;
   demodulator: Demodulator;
 
-  blerGraphCx: CanvasRenderingContext2D | null = null;
-  blerGraphWidth: number = 0;
-  blerGraphHeight: number = 0;
-
-  constellationDiagramCx: CanvasRenderingContext2D | null = null;
-  constellationDiagramWidth: number = 0;
-  constellationDiagramHeight: number = 0;
-
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
 
@@ -62,27 +56,6 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   constructor(private httpClient: HttpClient, private route: ActivatedRoute) {
     this.synchronizer = new BitStreamSynchronizer(this);
     this.demodulator = new Demodulator(this.synchronizer);
-  }
-
-  public ngAfterViewInit() {
-    // Initialize block error rate graph.
-    const blerGraphEl: HTMLCanvasElement = this.blerGraph.nativeElement;
-    this.blerGraphCx = blerGraphEl.getContext('2d');
-    this.blerGraphWidth = blerGraphEl.width;
-    this.blerGraphHeight = blerGraphEl.height;
-
-    if (this.blerGraphCx == null) {
-      return;
-    }
-    this.blerGraphCx.fillStyle = "#aaa";
-    this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
-
-    // Initialize constellation diagram.
-    const diagramEl: HTMLCanvasElement = this.constellationDiagram.nativeElement;
-    this.constellationDiagramCx = diagramEl.getContext('2d');
-    this.constellationDiagramWidth = diagramEl.width;
-    this.constellationDiagramHeight = diagramEl.height;
-    return this.constellationDiagramCx;
   }
 
   private async handleHttpError(error: HttpErrorResponse) {
@@ -123,7 +96,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   private setSource(source: RdsSource) {
     this.currentSource = source;
     // Clear constellation diagram.
-    this.updateConstellationDiagram([], []);
+    this.constellationDiagram.updateConstellationDiagram([], []);
   }
 
   private unsetSource() {
@@ -135,7 +108,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
   }
 
   async emitGroup(stream: number, blocks: Uint16Array, ok: boolean[]) {
-    this.updateBlerGraph(true, ok);
+    this.blerGraph.updateBlerGraph(true, ok);
 
     const events = this.stationChangeDetector.processGroup(stream, blocks, ok);
     for (let event of events) {
@@ -152,81 +125,11 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
     }
   }
 
-  updateBlerGraph(synced: boolean, ok: boolean[]) {
-    if (this.blerGraphCx == null) {
-      return;
-    }
-
-    // Scroll left.
-    this.blerGraphCx.drawImage(
-      this.blerGraphCx.canvas,
-      1, 0, this.blerGraphWidth-1, this.blerGraphHeight,
-      0, 0, this.blerGraphWidth-1, this.blerGraphHeight);
-    
-    // Draw line for new group.
-    const x = this.blerGraphWidth-1;
-    let prevY = 0;
-    for (let i = 0; i < 4; i++) {
-      this.blerGraphCx.strokeStyle =
-        synced ? (ok[i] ? "#8F8" : "#F88") : "#aaa";
-      const y = (i+1)*this.blerGraphHeight/4;
-      this.blerGraphCx.beginPath();
-      this.blerGraphCx.moveTo(x, prevY);
-      this.blerGraphCx.lineTo(x, y);
-      this.blerGraphCx.stroke();
-      prevY = y;
-    }
-  }
-
-  updateConstellationDiagram(symbolsI: number[], symbolsQ: number[]) {
-    if (this.constellationDiagramCx == null) {
-      return;
-    }
-
-    this.constellationDiagramCx.clearRect(
-      0, 0, this.constellationDiagramWidth, this.constellationDiagramHeight);
-    
-    const xC = this.constellationDiagramWidth / 2;
-    const yC = this.constellationDiagramHeight / 2;
-    
-    this.constellationDiagramCx.strokeStyle = "#000";
-
-    this.constellationDiagramCx.beginPath();
-    this.constellationDiagramCx.moveTo(xC, 0);
-    this.constellationDiagramCx.lineTo(xC, this.constellationDiagramHeight);
-    this.constellationDiagramCx.stroke();
-
-    this.constellationDiagramCx.beginPath();
-    this.constellationDiagramCx.moveTo(0, yC);
-    this.constellationDiagramCx.lineTo(this.constellationDiagramWidth, yC);
-    this.constellationDiagramCx.stroke();
-
-    let max = 0;
-    for (let i = 0; i < symbolsI.length; i++) {
-      max = Math.max(max, Math.abs(symbolsI[i]), Math.abs(symbolsQ[i]));
-    }
-
-    const scale = this.constellationDiagramWidth / 2 / max / 1.1;  // Add 10% margin.
-
-    this.constellationDiagramCx.fillStyle = "#004";
-    for (let i = 0; i < symbolsI.length; i++) {
-      this.constellationDiagramCx.beginPath();
-      this.constellationDiagramCx.arc(
-        xC + symbolsI[i] * scale,
-        yC + symbolsQ[i] * scale,
-        2,
-        0,
-        2 * Math.PI
-      );
-      this.constellationDiagramCx.fill();
-    }
-  }
-
   async processMpxSamples(samples: Float32Array) {
     for (let i=0; i<samples.length; i++) {
       this.demodulator.addSample(samples[i]);
     }
-    this.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
+    this.constellationDiagram.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
   }
 
   async processBits(bytes: Uint8Array) {
@@ -297,7 +200,7 @@ export class InputPaneComponent implements AfterViewInit, RdsPipeline  {
       this.emitGroup(event.stream || 0, event.blocks, event.ok);
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
-      this.updateBlerGraph(false, []);
+      this.blerGraph.updateBlerGraph(false, []);
     }
   }
 
