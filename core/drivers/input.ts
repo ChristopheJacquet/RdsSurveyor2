@@ -68,7 +68,7 @@ export function parseHexGroup(l: string): RdsReportEvent | undefined {
   }
 
   const blocks = l.trim().split(' ');
-  if (blocks.length != 4) {
+  if (blocks.length < 4) {
     console.log("Unrecognized line: ", l);
     return undefined;
   }
