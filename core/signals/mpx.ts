@@ -23,7 +23,13 @@ const SYNC_OUT_LENGTH = 100;
 
 export class Demodulator {
   // Subcarrier frequency.
-  fsc = FC_0;
+  fSub: number;
+
+  // Subcarrier to bitrate ratio, e.g. 57000/1187.5 = 48 for Stream 0.
+  subcarrierBitrateRatio: number;
+
+  // Oscillator frequency.
+  fsc: number;
 
   // Subcarrier phase.
   subcarr_phi = 0;
@@ -61,9 +67,17 @@ export class Demodulator {
   syncOutI: number[] = [];
   syncOutQ: number[] = [];
 
+  // Lock detection.
+  sumDistI = 0;
+  sumDistQ = 0;
+  locked = false;
+
   bitstreamSynchronizer: BitStreamSynchronizer;
 
-  constructor(bitstreamSynchronizer: BitStreamSynchronizer) {
+  constructor(subcarrierFreq: number, bitstreamSynchronizer: BitStreamSynchronizer) {
+    this.fSub = subcarrierFreq;
+    this.subcarrierBitrateRatio = subcarrierFreq / BIT_RATE;
+    this.fsc = subcarrierFreq;
     this.bitstreamSynchronizer = bitstreamSynchronizer;
   }
 
@@ -80,12 +94,12 @@ export class Demodulator {
     // Decimate band-limited signal.
     if (this.numsamples % this.decimate == 0) {
       // Reset subcarrier frequency if it is outside tolerance range.
-      if ((this.fsc > FC_0 + FC_TOLERANCE) || (this.fsc < FC_0 - FC_TOLERANCE)) {
-        this.fsc = FC_0;
+      if ((this.fsc > this.fSub + FC_TOLERANCE) || (this.fsc < this.fSub - FC_TOLERANCE)) {
+        this.fsc = this.fSub;
       }
 
       // 1187.5 Hz clock.
-      const clock_phi = this.subcarr_phi / 48.0 + this.clock_offset;   // Clock phase.
+      const clock_phi = this.subcarr_phi / this.subcarrierBitrateRatio + this.clock_offset;   // Clock phase.
       const lo_clock  = (clock_phi % (2 * Math.PI)) < Math.PI ? 1 : -1;
 
       // Clock phase recovery.
@@ -104,11 +118,18 @@ export class Demodulator {
 
         this.syncOutI.push(subcarr_bb_i);
         this.syncOutQ.push(subcarr_bb_q);
+        this.sumDistI += Math.abs(subcarr_bb_i);
+        this.sumDistQ += Math.abs(subcarr_bb_q);
         if (this.syncOutI.length > SYNC_OUT_LENGTH) {
-          this.syncOutI.shift();
-          this.syncOutQ.shift();
+          const i = this.syncOutI.shift();
+          const q = this.syncOutQ.shift();
+          if (i != undefined && q != undefined) {
+            this.sumDistI -= Math.abs(i);
+            this.sumDistQ -= Math.abs(q);
+          }
         }
-      }
+        this.locked = (this.sumDistI - this.sumDistQ) / this.sumDistI >= 0.5;
+    }
 
       this.prevclock = lo_clock;
       this.prev_bb = subcarr_bb_i;
@@ -216,8 +237,18 @@ class IirFilter {
   }
 }
 
-// RDS carrier frequency.
-const FC_0 = 57000.0;
+// RDS carrier frequencies.
+export const FREQ_STREAM_0 = 57000.0;
+export const FREQ_STREAM_1 = 66500.0;
+export const FREQ_STREAM_2 = 71250.0;
+export const FREQ_STREAM_3 = 76000.0;
+
+export const FREQ_STREAMS = [
+  FREQ_STREAM_0,
+  FREQ_STREAM_1,
+  FREQ_STREAM_2,
+  FREQ_STREAM_3,
+];
 
 /** 
  * Tolerance of RDS subcarrier frequency.
@@ -225,6 +256,8 @@ const FC_0 = 57000.0;
  * in the processing chain.
  */
 const FC_TOLERANCE = 12.0;
+
+const BIT_RATE = 1187.5;
 
 function sign(a: number) {
   return (a >= 0 ? 1 : 0);

@@ -102,3 +102,27 @@ input {
 ::ng-deep .input_tabs .mat-mdc-tab-body-wrapper {
   display: block !important;
 }
+
+.indicator {
+  border-radius: 3px;
+  background: #CCC;
+  color: #888;
+  padding: 3px 4px;
+}
+
+.indicator[data-on="1"] {
+  background: #8F8;
+  color: #000;
+}
+
+.demodinfo {
+  text-align: center;
+}
+
+table {
+  margin: 0 auto;
+}
+
+table th {
+  font-weight: normal;
+}

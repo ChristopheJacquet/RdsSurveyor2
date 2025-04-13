@@ -71,12 +71,13 @@
     <div>Constellation diagram</div>
     <app-constellation-diagram #constellationDiagram></app-constellation-diagram>
   </div>
-  <div *ngIf="synchronizer != null">
-    <div>Bit stream</div>
-    <div>{{ synchronizer.synced ? "SYNCED" : "NOT SYNCED" }}</div>
-  </div>
-  <div>
-    <div>Block errors</div>
-    <app-bler-graph #blerGraph></app-bler-graph>
-  </div>
+  <table>
+    <tr><th></th><th>Demod.</th><th>Bitstream</th><th>Block errors</th></tr>
+      <tr *ngFor="let item of [].constructor(4); let i = index">
+        <td>{{ i }}</td>
+        <td><span class="indicator" [attr.data-on]="demodulator[i].locked ? 1 : 0">LOCK</span></td>
+        <td><span class="indicator" [attr.data-on]="synchronizer[i].synced ? 1 : 0">SYNC</span></td>
+        <td><app-bler-graph #blerGraph></app-bler-graph></td>
+      </tr>
+  </table>
 </div>

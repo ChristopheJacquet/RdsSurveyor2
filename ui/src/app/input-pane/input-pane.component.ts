@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, EventEmitter, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -17,7 +17,7 @@ import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
-import { Demodulator } from "../../../../core/signals/mpx";
+import { Demodulator, FREQ_STREAMS } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
@@ -32,7 +32,7 @@ import { ConstellationDiagramComponent } from "../constellation-diagram/constell
   styleUrl: './input-pane.component.scss'
 })
 export class InputPaneComponent implements RdsPipeline  {
-  @ViewChild('blerGraph') public blerGraph!: BlerGraphComponent;
+  @ViewChildren('blerGraph') public blerGraph!: QueryList<BlerGraphComponent>;
   @ViewChild('constellationDiagram') public constellationDiagram!: ConstellationDiagramComponent;
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
@@ -45,8 +45,8 @@ export class InputPaneComponent implements RdsPipeline  {
   frequency: number = -1;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
-  synchronizer: BitStreamSynchronizer;
-  demodulator: Demodulator;
+  synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
+  demodulator = new Array<Demodulator>(FREQ_STREAMS.length);
 
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
@@ -54,8 +54,10 @@ export class InputPaneComponent implements RdsPipeline  {
   private snackBar = inject(MatSnackBar);
 
   constructor(private httpClient: HttpClient, private route: ActivatedRoute) {
-    this.synchronizer = new BitStreamSynchronizer(this);
-    this.demodulator = new Demodulator(this.synchronizer);
+    for (let i=0; i<FREQ_STREAMS.length; i++) {
+      this.synchronizer[i] = new BitStreamSynchronizer(i, this);
+      this.demodulator[i] = new Demodulator(FREQ_STREAMS[i], this.synchronizer[i]);
+    }
   }
 
   private async handleHttpError(error: HttpErrorResponse) {
@@ -108,7 +110,7 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async emitGroup(stream: number, blocks: Uint16Array, ok: boolean[]) {
-    this.blerGraph.updateBlerGraph(true, ok);
+    this.blerGraph.get(stream)?.updateBlerGraph(true, ok);
 
     const events = this.stationChangeDetector.processGroup(stream, blocks, ok);
     for (let event of events) {
@@ -126,14 +128,19 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async processMpxSamples(samples: Float32Array) {
-    for (let i=0; i<samples.length; i++) {
-      this.demodulator.addSample(samples[i]);
+    for (let demIndex = 0; demIndex<FREQ_STREAMS.length; demIndex++) {
+      const dem = this.demodulator[demIndex];
+      for (let i=0; i<samples.length; i++) {
+        dem.addSample(samples[i]);
+        
+      }
     }
-    this.constellationDiagram.updateConstellationDiagram(this.demodulator.syncOutI, this.demodulator.syncOutQ);
+    // TODO: allow selection of stream(s).
+    this.constellationDiagram.updateConstellationDiagram(this.demodulator[0].syncOutI, this.demodulator[0].syncOutQ);
   }
 
   async processBits(bytes: Uint8Array) {
-    this.synchronizer.addBits(bytes);
+    this.synchronizer[0].addBits(bytes);    // TODO: need to choose stream?
   }
 
   onDrop(e: any) {
@@ -200,7 +207,11 @@ export class InputPaneComponent implements RdsPipeline  {
       this.emitGroup(event.stream || 0, event.blocks, event.ok);
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
-      this.blerGraph.updateBlerGraph(false, []);
+      if (event.stream == undefined) {
+        console.log(`No stream in ${event}`);
+        return;
+      }
+      this.blerGraph.get(event.stream)?.updateBlerGraph(false, []);
     }
   }
 

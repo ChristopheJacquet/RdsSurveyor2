@@ -52,9 +52,11 @@ export class BitStreamSynchronizer {
 	private bitTime = 0;
   private unreportedUnsyncedBits = 0;
 	private nbSyncAtOffset: SyncEntry[][][] = [];
+  private stream: number;
   private listener: RdsPipeline;
 	
-	public constructor(listener: RdsPipeline) {
+	public constructor(stream: number, listener: RdsPipeline) {
+    this.stream = stream;
     this.listener = listener;
 		this.eraseSyncArray();
 	}
@@ -155,7 +157,7 @@ export class BitStreamSynchronizer {
         
         this.eraseSyncArray();
 
-        console.log("Got synchronization on block " + String.fromCharCode(65 + blockIndex) + "!");
+        console.log(`[${this.stream}] Got synchronization on block ${String.fromCharCode(65 + blockIndex)}!`);
         // TODO: Need to report status?
       }
     }
@@ -165,6 +167,7 @@ export class BitStreamSynchronizer {
       this.unreportedUnsyncedBits++;
       if (this.unreportedUnsyncedBits >= GROUP_SIZE) {
         this.listener.processRdsReportEvent({
+          stream: this.stream,
           type: RdsReportEventType.UNSYNCED_GROUP_DURATION,
           sourceInfo: "BitStreamSynchronizer"
         })
@@ -221,6 +224,7 @@ export class BitStreamSynchronizer {
 
   private emitGroup(blocks: Uint16Array, ok: boolean[]) {
     this.listener.processRdsReportEvent({
+      stream: this.stream,
       type: RdsReportEventType.GROUP,
       ok: ok,
       blocks: blocks,
