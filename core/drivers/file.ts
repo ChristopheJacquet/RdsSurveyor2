@@ -65,8 +65,11 @@ export class FileSource implements RdsSource {
       if (this.stoppingPlayback) {
         return;
       }
-      // Duration of a group (1000 ms / (1187.5/104)).
-      await timing.enforceInterval(this.realtimePlayback ? (1000 / (1187.5/104)) : 0);
+      // Stream 0 groups (which are always present) set the cadence. Enforce
+      // duration of a group (1000 ms / (1187.5/104)) each time a Stream 0
+      // group is received.
+      await timing.enforceInterval(
+        this.realtimePlayback && event.stream == 0 ? (1000 / (1187.5/104)) : 0);
     }
     this.pipeline.reportSourceEnd();
   }
