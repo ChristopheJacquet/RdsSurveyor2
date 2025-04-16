@@ -89,7 +89,7 @@ export class BitStreamSynchronizer {
       const offset = this.bitTime % BLOCK_SIZE;
       const pseudoBlock = (Math.floor(this.bitTime / BLOCK_SIZE) + BLOCKS_PER_GROUP - blockIndex) % BLOCKS_PER_GROUP;
 
-      console.log("[" + (String.fromCharCode(65+blockIndex)) + ":" + offset + "/" + pseudoBlock + "]");
+      console.log(`[${this.stream}] Good CRC: ${String.fromCharCode(65+blockIndex)}:${offset}/${pseudoBlock}`);
 
       // Add current time and block to the list of syndrome hits.
       const block = (this.block >> 10) & 0xFFFF;
@@ -157,7 +157,7 @@ export class BitStreamSynchronizer {
         
         this.eraseSyncArray();
 
-        console.log(`[${this.stream}] Got synchronization on block ${String.fromCharCode(65 + blockIndex)}!`);
+        console.log(`[${this.stream}] @${this.bitTime} Got synchronization on block ${String.fromCharCode(65 + blockIndex)}!`);
         // TODO: Need to report status?
       }
     }
@@ -200,7 +200,7 @@ export class BitStreamSynchronizer {
           // after a while without a correct block, decide we have lost synchronization
           if (this.nbUnsync >= SYNC_LOSS_DURATION) {
             this.synced = false;
-            console.log("Lost synchronization.");
+            console.log(`[${this.stream}] @${this.bitTime} Lost synchronization.`);
             // TODO: Need to report status?
           }
           
