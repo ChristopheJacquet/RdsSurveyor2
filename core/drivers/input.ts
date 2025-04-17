@@ -13,7 +13,7 @@ export enum RdsReportEventType {
 }
 
 export interface RdsPipeline {
-  processMpxSamples(samples: Float32Array): void;
+  processMpxSamples(samples: Float32Array, length?: number): void;
   processBits(bytes: Uint8Array): void;
   processRdsReportEvent(event: RdsReportEvent): void;
   reportFrequency(frequencyKhz: number): void;

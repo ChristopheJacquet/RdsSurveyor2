@@ -127,10 +127,13 @@ export class InputPaneComponent implements RdsPipeline  {
     }
   }
 
-  async processMpxSamples(samples: Float32Array) {
+  async processMpxSamples(samples: Float32Array, length?: number) {
+    if (length == undefined) {
+      length = samples.length;
+    }
     for (let demIndex = 0; demIndex<FREQ_STREAMS.length; demIndex++) {
       const dem = this.demodulator[demIndex];
-      for (let i=0; i<samples.length; i++) {
+      for (let i=0; i<length; i++) {
         dem.addSample(samples[i]);
         
       }

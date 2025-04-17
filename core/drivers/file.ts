@@ -1,3 +1,4 @@
+import { FMDemodulator } from "../signals/iq";
 import { RdsPipeline, RdsSource, SeekDirection, parseHexGroup } from "./input";
 
 export class FileSource implements RdsSource {
@@ -36,10 +37,10 @@ export class FileSource implements RdsSource {
         return true;
       }
 
-      case FileType.MPX_FLAC:
-      case FileType.MPX_WAV: {
+      case FileType.AUDIO_FLAC:
+      case FileType.AUDIO_WAV: {
         const buffer = await this.blob.arrayBuffer();
-        this.processMpx(buffer);
+        this.processAudio(buffer);
         return true;
       }
     }
@@ -95,7 +96,7 @@ export class FileSource implements RdsSource {
     this.pipeline.reportSourceEnd();
   }
 
-  async processMpx(buffer: ArrayBuffer) {
+  async processAudio(buffer: ArrayBuffer) {
     const sampleRate = 250000;
     // Blocksize is chosen so that blockSize samples represent a bit less than
     // one group (so the UI is fluid). Since there are 11.4 groups per second,
@@ -112,8 +113,26 @@ export class FileSource implements RdsSource {
       sampleRate
     );
     
-    const mpxBuffer = await context.decodeAudioData(buffer);
-    const samples = mpxBuffer.getChannelData(0);
+    const audioBuffer = await context.decodeAudioData(buffer);
+
+    switch (audioBuffer.numberOfChannels) {
+      case 1:
+        console.log("Processing MPX file.");
+        await this.processMpx(blockSize, delayBetweenBlocks, audioBuffer.getChannelData(0));
+        break;
+
+      case 2:
+        console.log("Processing I/Q file.");
+        await this.processIq(sampleRate, blockSize, delayBetweenBlocks, audioBuffer.getChannelData(0), audioBuffer.getChannelData(1));
+        break;
+
+      default:
+        console.log(`Don't know what to do with ${audioBuffer.numberOfChannels}-channel audio file.`);
+    }
+    this.pipeline.reportSourceEnd();
+  }
+
+  async processMpx(blockSize: number, delayBetweenBlocks: number, samples: Float32Array) {
     const timing = new Timing();
 
     for (let i = 0; i < samples.length; i += blockSize) {
@@ -124,7 +143,24 @@ export class FileSource implements RdsSource {
       }
       await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
     }
-    this.pipeline.reportSourceEnd();
+  }
+
+  async processIq(sampleRate: number, blockSize: number, delayBetweenBlocks: number,
+                  samplesI: Float32Array, samplesQ: Float32Array) {
+    const timing = new Timing();
+    const demodulator = new FMDemodulator(MAX_FM_DEVIATION / sampleRate);
+    const out = new Float32Array(blockSize);
+
+    for (let i = 0; i < samplesI.length; i += blockSize) {
+      const sliceI = samplesI.slice(i, Math.min(i + blockSize, samplesI.length));
+      const sliceQ = samplesQ.slice(i, Math.min(i + blockSize, samplesQ.length));
+      demodulator.demodulate(sliceI, sliceQ, out);
+      this.pipeline.processMpxSamples(out, sliceI.length);
+      if (this.stoppingPlayback) {
+        return;
+      }
+      await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
+    }
   }
 }
 
@@ -159,8 +195,8 @@ class Timing {
 enum FileType {
   UNSYNCED_BINARY_RDS,
   HEX_GROUPS,
-  MPX_FLAC,
-  MPX_WAV,
+  AUDIO_FLAC,
+  AUDIO_WAV,
 }
 
 function guessFileType(header: Uint8Array): FileType {
@@ -177,7 +213,7 @@ function guessFileType(header: Uint8Array): FileType {
       header[13] == 0x6D &&  // m
       header[14] == 0x74 &&  // t
       header[15] == 0x20) {  // ' '
-    return FileType.MPX_WAV;
+    return FileType.AUDIO_WAV;
   }
 
   if (
@@ -185,7 +221,7 @@ function guessFileType(header: Uint8Array): FileType {
       header[1] == 0x4C &&   // L
       header[2] == 0x61 &&   // a
       header[3] == 0x43) {   // C
-    return FileType.MPX_FLAC;
+    return FileType.AUDIO_FLAC;
   }
 
   let binary = false;
@@ -203,3 +239,5 @@ function guessFileType(header: Uint8Array): FileType {
     return FileType.HEX_GROUPS;
   }
 }
+
+const MAX_FM_DEVIATION = 75_000;   // 75 kHz, as defined in FM broadcast standard.
