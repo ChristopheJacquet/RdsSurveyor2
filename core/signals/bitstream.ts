@@ -54,6 +54,7 @@ export class BitStreamSynchronizer {
 	private nbSyncAtOffset: SyncEntry[][][] = [];
   private stream: number;
   private listener: RdsPipeline;
+  private verbose = false;
 	
 	public constructor(stream: number, listener: RdsPipeline) {
     this.stream = stream;
@@ -89,7 +90,9 @@ export class BitStreamSynchronizer {
       const offset = this.bitTime % BLOCK_SIZE;
       const pseudoBlock = (Math.floor(this.bitTime / BLOCK_SIZE) + BLOCKS_PER_GROUP - blockIndex) % BLOCKS_PER_GROUP;
 
-      console.log(`[${this.stream}] Good CRC: ${String.fromCharCode(65+blockIndex)}:${offset}/${pseudoBlock}`);
+      if (this.verbose) {
+        console.log(`[${this.stream}] Good CRC: ${String.fromCharCode(65+blockIndex)}:${offset}/${pseudoBlock}`);
+      }
 
       // Add current time and block to the list of syndrome hits.
       const block = (this.block >> 10) & 0xFFFF;
