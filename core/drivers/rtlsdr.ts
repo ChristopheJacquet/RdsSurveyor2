@@ -8,7 +8,7 @@ import { SchemeNBFM } from "@jtarrio/webrtlsdr/demod/scheme-nbfm";
 import { SchemeSSB } from "@jtarrio/webrtlsdr/demod/scheme-ssb";
 
 import { makeLowPassKernel } from "@jtarrio/webrtlsdr/dsp/coefficients";
-import { FMDemodulator, StereoSeparator } from "@jtarrio/webrtlsdr/dsp/demodulators";
+import { StereoSeparator } from "@jtarrio/webrtlsdr/dsp/demodulators";
 import { FrequencyShifter, Deemphasizer, FIRFilter } from "@jtarrio/webrtlsdr/dsp/filters";
 import { getPower } from "@jtarrio/webrtlsdr/dsp/power";
 import { ComplexDownsampler, RealDownsampler } from "@jtarrio/webrtlsdr/dsp/resamplers";
@@ -18,6 +18,7 @@ import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr";
 import { getMode } from "@jtarrio/webrtlsdr/demod/modes";
 
 import { RdsPipeline, RdsSource, SeekDirection } from "./input";
+import { FMDemodulator } from "../signals/iq";
 
 export class RtlSdr implements RdsSource {
   rtlSdrRadio?: Radio;
