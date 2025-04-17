@@ -258,6 +258,24 @@ export class InputPaneComponent implements RdsPipeline  {
     this.tuneBy(-50);
   }
 
+  setFrequency() {
+    const freqStr = window.prompt("New frequency:");
+    if (freqStr == null) {
+      console.log("No frequency entered.");
+      return;
+    }
+    const freq = Number.parseFloat(freqStr) * 1000;
+    if (Number.isNaN(freq)) {
+      console.log(`Entered frequency ${freqStr} could not be parsed.`);
+      return;
+    }
+    if (freq < 87500 || freq >= 108000) {
+      console.log(`Entered frequency ${freq} not in FM radio band.`);
+      return;
+    }
+    this.currentSource?.tune(freq);
+  }
+
   async selectLogDir() {
     if ('showDirectoryPicker' in self) {
       this.logDirHandle = await window.showDirectoryPicker();

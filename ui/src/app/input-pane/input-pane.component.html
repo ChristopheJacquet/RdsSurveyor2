@@ -51,7 +51,7 @@
       <button mat-icon-button (click)="tuneDown()">
         <mat-icon>keyboard_arrow_left</mat-icon>
       </button>
-      <span class="frequency">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</span>
+      <span class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</span>
       <button mat-icon-button (click)="tuneUp()">
         <mat-icon>keyboard_arrow_right</mat-icon>
       </button>
