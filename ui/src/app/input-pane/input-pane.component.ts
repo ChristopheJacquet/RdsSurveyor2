@@ -312,7 +312,7 @@ export class InputPaneComponent implements RdsPipeline  {
       return;
     }
 
-    let str = "";
+    let str = evt.stream > 0 ? `#S${evt.stream} ` : "";
     for (let i=0; i<4; i++) {
       str += evt.ok[i] ? evt.blocks[i].toString(16).toUpperCase().padStart(4, "0") + " " : "---- ";
     }
