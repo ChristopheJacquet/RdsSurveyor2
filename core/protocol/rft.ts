@@ -20,6 +20,7 @@ export class RftPipe {
   crc = new Uint16Array(MAX_CHUNKS);
   crcState = new Array<CrcState>(MAX_CHUNKS);
   size: number = 0;
+  bytesPresent: number = 0;
   fileId: number = 0;
   fileVersion: number = 0;
   crcPresent: boolean = false;
@@ -64,6 +65,7 @@ export class RftPipe {
           presentCount++;
         }
       }
+      this.bytesPresent = presentCount;
       return presentCount == this.size;
     }
     return false;
