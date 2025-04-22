@@ -1,4 +1,4 @@
-import { FMDemodulator } from "../signals/iq";
+import { FMDemodulator } from "@jtarrio/webrtlsdr/dsp/demodulators";
 import { RdsPipeline, RdsSource, SeekDirection, parseHexGroup } from "./input";
 
 export class FileSource implements RdsSource {
