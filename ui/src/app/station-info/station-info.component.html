@@ -228,6 +228,17 @@
       </tr>
     </table>    
   </mat-tab>
+  <mat-tab label="Radio Paging" *ngIf="station.rp_app.enabled">
+    <table class="data-table">
+      <tr><th>Address</th><th>Flag</th><th>Type</th><th>Message</th></tr>
+      <tr *ngFor="let m of station.rp_app.messages">
+        <td>{{ m.address }}</td>
+        <td>{{ m.flag_ab ? 'A' : 'B' }}</td>
+        <td>{{ m.type }}</td>
+        <td>{{ m.message }}</td>
+      </tr>
+    </table>    
+  </mat-tab>
   <mat-tab label="eRT" *ngIf="station.ert_app.enabled">
     <mat-list role="list">
       <mat-list-item role="listitem" class="rt-item" *ngFor="let msg of station.ert_app.ert.getPastMessages(true)">

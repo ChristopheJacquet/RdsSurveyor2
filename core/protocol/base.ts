@@ -28,6 +28,7 @@ export interface Station {
 	ert_app: ERtApp;
 	dab_cross_ref_app: DabCrossRefApp;
 	internet_connection_app: InternetConnectionApp;
+	rp_app: RpApp;
 	linkage_actuator?: boolean;
 	pin_day?: number;
 	pin_hour?: number;
@@ -987,6 +988,18 @@ export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: bool
 	}
 }
 
+export interface RpApp {
+	newBeepMessage(flag_ab: boolean): void;
+	new10dMessage(flag_ab: boolean): void;
+	new18dMessage(flag_ab: boolean): void;
+	newAlphaMessage(flag_ab: boolean): void;
+	reportAddress(flag_ab: boolean, y1: number, y2: number, z1: number, z2: number, z3: number, z4: number): void;
+	reportBeep(flag_ab: boolean): void;
+	report10dPart(flag_ab: boolean, addr: number, d1: number, d2: number): void;
+	report18dPart(flag_ab: boolean, addr: number, d1: number, d2: number): void;
+	reportAlphaPart(flag_ab: boolean, addr: number, offset: number, c1: number, c2: number, last: boolean): void;
+}
+
 export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
@@ -1006,8 +1019,14 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((addr != null)) {
 		switch (addr) {
 			case 0:
+				if ((flag_ab != null) && (station != null)) {
+					station.rp_app.newBeepMessage(flag_ab);
+				}
 				log.add(`Beep`);
 				get_parse_function("group_7A_address")(block, ok, log, station);
+				if ((flag_ab != null) && (station != null)) {
+					station.rp_app.reportBeep(flag_ab);
+				}
 				break;
 
 			case 1:
@@ -1045,7 +1064,12 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 }
 
 export function parse_group_7A_address(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field rp_common: unparsed<32> at +0, width 32.
+	// Field rp_common: unparsed<27> at +0, width 27.
+	// Field flag_ab: bool at +27, width 1.
+	let flag_ab = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field _: unparsed<4> at +28, width 4.
 	// Field y1: uint<4> at +32, width 4.
 	let y1 = (ok[2]) ?
 		((block[2] & 0b1111000000000000) >> 12)
@@ -1076,10 +1100,18 @@ export function parse_group_7A_address(block: Uint16Array, ok: boolean[], log: L
 	if ((y1 != null) && (y2 != null) && (z1 != null) && (z2 != null) && (z3 != null) && (z4 != null)) {
 		log.add(`Address: ${formatBcd(y1)}${formatBcd(y2)}/${formatBcd(z1)}${formatBcd(z2)}${formatBcd(z3)}${formatBcd(z4)}`);
 	}
+	if ((flag_ab != null) && (station != null) && (y1 != null) && (y2 != null) && (z1 != null) && (z2 != null) && (z3 != null) && (z4 != null)) {
+		station.rp_app.reportAddress(flag_ab, y1, y2, z1, z2, z3, z4);
+	}
 }
 
 export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field rp_common: unparsed<31> at +0, width 31.
+	// Field rp_common: unparsed<27> at +0, width 27.
+	// Field flag_ab: bool at +27, width 1.
+	let flag_ab = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field _: unparsed<3> at +28, width 3.
 	// Field addr: uint<1> at +31, width 1.
 	let addr = (ok[1]) ?
 		((block[1] & 0b1))
@@ -1121,15 +1153,33 @@ export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log
 	if ((addr != null)) {
 		switch (addr) {
 			case 0:
+				if ((flag_ab != null) && (station != null)) {
+					station.rp_app.new10dMessage(flag_ab);
+				}
 				get_parse_function("group_7A_address")(block, ok, log, station);
 				if ((a7 != null) && (a8 != null)) {
 					log.add(`Part 1/2: ${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				if ((a7 != null) && (a8 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report10dPart(flag_ab, 0, a7, a8);
 				}
 				break;
 
 			case 1:
 				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
 					log.add(`Part 2/2: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				if ((a1 != null) && (a2 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report10dPart(flag_ab, 1, a1, a2);
+				}
+				if ((a3 != null) && (a4 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report10dPart(flag_ab, 2, a3, a4);
+				}
+				if ((a5 != null) && (a6 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report10dPart(flag_ab, 3, a5, a6);
+				}
+				if ((a7 != null) && (a8 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report10dPart(flag_ab, 4, a7, a8);
 				}
 				break;
 
@@ -1138,7 +1188,12 @@ export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log
 }
 
 export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field rp_common: unparsed<30> at +0, width 30.
+	// Field rp_common: unparsed<27> at +0, width 27.
+	// Field flag_ab: bool at +27, width 1.
+	let flag_ab = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field _: unparsed<2> at +28, width 2.
 	// Field addr: uint<2> at +30, width 2.
 	let addr = (ok[1]) ?
 		((block[1] & 0b11))
@@ -1180,9 +1235,15 @@ export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log
 	if ((addr != null)) {
 		switch (addr) {
 			case 0:
+				if ((flag_ab != null) && (station != null)) {
+					station.rp_app.new18dMessage(flag_ab);
+				}
 				get_parse_function("group_7A_address")(block, ok, log, station);
 				if ((a7 != null) && (a8 != null)) {
 					log.add(`Part 1/3: ${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				if ((a7 != null) && (a8 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 0, a7, a8);
 				}
 				break;
 
@@ -1190,11 +1251,35 @@ export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log
 				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
 					log.add(`Part 2/3: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
 				}
+				if ((a1 != null) && (a2 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 1, a1, a2);
+				}
+				if ((a3 != null) && (a4 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 2, a3, a4);
+				}
+				if ((a5 != null) && (a6 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 3, a5, a6);
+				}
+				if ((a7 != null) && (a8 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 4, a7, a8);
+				}
 				break;
 
 			case 2:
 				if ((a1 != null) && (a2 != null) && (a3 != null) && (a4 != null) && (a5 != null) && (a6 != null) && (a7 != null) && (a8 != null)) {
 					log.add(`Part 3/3: ${formatBcd(a1)}${formatBcd(a2)}${formatBcd(a3)}${formatBcd(a4)}${formatBcd(a5)}${formatBcd(a6)}${formatBcd(a7)}${formatBcd(a8)}`);
+				}
+				if ((a1 != null) && (a2 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 5, a1, a2);
+				}
+				if ((a3 != null) && (a4 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 6, a3, a4);
+				}
+				if ((a5 != null) && (a6 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 7, a5, a6);
+				}
+				if ((a7 != null) && (a8 != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.report18dPart(flag_ab, 8, a7, a8);
 				}
 				break;
 
@@ -1203,30 +1288,40 @@ export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log
 }
 
 export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
-	// Field rp_common: unparsed<29> at +0, width 29.
+	// Field rp_common: unparsed<27> at +0, width 27.
+	// Field flag_ab: bool at +27, width 1.
+	let flag_ab = (ok[1]) ?
+		((block[1] & 0b10000) >> 4) == 1
+		: null;
+	// Field _: unparsed<1> at +28, width 1.
 	// Field addr: uint<3> at +29, width 3.
 	let addr = (ok[1]) ?
 		((block[1] & 0b111))
 		: null;
-	// Field text_seg: byte<4> at +32, width 32.
-	let text_seg__0 = (ok[2]) ?
+	// Field char1: uint<8> at +32, width 8.
+	let char1 = (ok[2]) ?
 		((block[2] & 0b1111111100000000) >> 8)
 		: null;
-	let text_seg__1 = (ok[2]) ?
+	// Field char2: uint<8> at +40, width 8.
+	let char2 = (ok[2]) ?
 		((block[2] & 0b11111111))
 		: null;
-	let text_seg__2 = (ok[3]) ?
+	// Field char3: uint<8> at +48, width 8.
+	let char3 = (ok[3]) ?
 		((block[3] & 0b1111111100000000) >> 8)
 		: null;
-	let text_seg__3 = (ok[3]) ?
+	// Field char4: uint<8> at +56, width 8.
+	let char4 = (ok[3]) ?
 		((block[3] & 0b11111111))
 		: null;
-	const text_seg = [text_seg__0, text_seg__1, text_seg__2, text_seg__3];
 
 	// Actions.
 	if ((addr != null)) {
 		switch (addr) {
 			case 0:
+				if ((flag_ab != null) && (station != null)) {
+					station.rp_app.newAlphaMessage(flag_ab);
+				}
 				get_parse_function("group_7A_address")(block, ok, log, station);
 				break;
 
@@ -1236,14 +1331,26 @@ export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], l
 			case 4:
 			case 5:
 			case 6:
-				if ((addr != null) && (text_seg != null)) {
-					log.add(`Part (${addr} + 6k)/n: "${formatRdsText(text_seg)}"`);
+				if ((addr != null) && (char1 != null) && (char2 != null) && (char3 != null) && (char4 != null)) {
+					log.add(`Part (${addr} + 6k)/n: "${RDS_CHARMAP[char1]}${RDS_CHARMAP[char2]}${RDS_CHARMAP[char3]}${RDS_CHARMAP[char4]}"`);
+				}
+				if ((addr != null) && (char1 != null) && (char2 != null) && (false != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.reportAlphaPart(flag_ab, addr, 0, char1, char2, false);
+				}
+				if ((addr != null) && (char3 != null) && (char4 != null) && (false != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.reportAlphaPart(flag_ab, addr, 1, char3, char4, false);
 				}
 				break;
 
 			case 7:
-				if ((text_seg != null)) {
-					log.add(`Part n/n: "${formatRdsText(text_seg)}"`);
+				if ((char1 != null) && (char2 != null) && (char3 != null) && (char4 != null)) {
+					log.add(`Part n/n: "${RDS_CHARMAP[char1]}${RDS_CHARMAP[char2]}${RDS_CHARMAP[char3]}${RDS_CHARMAP[char4]}"`);
+				}
+				if ((addr != null) && (char1 != null) && (char2 != null) && (false != null) && (flag_ab != null) && (station != null)) {
+					station.rp_app.reportAlphaPart(flag_ab, addr, 0, char1, char2, false);
+				}
+				if ((addr != null) && (char3 != null) && (char4 != null) && (flag_ab != null) && (station != null) && (true != null)) {
+					station.rp_app.reportAlphaPart(flag_ab, addr, 1, char3, char4, true);
 				}
 				break;
 

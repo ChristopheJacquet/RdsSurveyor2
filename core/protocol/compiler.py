@@ -502,6 +502,8 @@ def format_expr(var, fmt):
             return f"({var}>>1).toString() + (({var} & 1) == 0 ? 'A' : 'B')"
         case 'freq':
             return f'formatAf({var})'
+        case 'rdschar':
+            return f'RDS_CHARMAP[{var}]'
         case 'rdstext':
             return f'formatRdsText({var})'
         case 'bytes':

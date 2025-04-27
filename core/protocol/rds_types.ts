@@ -7,6 +7,7 @@ import { InternetConnectionAppImpl } from './internet_connection';
 import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 import { RftPipe } from "./rft";
+import { RpAppImpl } from './rp';
 
 export function parse_group(stream: number, block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
   if (stream == 0) {
@@ -59,6 +60,7 @@ export class StationImpl implements Station {
   stationLogoPipe: RftPipe | null = null;
   stationLogoUrl: string | null = null;
   log = new Array<LogMessage>();
+  rp_app = new RpAppImpl(this);
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -262,10 +264,12 @@ export class StationImpl implements Station {
     this.date = null;
     this.group_stats.fill(0);
 
-    // Reset ODAs.
+    // Reset ODAs and apps.
     this.rt_plus_app.reset();
     this.ert_app.reset();
     this.dab_cross_ref_app.reset();
+    this.internet_connection_app.reset();
+    this.rp_app.reset();
 
     this.log = [];
     this.diagnostics.reset();
