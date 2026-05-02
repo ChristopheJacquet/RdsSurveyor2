@@ -52,14 +52,13 @@ export class Demodulator {
   
   acc = 0;
   
-  numsamples = 0;
-
 	// Demodulated sample from RDS data stream (NRZ-M encoded).
 	private dbit = 0;
 
   // TODO: Make this a parameter.
   sampleRate = 250000;
   decimate = Math.floor(this.sampleRate / 7125);
+  private decimPhase = 0;
 
 	// Used by biphase().
 	private prev_acc = 0;
@@ -107,7 +106,8 @@ export class Demodulator {
     this.fsc -= 0.1 * PLL_BETA * err;    // Reduced 0.5 -> 0.1.
 
     // Decimate band-limited signal.
-    if (this.numsamples % this.decimate == 0) {
+    if (this.decimPhase >= this.decimate) {
+      this.decimPhase -= this.decimate;
       // Reset subcarrier frequency if it is outside tolerance range.
       if ((this.fsc > this.fSub + FC_TOLERANCE) || (this.fsc < this.fSub - FC_TOLERANCE)) {
         this.fsc = this.fSub;
@@ -154,7 +154,7 @@ export class Demodulator {
       this.prev_bb = subcarr_bb_i;
     }
     
-    this.numsamples++;
+    this.decimPhase++;
   }
 
 	/**
