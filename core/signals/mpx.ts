@@ -124,8 +124,12 @@ export class Demodulator {
         this.clock_offset -= 0.005 * d_cphi;
       }
 
+      // Correct I value: phase aligned projection instead of using subcarr_bb_i directly.
+      const phase_err = Math.atan2(subcarr_bb_q, subcarr_bb_i);
+      const i_corr = Math.cos(phase_err);
+
       // Biphase symbol integrate & dump.
-      this.acc += subcarr_bb_i * lo_clock;
+      this.acc += i_corr * lo_clock;
 
       if (sign(lo_clock) != sign(this.prevclock)) {
         this.biphase(this.acc);
