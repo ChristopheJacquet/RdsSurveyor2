@@ -16,7 +16,7 @@ const LP_2400_COEFFS_B = [
 const LP_PLL_COEFFS_A = [1.0, -0.9461821078275034];
 const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
 
-const PLL_BETA = 50;
+const PLL_BETA = 5;    // Reduced 50 -> 5 to make the PLL more stable.
 
 // Number of out symbols kept (for drawing the constellation diagram).
 const SYNC_OUT_LENGTH = 100;
@@ -84,12 +84,13 @@ export class Demodulator {
   addSample(sample: number) {
     // Subcarrier downmix & phase recovery.
     this.subcarr_phi += 2 * Math.PI * this.fsc / this.sampleRate;
-    const subcarr_bb_i = this.lp2400iFilter.step(sample /* / 32768.0*/ * Math.cos(this.subcarr_phi));
-    const subcarr_bb_q = this.lp2400qFilter.step(sample /* / 32768.0*/ * Math.sin(this.subcarr_phi));
+    const subcarr_bb_i = this.lp2400iFilter.step(sample * Math.cos(this.subcarr_phi));
+    const subcarr_bb_q = this.lp2400qFilter.step(sample * Math.sin(this.subcarr_phi));
 
     const d_phi_sc = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);   // Subcarrier phase error.
-    this.subcarr_phi -= PLL_BETA * d_phi_sc;
-    this.fsc -= 0.5 * PLL_BETA * d_phi_sc;
+    const err = Math.max(-0.05, Math.min(0.05, d_phi_sc));   // Clamp error to prevent jumps.
+    this.subcarr_phi -= PLL_BETA * err;
+    this.fsc -= 0.1 * PLL_BETA * err;    // Reduced 0.5 -> 0.1.
 
     // Decimate band-limited signal.
     if (this.numsamples % this.decimate == 0) {
