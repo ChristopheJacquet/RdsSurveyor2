@@ -6,6 +6,10 @@ import { BitStreamSynchronizer } from "./bitstream";
 // Portions Copyright (c) Oona Räisänen OH2EIQ (windyoona@gmail.com)
 // Used under the GNU Lesser Public License.
 
+// Automatic Gain Control.
+const AGC_ATTACK_TIME = 0.00001;
+const AGC_RELEASE_TIME = 1;
+
 // Filter coefficients.
 const LP_2400_COEFFS_A = [
   1.0, -4.837342474770194, 9.362520173574179, -9.062853383573557,
@@ -22,6 +26,9 @@ const PLL_BETA = 5;    // Reduced 50 -> 5 to make the PLL more stable.
 const SYNC_OUT_LENGTH = 100;
 
 export class Demodulator {
+  // Automatic Gain Control.
+  private agcEnvelope = 0;
+
   // Subcarrier frequency.
   fSub: number;
 
@@ -82,10 +89,17 @@ export class Demodulator {
   }
 
   addSample(sample: number) {
+    // Automatic Gain Control (AGC).
+    const sampleAbs = Math.abs(sample);
+    const coef = sampleAbs > this.agcEnvelope ? AGC_ATTACK_TIME : AGC_RELEASE_TIME;
+    const alpha = Math.exp(-1.0 / (this.sampleRate * coef));
+    this.agcEnvelope = (1.0 - alpha) * sampleAbs + alpha * this.agcEnvelope;
+    const normSample = sample / (this.agcEnvelope + 1e-6);
+
     // Subcarrier downmix & phase recovery.
     this.subcarr_phi += 2 * Math.PI * this.fsc / this.sampleRate;
-    const subcarr_bb_i = this.lp2400iFilter.step(sample * Math.cos(this.subcarr_phi));
-    const subcarr_bb_q = this.lp2400qFilter.step(sample * Math.sin(this.subcarr_phi));
+    const subcarr_bb_i = this.lp2400iFilter.step(normSample * Math.cos(this.subcarr_phi));
+    const subcarr_bb_q = this.lp2400qFilter.step(normSample * Math.sin(this.subcarr_phi));
 
     const d_phi_sc = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);   // Subcarrier phase error.
     const err = Math.max(-0.05, Math.min(0.05, d_phi_sc));   // Clamp error to prevent jumps.
