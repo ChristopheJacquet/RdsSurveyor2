@@ -19,6 +19,7 @@ import { FileSource } from "../../../../core/drivers/file";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator, FREQ_STREAMS } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
+import { Group } from "../../../../core/protocol/rds_types";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
 import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
@@ -50,6 +51,7 @@ export class InputPaneComponent implements RdsPipeline  {
 
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
+  prefMaxErrors = new Pref<number>("pref.max_errors", 0);
 
   private snackBar = inject(MatSnackBar);
 
@@ -73,6 +75,8 @@ export class InputPaneComponent implements RdsPipeline  {
     this.fileSource.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
 
     this.prefTunedFrequency.init();
+
+    this.prefMaxErrors.init();
 
     // If a play_url param is provided, try to load a file from the provided URL.
     const httpClient = this.httpClient;
@@ -109,10 +113,10 @@ export class InputPaneComponent implements RdsPipeline  {
     return this.currentSource != undefined;
   }
 
-  async emitGroup(stream: number, blocks: Uint16Array, ok: boolean[]) {
-    this.blerGraph.get(stream)?.updateBlerGraph(true, ok);
+  async emitGroup(stream: number, group: Group, maxErrors: number) {
+    this.blerGraph.get(stream)?.updateBlerGraph(true, group, maxErrors);
 
-    const events = this.stationChangeDetector.processGroup(stream, blocks, ok);
+    const events = this.stationChangeDetector.processGroup(stream, group, maxErrors);
     for (let event of events) {
       switch (event.kind) {
         case ReceiverEventKind.NewStationEvent:
@@ -181,6 +185,10 @@ export class InputPaneComponent implements RdsPipeline  {
     this.prefPlaybackSpeed.setValue(event.value);
   }
 
+  setMaxErrors(event: any) {
+    this.prefMaxErrors.setValue(event.value);
+  }
+
   async startSelectedRadioSource() {
     console.log(this.selectedRadioSource);
 
@@ -205,16 +213,15 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async processRdsReportEvent(event: RdsReportEvent) {
-    if (event.type == RdsReportEventType.GROUP 
-      && event.ok != undefined && event.blocks != undefined) {
-      this.emitGroup(event.stream || 0, event.blocks, event.ok);
+    if (event.type == RdsReportEventType.GROUP && event.group != undefined) {
+      this.emitGroup(event.stream || 0, event.group, this.prefMaxErrors.value);
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
       if (event.stream == undefined) {
         console.log(`No stream in ${event}`);
         return;
       }
-      this.blerGraph.get(event.stream)?.updateBlerGraph(false, []);
+      this.blerGraph.get(event.stream)?.updateBlerGraph(false, undefined, 0);
     }
   }
 
@@ -312,11 +319,7 @@ export class InputPaneComponent implements RdsPipeline  {
       return;
     }
 
-    let str = evt.stream > 0 ? `#S${evt.stream} ` : "";
-    for (let i=0; i<4; i++) {
-      str += evt.ok[i] ? evt.blocks[i].toString(16).toUpperCase().padStart(4, "0") + " " : "---- ";
-    }
-
-    await this.logFileStream.write(str + "\n");
+    const logLine = (evt.stream > 0 ? `#S${evt.stream} ` : "") + evt.group;
+    await this.logFileStream.write(logLine + "\n");
   }
 }

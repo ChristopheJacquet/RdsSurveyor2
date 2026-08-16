@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { Group } from '../../../../core/protocol/rds_types';
 
 @Component({
   selector: 'app-bler-graph',
@@ -28,7 +29,7 @@ export class BlerGraphComponent implements AfterViewInit {
     this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
   }
 
-  updateBlerGraph(synced: boolean, ok: boolean[]) {
+  updateBlerGraph(synced: boolean, group: Group | undefined, maxErrors: number) {
     if (this.blerGraphCx == null) {
       return;
     }
@@ -43,8 +44,13 @@ export class BlerGraphComponent implements AfterViewInit {
     const x = this.blerGraphWidth-1;
     let prevY = 0;
     for (let i = 0; i < 4; i++) {
-      this.blerGraphCx.strokeStyle =
-        synced ? (ok[i] ? "#8F8" : "#F88") : "#aaa";
+      if (!synced || group == undefined) {
+        this.blerGraphCx.strokeStyle = "#aaa";
+      } else {
+        const err = group.blocks[i].errorCount;
+        this.blerGraphCx.strokeStyle =
+          err == 0 ? "#8F8" : err <= maxErrors ? "#FC8" : "#F88";
+      }
       const y = (i+1)*this.blerGraphHeight/4;
       this.blerGraphCx.beginPath();
       this.blerGraphCx.moveTo(x, prevY);

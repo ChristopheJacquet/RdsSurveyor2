@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "./input";
+import { Block, ErrorCount, Group, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
 
 /**************************************************************************
  * Register Definitions
@@ -401,26 +402,41 @@ export class Si470x implements RdsSource {
       return;
     }
 
-    const block = Uint16Array.from([
+    const values = [
       regs[RDSA - RDS_REPORT_BASE],
       regs[RDSB - RDS_REPORT_BASE],
       regs[RDSC - RDS_REPORT_BASE],
-      regs[RDSD - RDS_REPORT_BASE]]);
-    
-    const ok = this.firmware >= MIN_CHIP_FIRMWARE_REV_FOR_VERBOSE_MODE ?
+      regs[RDSD - RDS_REPORT_BASE]];
+
+    const bler = this.firmware >= MIN_CHIP_FIRMWARE_REV_FOR_VERBOSE_MODE ?
     [
-      (regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_BLERA) == 0,
-      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERB) == 0,
-      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERC) == 0,
-      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERD) == 0,
+      (regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_BLERA) >> 9,
+      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERB) >> 14,
+      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERC) >> 12,
+      (regs[READCHAN - RDS_REPORT_BASE] & READCHAN_BLERD) >> 10,
     ] : ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSE) == 0 ?
-    [true, true, true, true] : [false, false, false, false]);
+    [0, 0, 0, 0] : [3, 3, 3, 3]);
+
+    const group: Group = new Group(
+      [0, 1, 2, 3].map((i) => 
+        new Block(values[i], blerToMaxCorrectedErrors(bler[i]))
+      ) as [Block, Block, Block, Block]
+    );
 
     this.sendRdsEvent({
       type: RdsReportEventType.GROUP,
       sourceInfo: dongleInfo,
-      ok: ok,
-      blocks: block,
+      group: group,
     })
+  }
+}
+
+function blerToMaxCorrectedErrors(bler: number): ErrorCount {
+  switch (bler) {
+    case 0: return 0;
+    case 1: return 2;  // 1 or 2 corrected errors.
+    case 2: return 5;  // 2, 4 or 5 corrected errors.
+    case 3: return UNCORRECTABLE_ERRORS;
+    default: return UNCORRECTABLE_ERRORS;  // Should not be reachable.
   }
 }

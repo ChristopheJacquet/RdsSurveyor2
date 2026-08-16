@@ -1,3 +1,5 @@
+import { Group } from "./rds_types";
+
 // Tuning state used for station change detection.
 enum TuningState {
   INITIALIZING,
@@ -10,18 +12,18 @@ export enum ReceiverEventKind { "GroupEvent", "NewStationEvent"};
 export class GroupEvent {
   readonly kind = ReceiverEventKind.GroupEvent
   public stream: number;
-  public blocks: Uint16Array;
-  public ok: boolean[];
+  public group: Group;
+  public maxErrors: number;
 
-  constructor(stream: number, blocks: Uint16Array, ok: boolean[]) {
+  constructor(stream: number, group: Group, maxErrors: number) {
     this.stream = stream;
-    this.blocks = blocks;
-    this.ok = ok;
+    this.group = group;
+    this.maxErrors = maxErrors;
   }
 
   public hexDump(): string {
-    return [...this.blocks].map(
-      (b, i) => this.ok[i] ? b.toString(16).toUpperCase().padStart(4, "0") : "----"
+    return this.group.blocks.map(
+      (b) => b.errorCount <= this.maxErrors ? b.value.toString(16).toUpperCase().padStart(4, "0") : "----"
     ).join(" ");
   }
 }
@@ -43,13 +45,14 @@ export class StationChangeDetector {
   tuningState: TuningState = TuningState.INITIALIZING;
   pendingGroupEvents = Array<GroupEvent>();
 
-  processGroup(stream: number, blocks: Uint16Array, ok: boolean[]): Array<ReceiverEvent> {
+  processGroup(stream: number, group: Group, maxErrors: number): Array<ReceiverEvent> {
     const result = new Array<ReceiverEvent>();
+    const piOk = group.blocks[0].errorCount <= maxErrors;
 
     // Station change detection (for stream 0 groups; for other streams state
     // does not change).
-    if (stream == 0 && ok[0]) {
-      const pi = blocks[0];
+    if (stream == 0 && piOk) {
+      const pi = group.blocks[0].value;
       switch (this.tuningState) {
         case TuningState.INITIALIZING:
           this.lastPi = pi;
@@ -85,8 +88,8 @@ export class StationChangeDetector {
       }
     }
 
-    const evt = new GroupEvent(stream, blocks, ok);
-    if (this.tuningState == TuningState.TUNED && ok[0]) {
+    const evt = new GroupEvent(stream, group, maxErrors);
+    if (this.tuningState == TuningState.TUNED && piOk) {
       this.emitAllPendingEvents(result);
       result.push(evt);
     } else {

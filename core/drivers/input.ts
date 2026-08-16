@@ -1,8 +1,9 @@
+import { Block, Group, ErrorCount, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
+
 export class RdsReportEvent {
   public type: RdsReportEventType = RdsReportEventType.GROUP;
   public stream?: number = 0;
-  public blocks?: Uint16Array;
-  public ok?: boolean[];
+  public group?: Group;
   public sourceInfo!: string;
 }
 
@@ -36,22 +37,22 @@ export interface RdsSource {
 }
 
 
-function parseHexBlock(s: string): [boolean, number] {
-  if (s.match(/^[0-9A-Z]{4}$/)) {
-    const val = parseInt(s, 16);
-    return [!Number.isNaN(val), val];
+function parseHexBlock(s: string): Block {
+  if (s.match(/^[0-9A-F]{4}$/)) {
+    const value = parseInt(s, 16);
+    return new Block(value, 0);
   }
 
-  const m = s.match(/^(?<value>[0-9A-Z]{4})\/(?<errors>\d)$/);
+  const m = s.match(/^(?<value>[0-9A-F]{4})\/(?<errors>\d)$/);
   if (m) {
     const value = parseInt(m[1], 16);
-    const errors = parseInt(m[2]);
-    console.log(`With errors: ${value} / ${errors}`);
-    return [errors == 0, value];
+    const errorCount = Math.min(parseInt(m[2]), UNCORRECTABLE_ERRORS) as ErrorCount;
+    console.log(`With errors: ${value} / ${errorCount}`);
+    return new Block(value, errorCount);
   }
 
   // Placeholder for any unrecognized block.
-  return [false, 0];
+  return new Block(0, UNCORRECTABLE_ERRORS);
 }
 
 export function parseHexGroup(l: string): RdsReportEvent | undefined {
@@ -72,18 +73,15 @@ export function parseHexGroup(l: string): RdsReportEvent | undefined {
     console.log("Unrecognized line: ", l);
     return undefined;
   }
-  const bl: number[] = [];
-  const ok: boolean[] = [];
-  for (let i = 0; i<4; i++) {
-    const [is_ok, val] = parseHexBlock(blocks[i]);
-    bl.push(val);
-    ok.push(is_ok);
-  }
+  const group: Group = new Group([
+      parseHexBlock(blocks[0]),
+      parseHexBlock(blocks[1]),
+      parseHexBlock(blocks[2]),
+      parseHexBlock(blocks[3])]);
   return {
     type: RdsReportEventType.GROUP,
     stream: stream,
-    ok: ok,
-    blocks: Uint16Array.from(bl),
+    group: group,
     sourceInfo: "file"
   };
 }

@@ -3,15 +3,17 @@ import { Station } from './base';
 import { parseHexGroup, RdsReportEventType } from '../drivers/input';
 
 
+const MAX_ERRORS = 0;
+
 function send(s: string, station: Station) {
   for (let l of s.split('\n')) {
     const evt = parseHexGroup(l);
     if (evt == undefined || evt.type != RdsReportEventType.GROUP
-        || evt.stream == undefined || evt.blocks == undefined || evt.ok == undefined) {
+        || evt.stream == undefined || evt.group == undefined) {
       continue;
     }
     const logMessage = new LogMessage();
-    parse_group(evt.stream, evt.blocks, evt.ok, logMessage, station);
+    parse_group(evt.stream, evt.group, MAX_ERRORS, logMessage, station);
     console.log(logMessage.text);
   }
 }

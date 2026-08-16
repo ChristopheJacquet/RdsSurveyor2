@@ -1,4 +1,5 @@
 import { RdsPipeline, RdsReportEventType } from "../drivers/input";
+import { Block, Group, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
 
 // Number of good blocks needed after initial block to confirm synchronization.
 const SYNC_THRESHOLD = 2;
@@ -43,10 +44,14 @@ export class BitStreamSynchronizer {
 	private block = 0;        // block contents
 	private blockCount = 0;   // block counter within group
 	private bitCount = 0;     // bit count within block
-	private group = new Uint16Array(BLOCKS_PER_GROUP);   // group
+	private group: [Block, Block, Block, Block] = [
+    new Block(0, UNCORRECTABLE_ERRORS),
+    new Block(0, UNCORRECTABLE_ERRORS),
+    new Block(0, UNCORRECTABLE_ERRORS),
+    new Block(0, UNCORRECTABLE_ERRORS),
+  ];   // group
 	public synced = false;
 	private nbOk = 0;
-	private blocksOk: Array<boolean> = [false, false, false, false];
 	private nbUnsync = 0;
 	private groupCount = 0;
 	private bitTime = 0;
@@ -108,27 +113,26 @@ export class BitStreamSynchronizer {
         this.synced = true;
         this.unreportedUnsyncedBits = 0;
 
-        this.group[blockIndex] = block;
+        this.group[blockIndex] = new Block(block, 0);
         this.blockCount = (blockIndex+1) % BLOCKS_PER_GROUP;
         this.bitCount = 0;
         this.nbOk = 1;
-        for (let k=0; k<BLOCKS_PER_GROUP; k++) this.blocksOk[k] = (k == blockIndex);
+        for (let k=0; k<BLOCKS_PER_GROUP; k++) {
+          if (k != blockIndex) this.group[k].errorCount = UNCORRECTABLE_ERRORS;
+        }
 
         // Fill in the previous blocks.
         {
           const syncEntries = this.nbSyncAtOffset[offset][pseudoBlock];
           let bt = syncEntries.pop()!.bitTime - BLOCK_SIZE;
-          let pastBlocks: number[] = [];
-          let pastOk: boolean[] = [];
+          let pastBlocks: Block[] = [];
 
           while (bt >= 0 && syncEntries.length > 0) {
             if (bt == syncEntries[syncEntries.length-1].bitTime) {
               const blk = syncEntries.pop()!.block;
-              pastBlocks.unshift(blk);
-              pastOk.unshift(true);
+              pastBlocks.unshift(new Block(blk, 0));
             } else {
-              pastBlocks.unshift(0);
-              pastOk.unshift(false);
+              pastBlocks.unshift(new Block(0, UNCORRECTABLE_ERRORS));
             }
             bt -= BLOCK_SIZE;
           }
@@ -137,24 +141,19 @@ export class BitStreamSynchronizer {
           // Note: i contains the number of past blocks to add to the current group.
           const targetBlockSize = blockIndex + Math.ceil((pastBlocks.length - blockIndex) / BLOCKS_PER_GROUP) * BLOCKS_PER_GROUP;
           while (pastBlocks.length < targetBlockSize) {
-            pastBlocks.unshift(0);
-            pastOk.unshift(false);
+            pastBlocks.unshift(new Block(0, UNCORRECTABLE_ERRORS));
           }
 
           // Now, emit groups.
           while (pastBlocks.length >= BLOCKS_PER_GROUP) {
             this.emitGroup(
-              new Uint16Array(pastBlocks.slice(0, BLOCKS_PER_GROUP)),
-              pastOk.slice(0, BLOCKS_PER_GROUP)
-            )
+              new Group(pastBlocks.slice(0, BLOCKS_PER_GROUP) as [Block, Block, Block, Block]));
             pastBlocks = pastBlocks.slice(BLOCKS_PER_GROUP);
-            pastOk = pastOk.slice(BLOCKS_PER_GROUP);
           }
 
           // Fill in the rest in the current group.
           for (let k = 0; k < pastBlocks.length; k++) {
             this.group[k] = pastBlocks[k];
-            this.blocksOk[k] = pastOk[k];
           }
         }
         
@@ -178,17 +177,15 @@ export class BitStreamSynchronizer {
       }
     } else {   // If synced.
       if (this.bitCount == BLOCK_SIZE) {
-        this.group[this.blockCount] = (this.block>>10) & 0xFFFF;
         const synd = calcSyndrome(this.block);
 
         if (SYNDROMES.get(synd) == this.blockCount) {
           this.nbOk++;
-          this.blocksOk[this.blockCount] = true;
+          this.group[this.blockCount] = new Block((this.block>>10) & 0xFFFF, 0);
         } else {
-          this.blocksOk[this.blockCount] = false;
-          this.group[this.blockCount] = -1;
+          this.group[this.blockCount] = new Block(-1, UNCORRECTABLE_ERRORS);
         }
-        
+
         this.bitCount = 0;
         this.blockCount++;
         
@@ -208,29 +205,19 @@ export class BitStreamSynchronizer {
           }
           
           this.nbOk = 0;
-          
+
           // Return group data.
-          const theGroup = new Uint16Array(this.group);
-          /*
-          console.log(
-            'Read group:',
-            this.blocksOk[0] ? theGroup[0].toString(16) : '----',
-            this.blocksOk[1] ? theGroup[1].toString(16) : '----',
-            this.blocksOk[2] ? theGroup[2].toString(16) : '----',
-            this.blocksOk[3] ? theGroup[3].toString(16) : '----');
-          */
-          this.emitGroup(theGroup, [...this.blocksOk]);
+          this.emitGroup(new Group([...this.group] as [Block, Block, Block, Block]));
         }
       }
     }
   }
 
-  private emitGroup(blocks: Uint16Array, ok: boolean[]) {
+  private emitGroup(group: Group) {
     this.listener.processRdsReportEvent({
       stream: this.stream,
       type: RdsReportEventType.GROUP,
-      ok: ok,
-      blocks: blocks,
+      group: group,
       sourceInfo: "BitStreamSynchronizer",
     });
 }
