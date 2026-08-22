@@ -1,5 +1,4 @@
-import { RdsPipeline, RdsReportEventType } from "../drivers/input";
-import { Block, Group, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
+import { Block, Group, RdsPipeline, RdsReportEventType, UNCORRECTABLE_ERRORS } from "../drivers/input";
 
 // Number of good blocks needed after initial block to confirm synchronization.
 const SYNC_THRESHOLD = 2;

@@ -1,7 +1,20 @@
-import { RdsReportEvent, RdsReportEventListener, RdsReportEventType } from "../drivers/input";
+import { Block, Group, RdsReportEvent, RdsPipeline, RdsReportEventType } from "../drivers/input";
 import { BitStreamSynchronizer } from "./bitstream";
 
-class RdsListener implements RdsReportEventListener {
+class RdsListener implements RdsPipeline {
+  processMpxSamples(samples: Float32Array, length?: number): void {
+  }
+
+  processBits(bytes: Uint8Array): void {
+  }
+
+  reportFrequency(frequencyKhz: number): void {
+  }
+
+  reportSourceEnd(): void {
+    throw new Error("Method not implemented.");
+  }
+
   processRdsReportEvent(event: RdsReportEvent): void {
   }
 }
@@ -15,7 +28,7 @@ describe('Error-free bit stream', () => {
      0x41, 0x01, 0x00, 0x01, 0xe4, 0x03, 0xc0, 0xf9]);
 
   const listener = new RdsListener();
-  const bss = new BitStreamSynchronizer(listener);
+  const bss = new BitStreamSynchronizer(0, listener);
 
   it('should sync', () => {
     const spy = spyOn(listener, 'processRdsReportEvent');
@@ -23,24 +36,36 @@ describe('Error-free bit stream', () => {
     expect(bss.synced).toBe(true);
     expect(spy).toHaveBeenCalledTimes(3);
     expect(spy).toHaveBeenCalledWith({
+      stream: 0,
       type: RdsReportEventType.GROUP,
-      ok: [true, true, true, true],
-      blocks: new Uint16Array([0xf206, 0x0403, 0xe5b4, 0x2020]),
-      freq: 0,
+      group: new Group([
+        new Block(0xf206, 0),
+        new Block(0x0403, 0),
+        new Block(0xe5b4, 0),
+        new Block(0x2020, 0),
+      ]),
       sourceInfo: "BitStreamSynchronizer",
     })
     expect(spy).toHaveBeenCalledWith({
+      stream: 0,
       type: RdsReportEventType.GROUP,
-      ok: [true, true, true, true],
-      blocks: new Uint16Array([0xf206, 0x1411, 0x0000, 0x0000]),
-      freq: 0,
+      group: new Group([
+        new Block(0xf206, 0),
+        new Block(0x1411, 0),
+        new Block(0x0000, 0),
+        new Block(0x0000, 0),
+      ]),
       sourceInfo: "BitStreamSynchronizer",
     })
     expect(spy).toHaveBeenCalledWith({
+      stream: 0,
       type: RdsReportEventType.GROUP,
-      ok: [true, true, true, true],
-      blocks: new Uint16Array([0xf206, 0xe410, 0x2020, 0xf201]),
-      freq: 0,
+      group: new Group([
+        new Block(0xf206, 0),
+        new Block(0xe410, 0),
+        new Block(0x2020, 0),
+        new Block(0xf201, 0),
+      ]),
       sourceInfo: "BitStreamSynchronizer",
     })
   });

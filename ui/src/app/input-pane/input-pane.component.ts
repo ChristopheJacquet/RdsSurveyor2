@@ -12,14 +12,13 @@ import {FormsModule} from '@angular/forms';
 import {MatRadioModule} from '@angular/material/radio';
 
 
-import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
+import { Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator, FREQ_STREAMS } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
-import { Group } from "../../../../core/protocol/rds_types";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
 import { BlerGraphComponent } from "../bler-graph/bler-graph.component";

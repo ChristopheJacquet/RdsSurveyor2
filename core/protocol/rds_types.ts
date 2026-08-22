@@ -8,30 +8,7 @@ import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 import { RftPipe } from "./rft";
 import { RpAppImpl } from './rp';
-
-export const UNCORRECTABLE_ERRORS = 6 as const;
-
-export type ErrorCount = 0 | 1 | 2 | 3 | 4 | 5 | typeof UNCORRECTABLE_ERRORS;
-
-export class Block {
-  private readonly nominal?: void;
-  constructor(public value: number, public errorCount: number) {
-  }
-
-  toString(): string {
-    return this.value.toString(16).toUpperCase().padStart(4, "0") + "/" + this.errorCount;
-  }
-}
-
-export class Group {
-  private readonly nominal?: void;
-  constructor(public blocks: [Block, Block, Block, Block]) {
-  }
-
-  toString(): string {
-    return this.blocks.join(" ");
-  }
-}
+import { Block, Group } from "../drivers/input";
 
 export function parse_group(stream: number, group: Group, maxErrors: number, log: LogMessage, station: Station) {
   const blocks = new Uint16Array([

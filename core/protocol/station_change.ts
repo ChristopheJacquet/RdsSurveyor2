@@ -1,4 +1,4 @@
-import { Group } from "./rds_types";
+import { Group } from "../drivers/input";
 
 // Tuning state used for station change detection.
 enum TuningState {

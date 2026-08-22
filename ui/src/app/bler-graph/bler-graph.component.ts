@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
-import { Group } from '../../../../core/protocol/rds_types';
+import { Group } from '../../../../core/drivers/input';
 
 @Component({
   selector: 'app-bler-graph',

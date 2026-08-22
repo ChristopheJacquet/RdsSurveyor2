@@ -1,4 +1,26 @@
-import { Block, Group, ErrorCount, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
+export const UNCORRECTABLE_ERRORS = 6 as const;
+
+export type ErrorCount = 0 | 1 | 2 | 3 | 4 | 5 | typeof UNCORRECTABLE_ERRORS;
+
+export class Block {
+  private readonly nominal?: void;
+  constructor(public value: number, public errorCount: number) {
+  }
+
+  toString(): string {
+    return this.value.toString(16).toUpperCase().padStart(4, "0") + "/" + this.errorCount;
+  }
+}
+
+export class Group {
+  private readonly nominal?: void;
+  constructor(public blocks: [Block, Block, Block, Block]) {
+  }
+
+  toString(): string {
+    return this.blocks.join(" ");
+  }
+}
 
 export class RdsReportEvent {
   public type: RdsReportEventType = RdsReportEventType.GROUP;

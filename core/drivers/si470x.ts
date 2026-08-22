@@ -20,8 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "./input";
-import { Block, ErrorCount, Group, UNCORRECTABLE_ERRORS } from "../protocol/rds_types";
+import { Block, ErrorCount, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection, UNCORRECTABLE_ERRORS } from "./input";
 
 /**************************************************************************
  * Register Definitions
