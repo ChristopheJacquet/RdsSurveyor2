@@ -12,7 +12,6 @@ class RdsListener implements RdsPipeline {
   }
 
   reportSourceEnd(): void {
-    throw new Error("Method not implemented.");
   }
 
   processRdsReportEvent(event: RdsReportEvent): void {
@@ -68,5 +67,35 @@ describe('Error-free bit stream', () => {
       ]),
       sourceInfo: "BitStreamSynchronizer",
     })
+  });
+});
+
+describe('Bit stream with injected errors', () => {
+  const data = new Uint8Array(
+    [0xf9, 0x03, 0x6b, 0xe0, 0x80, 0x61, 0x1f, 0x2d, 
+     0xa3, 0x60, 0x40, 0x40, 0x6e, 0x79]);
+
+  it('should correct a burst of up to 5 errors', () => {
+    for (let numErrors = 1; numErrors <= 6; numErrors++) {
+      const listener = new RdsListener();
+      const bss = new BitStreamSynchronizer(0, listener);
+      const spy = spyOn(listener, 'processRdsReportEvent');
+      const dataWithErrors = data.slice();
+      dataWithErrors[10] ^= (1 << numErrors) - 1;   // Flip numError bits.
+      bss.addBits(dataWithErrors);
+      expect(bss.synced).toBe(true);
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith({
+        stream: 0,
+        type: RdsReportEventType.GROUP,
+        group: new Group([
+          new Block(0xf206, 0),
+          new Block(0x0403, 0),
+          new Block(0xe5b4, 0),
+          new Block(numErrors < 6 ? 0x2020 : 0x3FA0, numErrors),
+        ]),
+        sourceInfo: "BitStreamSynchronizer",
+      })
+    }
   });
 });
