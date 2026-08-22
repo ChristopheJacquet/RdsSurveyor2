@@ -54,6 +54,7 @@ function calcSyndrome(block: number, ini: number): number {
   return rem;
 }
 
+// Counts the number of 1 bits in `x`.
 function popcount(x: number): number {
   let count = 0;
   while (x != 0) {
@@ -63,9 +64,9 @@ function popcount(x: number): number {
   return count;
 }
 
-// Tries to correct a burst error in `message`, given the syndrome expected
-// of an error-free block at this position. Returns the corrected message
-// and the number of bits that were flipped, or null if uncorrectable.
+// Tries to correct a burst error in `block`, given the syndrome expected
+// of an error-free block at this position. Returns the corrected block
+// with the number of bits that were flipped, or UNCORRECTABLE_ERRORS.
 function correctBlock(block: number, expectedSyndrome: number): Block {
   let rem = calcSyndrome(block, INITIAL_MULTIPLIER) ^ expectedSyndrome;
   let shift = 16;
@@ -86,17 +87,12 @@ function correctBlock(block: number, expectedSyndrome: number): Block {
   return new Block(((block ^ rem) >> GEN_DEGREE) & 0xFFFF, popcount(rem));
 }
 
-// Tries to correct `message`, known to be at position `blockIndex` within
+// Tries to correct `block`, known to be at position `blockIndex` within
 // the group, against every syndrome value that is valid for that position.
 function correctBlockAtPosition(block: number, blockIndex: number): Block {
-  let best = new Block((block >> GEN_DEGREE) & 0xFFFF, UNCORRECTABLE_ERRORS);
-  for (const expectedSyndrome of SYNDROMES_BY_BLOCK[blockIndex]) {
-    const correct = correctBlock(block, expectedSyndrome);
-    if (correct.errorCount < best.errorCount) {
-      best = correct;
-    }
-  }
-  return best;
+  return SYNDROMES_BY_BLOCK[blockIndex]
+    .map(expectedSyndrome => correctBlock(block, expectedSyndrome))
+    .reduce((best, other) => other.errorCount < best.errorCount ? other : best);
 }
 
 export class BitStreamSynchronizer {
