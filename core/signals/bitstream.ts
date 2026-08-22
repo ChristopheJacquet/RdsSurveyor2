@@ -10,18 +10,31 @@ const SYNC_CONFIRM_DURATION = 5;
 // Lose synchronization after that many groups without a good block.
 const SYNC_LOSS_DURATION = 2;
 
-const MAT_H: number[] = [
-  0x31B, 0x38F, 0x2A7, 0x0F7, 0x1EE, 0x3DC, 0x201, 0x1BB, 0x376, 0x355,
-  0x313, 0x39F, 0x287, 0x0B7, 0x16E, 0x2DC, 0x001, 0x002, 0x004, 0x008,
-  0x010, 0x020, 0x040, 0x080, 0x100, 0x200
-];
-
 const BLOCK_SIZE = 26;
 const BLOCKS_PER_GROUP = 4;
 const GROUP_SIZE = BLOCKS_PER_GROUP * BLOCK_SIZE;
 
 const SYNDROMES = new Map<number, number>(
   [[0x3D8, 0], [0x3D4, 1], [0x25C, 2], [0x3CC, 2], [0x258, 3]]);
+
+// Reverse lookup: for a given block position (A/B/C/D), the syndrome
+// value(s) expected of an error-free block at that position.
+const SYNDROMES_BY_BLOCK: number[][] = [[], [], [], []];
+for (const [synd, blockIndex] of SYNDROMES) {
+  SYNDROMES_BY_BLOCK[blockIndex].push(synd);
+}
+
+// Generator polynomial: x^10+x^8+x^7+x^5+x^4+x^3+1.
+const GEN = 0x5B9;
+const GEN_DEGREE = 10;
+
+// x^325 mod gen: x^9+x^8+x^4+x^3+x+1. Used as the initial multiplier to
+// turn a raw block into its syndrome.
+const INITIAL_MULTIPLIER = 0x31B;
+
+// A 5-bit "trap": once the shifted syndrome falls in this window, the
+// remaining bits identify a correctable burst error.
+const TRAP = 0x1F;
 
 class SyncEntry {
   public constructor(public bitTime: number, public block: number) {}
@@ -31,13 +44,59 @@ class SyncEntry {
   }
 }
 
-function calcSyndrome(block: number): number {
-  let synd = 0;
-  for (let i = 0; i < BLOCK_SIZE; i++) {
-    if ((block & 1) != 0) synd ^= MAT_H[i];
-    block >>= 1;
+function calcSyndrome(block: number, ini: number): number {
+  let rem = 0;
+  for (let i = BLOCK_SIZE; i > 0; i--) {
+    if ((block >> (i - 1)) & 0x01) rem = (rem << 1) ^ ini;
+    else rem = rem << 1;
+    if (rem & (0x01 << GEN_DEGREE)) rem = rem ^ GEN;
   }
-  return synd;
+  return rem;
+}
+
+function popcount(x: number): number {
+  let count = 0;
+  while (x != 0) {
+    x &= x - 1;
+    count++;
+  }
+  return count;
+}
+
+// Tries to correct a burst error in `message`, given the syndrome expected
+// of an error-free block at this position. Returns the corrected message
+// and the number of bits that were flipped, or null if uncorrectable.
+function correctBlock(block: number, expectedSyndrome: number): Block {
+  let rem = calcSyndrome(block, INITIAL_MULTIPLIER) ^ expectedSyndrome;
+  let shift = 16;
+  let trapped = false;
+  for (; shift > 0; shift--) {     // Calculate successive syndromes.
+    rem = calcSyndrome(rem, 1);
+    if ((rem & TRAP) == 0) {
+      trapped = true;
+      break;
+    }
+    rem = rem << 1;
+  }
+  if (!trapped) {
+    return new Block((block >> GEN_DEGREE) & 0xFFFF, UNCORRECTABLE_ERRORS);
+  }
+
+  rem = rem << shift;
+  return new Block(((block ^ rem) >> GEN_DEGREE) & 0xFFFF, popcount(rem));
+}
+
+// Tries to correct `message`, known to be at position `blockIndex` within
+// the group, against every syndrome value that is valid for that position.
+function correctBlockAtPosition(block: number, blockIndex: number): Block {
+  let best = new Block((block >> GEN_DEGREE) & 0xFFFF, UNCORRECTABLE_ERRORS);
+  for (const expectedSyndrome of SYNDROMES_BY_BLOCK[blockIndex]) {
+    const correct = correctBlock(block, expectedSyndrome);
+    if (correct.errorCount < best.errorCount) {
+      best = correct;
+    }
+  }
+  return best;
 }
 
 export class BitStreamSynchronizer {
@@ -85,8 +144,8 @@ export class BitStreamSynchronizer {
     
     try_sync:
     if (!this.synced) {
-      const synd = calcSyndrome(this.block);
-      
+      const synd = calcSyndrome(this.block, INITIAL_MULTIPLIER);
+
       const blockIndex = SYNDROMES.get(synd);
       if (blockIndex == undefined) {    // The syndrome does not match one of the offset syndromes.
         break try_sync;
@@ -177,13 +236,17 @@ export class BitStreamSynchronizer {
       }
     } else {   // If synced.
       if (this.bitCount == BLOCK_SIZE) {
-        const synd = calcSyndrome(this.block);
+        const synd = calcSyndrome(this.block, INITIAL_MULTIPLIER);
 
         if (SYNDROMES.get(synd) == this.blockCount) {
           this.nbOk++;
           this.group[this.blockCount] = new Block((this.block>>10) & 0xFFFF, 0);
         } else {
-          this.group[this.blockCount] = new Block(-1, UNCORRECTABLE_ERRORS);
+          const corrected = correctBlockAtPosition(this.block, this.blockCount);
+          this.group[this.blockCount] = corrected;
+          if (corrected.errorCount != UNCORRECTABLE_ERRORS) {
+            this.nbOk++;
+          }
         }
 
         this.bitCount = 0;
