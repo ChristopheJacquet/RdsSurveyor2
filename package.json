@@ -1,0 +1,13 @@
+{
+  "name": "rds-surveyor-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lmdb",
+      "msgpackr-extract",
+      "nice-napi"
+    ]
+  }
+}

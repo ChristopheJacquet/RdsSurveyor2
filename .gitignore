@@ -2,12 +2,18 @@
 .DS_Store
 
 # Compiled output
-/core/bazel-*
+/bazel-*
 /ui/dist
+*.tsbuildinfo
 
 # Node
+/node_modules
 /ui/node_modules
 /core/node_modules
+
+# Python
+__pycache__/
+*.pyc
 
 # Angular
 /ui/.angular/cache

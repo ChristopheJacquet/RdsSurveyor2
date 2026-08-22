@@ -1,3 +1,4 @@
+import { Block, Group, UNCORRECTABLE_ERRORS } from "../drivers/input";
 import { ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "./station_change";
 
 function send(s: string, detector: StationChangeDetector): Array<ReceiverEvent> {
@@ -9,11 +10,24 @@ function send(s: string, detector: StationChangeDetector): Array<ReceiverEvent> 
       parseInt(g[0], 16), parseInt(g[1], 16), parseInt(g[2], 16), parseInt(g[3], 16)];
     const evts = detector.processGroup(
       /* stream= */ 0,
-      Uint16Array.from(b),
-      [!Number.isNaN(b[0]), !Number.isNaN(b[1]), !Number.isNaN(b[2]), !Number.isNaN(b[3])]);
+      new Group(
+        b.map(v => Number.isNaN(v) ? new Block(0, UNCORRECTABLE_ERRORS) : new Block(v, 0)) as [Block, Block, Block, Block]),
+      /* maxErrors= */ 0);
     events.push(...evts);
   }
   return events;
+}
+
+// Builds the Group produced by 4 error-free blocks.
+function mkGroup(pi: number, b1: number, b2: number, b3: number): Group {
+  return new Group([new Block(pi, 0), new Block(b1, 0), new Block(b2, 0), new Block(b3, 0)]);
+}
+
+// Builds the Group produced when the PI block is missing/uncorrectable
+// (a "----" block), as emitted for a PI-less group.
+function mkGroupWithMissingPi(b1: number, b2: number, b3: number): Group {
+  return new Group([
+    new Block(0, UNCORRECTABLE_ERRORS), new Block(b1, 0), new Block(b2, 0), new Block(b3, 0)]);
 }
 
 describe('A station change', () => {
@@ -27,11 +41,11 @@ describe('A station change', () => {
   it('should get detected', () => {
     expect(events).toEqual([
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x1000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0101, 0x0102, 0x0103])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0201, 0x0202, 0x0203])}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0101, 0x0102, 0x0103)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0201, 0x0202, 0x0203)}),
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x2000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x2000, 0x0301, 0x0302, 0x0303])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x2000, 0x0401, 0x0402, 0x0403])})
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x2000, 0x0301, 0x0302, 0x0303)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x2000, 0x0401, 0x0402, 0x0403)})
     ]);
   });
 });
@@ -46,8 +60,8 @@ describe('An isolated group with bad PI', () => {
   it('should get dropped', () => {
     expect(events).toEqual([
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x1000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0101, 0x0102, 0x0103])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0301, 0x0302, 0x0303])}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0101, 0x0102, 0x0103)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0301, 0x0302, 0x0303)}),
     ]);
   });
 });
@@ -62,9 +76,9 @@ describe('An isolated group with missing PI', () => {
   it('should get emitted', () => {
     expect(events).toEqual([
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x1000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0101, 0x0102, 0x0103])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x0000, 0x0201, 0x0202, 0x0203]), ok: [false, true, true, true]}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0301, 0x0302, 0x0303])}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0101, 0x0102, 0x0103)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroupWithMissingPi(0x0201, 0x0202, 0x0203)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0301, 0x0302, 0x0303)}),
     ]);
   });
 });
@@ -84,13 +98,13 @@ describe('PI-less groups around a station change', () => {
   it('should get dropped', () => {
     expect(events).toEqual([
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x1000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0101, 0x0102, 0x0103])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x0000, 0x0201, 0x0202, 0x0203]), ok: [false, true, true, true]}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x1000, 0x0301, 0x0302, 0x0303])}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0101, 0x0102, 0x0103)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroupWithMissingPi(0x0201, 0x0202, 0x0203)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x1000, 0x0301, 0x0302, 0x0303)}),
       jasmine.objectContaining({kind: ReceiverEventKind.NewStationEvent, pi: 0x2000}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x2000, 0x0601, 0x0602, 0x0603])}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x0000, 0x0701, 0x0702, 0x0703]), ok: [false, true, true, true]}),
-      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, blocks: Uint16Array.from([0x2000, 0x0801, 0x0802, 0x0803])}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x2000, 0x0601, 0x0602, 0x0603)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroupWithMissingPi(0x0701, 0x0702, 0x0703)}),
+      jasmine.objectContaining({kind: ReceiverEventKind.GroupEvent, group: mkGroup(0x2000, 0x0801, 0x0802, 0x0803)}),
     ]);
   });
 });

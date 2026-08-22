@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from dataclasses import dataclass
+import os
 import sys
 import lark
 from lark import Lark
@@ -689,8 +690,9 @@ def compile(codegen, t):
 
 l = Lark(grammar)
 
-infile = sys.argv[1] + '.p'
-outfile = sys.argv[1] + '.ts'
+infile = sys.argv[1]
+outfile = sys.argv[2]
+include_dir = os.path.dirname(infile)
 
 f = open(infile, encoding="utf8")
 lines = f.readlines()
@@ -700,7 +702,7 @@ preprocessed_lines = []
 for li in lines:
     if li.startswith('#include '):
         included_file = li.split(' ')[1].strip()
-        incl_f = open(included_file, encoding='utf8')
+        incl_f = open(os.path.join(include_dir, included_file), encoding='utf8')
         incl_lines = incl_f.readlines()
         preprocessed_lines.extend(incl_lines)
     else:

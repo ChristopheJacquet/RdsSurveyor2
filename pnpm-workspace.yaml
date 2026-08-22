@@ -1,0 +1,8 @@
+packages:
+  - core
+  - ui
+allowBuilds:
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  nice-napi: true
