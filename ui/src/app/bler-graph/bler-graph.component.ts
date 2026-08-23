@@ -29,7 +29,7 @@ export class BlerGraphComponent implements AfterViewInit {
     this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
   }
 
-  updateBlerGraph(synced: boolean, group: Group | undefined, maxErrors: number) {
+  updateBlerGraph(synced: boolean, group: Group | undefined) {
     if (this.blerGraphCx == null) {
       return;
     }
@@ -47,9 +47,9 @@ export class BlerGraphComponent implements AfterViewInit {
       if (!synced || group == undefined) {
         this.blerGraphCx.strokeStyle = "#aaa";
       } else {
-        const err = group.blocks[i].errorCount;
+        const b = group.blocks[i];
         this.blerGraphCx.strokeStyle =
-          err == 0 ? "#8F8" : err <= maxErrors ? "#FC8" : "#F88";
+          b.errorCount == 0 ? "#8F8" : b.ok ? "#FC8" : "#F88";
       }
       const y = (i+1)*this.blerGraphHeight/4;
       this.blerGraphCx.beginPath();

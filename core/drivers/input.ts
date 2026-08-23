@@ -4,7 +4,13 @@ export type ErrorCount = 0 | 1 | 2 | 3 | 4 | 5 | typeof UNCORRECTABLE_ERRORS;
 
 export class Block {
   private readonly nominal?: void;
+  // True unless the block is genuinely uncorrectable. GroupEvent further
+  // narrows this (never widens it) based on the user's configured error
+  // tolerance; it is the only signal most consumers should look at.
+  public ok: boolean;
+
   constructor(public value: number, public errorCount: number) {
+    this.ok = errorCount != UNCORRECTABLE_ERRORS;
   }
 
   toString(): string {

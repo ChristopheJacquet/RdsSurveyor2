@@ -13,17 +13,20 @@ export class GroupEvent {
   readonly kind = ReceiverEventKind.GroupEvent
   public stream: number;
   public group: Group;
-  public maxErrors: number;
 
   constructor(stream: number, group: Group, maxErrors: number) {
     this.stream = stream;
     this.group = group;
-    this.maxErrors = maxErrors;
+    // Single place where the user's configured error tolerance is applied:
+    // narrow each block's "ok" flag, never widen it.
+    for (const b of group.blocks) {
+      if (b.errorCount > maxErrors) b.ok = false;
+    }
   }
 
   public hexDump(): string {
     return this.group.blocks.map(
-      (b) => b.errorCount <= this.maxErrors ? b.value.toString(16).toUpperCase().padStart(4, "0") : "----"
+      (b) => b.ok ? b.value.toString(16).toUpperCase().padStart(4, "0") : "----"
     ).join(" ");
   }
 }
@@ -47,7 +50,8 @@ export class StationChangeDetector {
 
   processGroup(stream: number, group: Group, maxErrors: number): Array<ReceiverEvent> {
     const result = new Array<ReceiverEvent>();
-    const piOk = group.blocks[0].errorCount <= maxErrors;
+    const evt = new GroupEvent(stream, group, maxErrors);
+    const piOk = group.blocks[0].ok;
 
     // Station change detection (for stream 0 groups; for other streams state
     // does not change).
@@ -88,7 +92,6 @@ export class StationChangeDetector {
       }
     }
 
-    const evt = new GroupEvent(stream, group, maxErrors);
     if (this.tuningState == TuningState.TUNED && piOk) {
       this.emitAllPendingEvents(result);
       result.push(evt);

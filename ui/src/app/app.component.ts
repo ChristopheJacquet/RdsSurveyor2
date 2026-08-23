@@ -22,7 +22,7 @@ export class AppComponent {
       case ReceiverEventKind.GroupEvent:
         const log = new LogMessage();
         log.add(evt.stream + ':[' + evt.hexDump() + '] ', false);
-        parse_group(evt.stream, evt.group, evt.maxErrors, log, this.station);
+        parse_group(evt.stream, evt.group, log, this.station);
         this.station.addLogMessage(log);
         this.station.tickGroupDuration();
         break;

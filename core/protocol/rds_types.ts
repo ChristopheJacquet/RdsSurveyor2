@@ -8,19 +8,15 @@ import { RtPlusAppImpl } from "./radio_text_plus";
 import { callsign } from "./rbds_callsigns";
 import { RftPipe } from "./rft";
 import { RpAppImpl } from './rp';
-import { Block, Group } from "../drivers/input";
+import { Group } from "../drivers/input";
 
-export function parse_group(stream: number, group: Group, maxErrors: number, log: LogMessage, station: Station) {
+export function parse_group(stream: number, group: Group, log: LogMessage, station: Station) {
   const blocks = new Uint16Array([
     group.blocks[0].value,
     group.blocks[1].value,
     group.blocks[2].value,
     group.blocks[3].value]);
-  const ok = [
-    group.blocks[0].errorCount <= maxErrors,
-    group.blocks[1].errorCount <= maxErrors,
-    group.blocks[2].errorCount <= maxErrors,
-    group.blocks[3].errorCount <= maxErrors];
+  const ok = group.blocks.map(b => b.ok);
   if (stream == 0) {
     parse_group_ab(blocks, ok, log, station);
   } else {

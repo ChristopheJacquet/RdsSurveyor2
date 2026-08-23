@@ -113,9 +113,11 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async emitGroup(stream: number, group: Group, maxErrors: number) {
-    this.blerGraph.get(stream)?.updateBlerGraph(true, group, maxErrors);
-
+    // Apply the error tolerance (narrowing group.blocks[i].ok) before
+    // updating the BLER graph, so groups with more than maxErrors are rendered
+    // as uncorrectable.
     const events = this.stationChangeDetector.processGroup(stream, group, maxErrors);
+    this.blerGraph.get(stream)?.updateBlerGraph(true, group);
     for (let event of events) {
       switch (event.kind) {
         case ReceiverEventKind.NewStationEvent:
@@ -220,7 +222,7 @@ export class InputPaneComponent implements RdsPipeline  {
         console.log(`No stream in ${event}`);
         return;
       }
-      this.blerGraph.get(event.stream)?.updateBlerGraph(false, undefined, 0);
+      this.blerGraph.get(event.stream)?.updateBlerGraph(false, undefined);
     }
   }
 
