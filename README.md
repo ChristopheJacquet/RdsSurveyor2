@@ -84,3 +84,58 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 * RP support (with own tab in UI).
 * Broadcaster-specific TDC/IH data support: CATRADIO.
 * Audio out support in playback mode.
+
+## Building and Running
+
+Required dependencies:
+
+* Node.js (comes with `corepack`)
+* pnpm: install it by running `corepack enable pnpm`
+* Bazel (build system)
+
+Open a terminal at the root of the repository.
+
+First resolve and fetch Typescript / Javascript dependencies:
+
+```
+pnpm install
+```
+
+To start local dev server:
+
+```
+cd ui && pnpm exec ng serve
+```
+
+or
+
+```
+pnpm --filter rds-surveyor start
+```
+
+To build the app for production:
+
+```
+cd ui && pnpm exec ng build
+```
+
+or
+
+```
+bazel build //ui:build
+```
+
+To run tests:
+
+```
+bazel test //...
+```
+
+To update the protocol parser in file `core/protocol/base.ts` (currently gets
+commited to the repository, so the following command is needed only if changing
+the protocol in `core/protocol/*.p`, but this is likely to change in the
+future):
+
+```
+bazel run //core/protocol:update_base_ts
+```
