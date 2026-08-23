@@ -84,12 +84,14 @@
     </mat-button-toggle-group>
   </div>
   <table>
-    <tr><th></th><th>Demod.</th><th>Bitstream</th><th>Block errors</th></tr>
+    <tr><th></th><th>Demod.</th><th>Bitstream</th><th>Block errors</th><th>Errors</th><th>Corrected</th></tr>
       <tr *ngFor="let item of [].constructor(4); let i = index">
         <td>{{ i }}</td>
         <td><span class="indicator" [attr.data-on]="demodulator[i].locked ? 1 : 0">LOCK</span></td>
         <td><span class="indicator" [attr.data-on]="synchronizer[i].synced ? 1 : 0">SYNC</span></td>
         <td><app-bler-graph #blerGraph></app-bler-graph></td>
+        <td>{{ blerGraph.hasBlocks ? (blerGraph.errorRatePercent | number:'1.0-1') + ' %' : '-' }}</td>
+        <td>{{ blerGraph.hasBlocks ? (blerGraph.correctedRatePercent | number:'1.0-1') + ' %' : '-' }}</td>
       </tr>
   </table>
 </div>
