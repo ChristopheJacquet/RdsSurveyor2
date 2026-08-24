@@ -239,9 +239,6 @@ export class BitStreamSynchronizer {
         } else {
           const corrected = correctBlockAtPosition(this.block, this.blockCount);
           this.group[this.blockCount] = corrected;
-          if (corrected.errorCount != UNCORRECTABLE_ERRORS) {
-            this.nbOk++;
-          }
         }
 
         this.bitCount = 0;
