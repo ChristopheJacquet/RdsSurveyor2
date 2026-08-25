@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatListModule} from '@angular/material/list';
@@ -17,16 +17,40 @@ import { humanReadableUrl } from '../../../../core/protocol/internet_connection'
   templateUrl: './station-info.component.html',
   styleUrl: './station-info.component.scss'
 })
-export class StationInfoComponent {
+export class StationInfoComponent implements AfterViewInit, OnDestroy {
   @Input() station!: StationImpl;
   group_ids = Array(16).fill(0).map((x,i)=>i);
 	rdsVariant: RdsVariant = RdsVariant.RDS;
 	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
 	readonly aboutDialog = inject(MatDialog);
 
+	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
+	stickToBottom = true;
+	private groupLogObserver?: MutationObserver;
+
 	ngOnInit() {
 		this.prefRdsVariant.init();
 		this.rdsVariant = this.prefRdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+	}
+
+	ngAfterViewInit() {
+		const el = this.groupLogEl?.nativeElement;
+		if (!el) return;
+		this.groupLogObserver = new MutationObserver(() => {
+			if (this.stickToBottom) {
+				// mat-tab-group scrolls the active tab via its own internal
+				// .mat-mdc-tab-body-content element, not our .bottom-tabs wrapper.
+				const scrollParent = el.closest<HTMLElement>('.mat-mdc-tab-body-content');
+				if (scrollParent) {
+					scrollParent.scrollTop = scrollParent.scrollHeight;
+				}
+			}
+		});
+		this.groupLogObserver.observe(el, { childList: true });
+	}
+
+	ngOnDestroy() {
+		this.groupLogObserver?.disconnect();
 	}
 
 	setRdsVariant(event: any) {

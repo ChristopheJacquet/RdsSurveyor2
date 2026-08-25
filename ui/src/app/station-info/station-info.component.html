@@ -292,7 +292,14 @@
     </mat-list>
   </mat-tab>
   <mat-tab label="Group log">
-    <div class="group-log">
+    <div class="group-log-controls">
+      <label>
+        <input type="checkbox" [checked]="stickToBottom"
+            (change)="stickToBottom = $any($event.target).checked">
+        Auto-scroll to bottom
+      </label>
+    </div>
+    <div class="group-log" #groupLog>
       <div *ngFor="let m of station.log">
         {{ m.toString() }}
       </div>

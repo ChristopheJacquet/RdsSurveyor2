@@ -130,6 +130,16 @@
   height: 100%;
 }
 
+.group-log-controls {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px 0 8px;
+  margin-bottom: 4px;
+  background: #FFF;
+  font-size: 90%;
+}
+
 .group-log {
   font-family: "Roboto Mono", monospace;
   letter-spacing: -0.05em;
