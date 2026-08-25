@@ -12,7 +12,7 @@ function send(s: string, station: Station) {
     }
     const logMessage = new LogMessage();
     parse_group(evt.stream, evt.group, logMessage, station);
-    console.log(logMessage.text);
+    console.log(logMessage.toString());
   }
 }
 

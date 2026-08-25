@@ -741,22 +741,31 @@ class OtherNetworkSwitch extends TrafficEvent {
   }
 }
 
+// A fragment of a LogMessage. `tag` is a semantic label (e.g. "corrected") for
+// styling the fragment via CSS, `details` is a descriptive text, typically to
+// be rendered as a tooltip.
+export interface LogPart {
+  text: string;
+  tag?: string;
+  details?: string;
+}
+
 export class LogMessage {
-  text = "";
+  parts: Array<LogPart> = [];
   addSeparator = false;
 
-  add(message: string, addSeparator=true) {
+  add(message: string, addSeparator=true, tag?: string, details?: string) {
     if (this.addSeparator) {
-      this.text += ", ";
+      this.parts.push({ text: ", " });
     }
-    this.text += message;
+    this.parts.push({ text: message, tag, details });
     // Record if we want to start with a separator next time. (The separator is
     // added if and when there is a next message.)
     this.addSeparator = addSeparator;
   }
 
   toString() {
-    return this.text;
+    return this.parts.map(p => p.text).join("");
   }
 }
 

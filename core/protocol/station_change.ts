@@ -25,9 +25,18 @@ export class GroupEvent {
   }
 
   public hexDump(): string {
-    return this.group.blocks.map(
-      (b) => b.ok ? b.value.toString(16).toUpperCase().padStart(4, "0") : "----"
+    return this.hexDumpParts().map(
+      (p) => p.text
     ).join(" ");
+  }
+
+  // Per-block breakdown of the hex dump, tagging blocks that were corrected
+  // by error correction so the UI can highlight them.
+  public hexDumpParts(): Array<{ text: string, correctedErrors: number }> {
+    return this.group.blocks.map((b) => ({
+      text: b.ok ? b.value.toString(16).toUpperCase().padStart(4, "0") : "----",
+      correctedErrors: b.ok ? b.errorCount : 0,
+    }));
   }
 }
 

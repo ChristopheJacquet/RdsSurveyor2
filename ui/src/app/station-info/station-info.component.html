@@ -301,7 +301,11 @@
     </div>
     <div class="group-log" #groupLog>
       <div *ngFor="let m of station.log">
-        {{ m.toString() }}
+        <span
+          *ngFor="let p of m.parts"
+          [class]="p.tag ? 'logpart-' + p.tag : ''"
+          [title]="p.details ? p.details : ''"
+        >{{ p.text }}</span>
       </div>
     </div>
   </mat-tab>
