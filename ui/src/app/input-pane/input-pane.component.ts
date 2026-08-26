@@ -121,6 +121,9 @@ export class InputPaneComponent implements RdsPipeline  {
     for (let event of events) {
       switch (event.kind) {
         case ReceiverEventKind.NewStationEvent:
+          for (let s = 0; s < 4; s++) {
+            this.blerGraph.get(s)?.reset();
+          }
           await this.startNewLogFile(event.pi);
           break;
         

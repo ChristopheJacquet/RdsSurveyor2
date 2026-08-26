@@ -74,11 +74,7 @@ export class BlerGraphComponent implements AfterViewInit {
     this.blerGraphWidth = blerGraphEl.width;
     this.blerGraphHeight = blerGraphEl.height;
 
-    if (this.blerGraphCx == null) {
-      return;
-    }
-    this.blerGraphCx.fillStyle = "#aaa";
-    this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
+    this.reset();
   }
 
   updateBlerGraph(synced: boolean, group: Group | undefined) {
@@ -112,5 +108,17 @@ export class BlerGraphComponent implements AfterViewInit {
       this.blerGraphCx.stroke();
       prevY = y;
     }
+  }
+
+  reset() {
+    this.writeIndex = 0;
+    this.filled = 0;
+    this.categoryCounts.fill(0);
+
+    if (this.blerGraphCx == null) {
+      return;
+    }
+    this.blerGraphCx.fillStyle = "#aaa";
+    this.blerGraphCx.fillRect(0, 0, this.blerGraphWidth, this.blerGraphHeight);
   }
 }
