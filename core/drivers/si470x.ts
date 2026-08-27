@@ -117,6 +117,8 @@ const RDSD_RDSD = 0xffff;	/* bits 15..00: RDS Block D Data (Si4701 only) */
 
 const MIN_CHIP_FIRMWARE_REV_FOR_VERBOSE_MODE = 13;
 
+const SILAB_MFGID = 0x242;
+
 /**************************************************************************
  * Values
  **************************************************************************/
@@ -188,6 +190,8 @@ export class Si470x implements RdsSource {
   private channelSpacing: ChannelSpacing = ChannelSpacing.CHANNEL_SPACING_50_KHZ;
   channelSpacingKhz: number;
   bandBottom: number;
+  chip: string = "";
+  chipRev: string = "";
   firmware: number = 0;
   private rdsEventListener: RdsPipeline;
 
@@ -231,11 +235,20 @@ export class Si470x implements RdsSource {
     await this.device.open();
 
     const deviceIdReg = await this.getRegister(DEVICEID);
-    console.log("DEVICEID: ", deviceIdReg.toString(16));
+    const pn = (deviceIdReg & DEVICEID_PN) >> 12;
+    const mfgId = deviceIdReg & DEVICEID_MFGID;
+    if (mfgId != SILAB_MFGID) {
+      console.log(`Unexpected manufacturer ID: ${mfgId}. Not SiLabs/Skyworks?`);
+    }
+    if (pn != 1) {
+      console.log(`Unexpected part number: ${pn}`);
+    }
 
     const chipIdReg = await this.getRegister(CHIPID);
+    this.chipRev = chipVersion((chipIdReg & CHIPID_REV) >> 10);
     this.firmware = chipIdReg & CHIPID_FIRMWARE;
-    console.log("CHIPID: chip=%d, firmware=%d", (chipIdReg & CHIPID_DEV)>>6, this.firmware);
+    this.chip = chipFromDev((chipIdReg & CHIPID_DEV) >> 6);
+    console.log(`Chip: ${this.chip}, hardware revision: ${this.chipRev}, firmware: ${this.firmware}`);
 
     await this.setRegister(POWERCFG, POWERCFG_DMUTE | POWERCFG_ENABLE | POWERCFG_RDSM);
     await this.setRegister(SYSCONFIG1, SYSCONFIG1_RDS);
@@ -437,5 +450,22 @@ function blerToMaxCorrectedErrors(bler: number): ErrorCount {
     case 2: return 5;  // 2, 4 or 5 corrected errors.
     case 3: return UNCORRECTABLE_ERRORS;
     default: return UNCORRECTABLE_ERRORS;  // Should not be reachable.
+  }
+}
+
+function chipVersion(rev: number) {
+  if (rev == 0) {
+    return '0?';
+  } else {
+    return String.fromCharCode(65 + rev);
+  }
+}
+
+function chipFromDev(dev: number) {
+  switch (dev) {
+    case 0b1000: return 'Si4701';
+    case 0b0001: return 'Si4702';
+    case 0b1001: return 'Si4703';
+    default: return `Unknown (${dev})`;
   }
 }
