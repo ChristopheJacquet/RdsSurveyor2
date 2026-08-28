@@ -1,11 +1,11 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
-  selector: 'app-constellation-diagram',
-  standalone: true,
-  imports: [],
-  templateUrl: './constellation-diagram.component.html',
-  styleUrl: './constellation-diagram.component.scss'
+    selector: 'app-constellation-diagram',
+    imports: [],
+    templateUrl: './constellation-diagram.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './constellation-diagram.component.scss'
 })
 export class ConstellationDiagramComponent  implements AfterViewInit {
   @ViewChild('constellationDiagram') public constellationDiagram!: ElementRef;

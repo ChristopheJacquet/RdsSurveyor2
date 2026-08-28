@@ -12,7 +12,7 @@
 
   <div class="top-controls">
     <mat-button-toggle-group name="rdsVariant" [value]="prefRdsVariant.value"
-        (change)="setRdsVariant($event)">
+      (change)="setRdsVariant($event)">
       <mat-button-toggle value="rds">RDS</mat-button-toggle>
       <mat-button-toggle value="rbds">RBDS</mat-button-toggle>
     </mat-button-toggle-group>
@@ -26,10 +26,12 @@
       <div class="infogrid-title">PI</div>
       <div class="infogrid-value">{{ station.pi | hex:4 }} </div>
     </div>
-    <div class="infogrid-cell" *ngIf="isRbds()">
-      <div class="infogrid-title">Call letters</div>
-      <div class="infogrid-value">{{ station.getCallsign() }} </div>
-    </div>
+    @if (isRbds()) {
+      <div class="infogrid-cell">
+        <div class="infogrid-title">Call letters</div>
+        <div class="infogrid-value">{{ station.getCallsign() }} </div>
+      </div>
+    }
     <div class="infogrid-cell">
       <div class="infogrid-title">PS</div>
       <div class="infogrid-value">{{ station.getPS() }} </div>
@@ -44,7 +46,9 @@
     </div>
   </div>
 
-  <img *ngIf="station.stationLogoUrl != null" class="infogrid-logo" [src]="station.stationLogoUrl">
+  @if (station.stationLogoUrl != null) {
+    <img class="infogrid-logo" [src]="station.stationLogoUrl">
+  }
 
   <div class="infogrid-row">
     <div class="infogrid-cell infogrid-cell-limited">
@@ -88,23 +92,29 @@
         <table class="group-stats">
           <tr>
             <th></th>
-            <th *ngFor="let i of group_ids">{{ i }}</th>
+            @for (i of group_ids; track i) {
+              <th>{{ i }}</th>
+            }
           </tr>
           <tr>
             <th>A</th>
-            <td *ngFor="let i of group_ids">
-              <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2] > 0">
-                {{ station.group_stats[i*2] }}
-              </div>
-            </td>
+            @for (i of group_ids; track i) {
+              <td>
+                <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2] > 0">
+                  {{ station.group_stats[i*2] }}
+                </div>
+              </td>
+            }
           </tr>
           <tr>
             <th>B</th>
-            <td *ngFor="let i of group_ids">
-              <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2+1] > 0">
-                {{ station.group_stats[i*2+1] }}
-              </div>
-            </td>
+            @for (i of group_ids; track i) {
+              <td>
+                <div class="group-stats-number" [class.group-stats-any]="station.group_stats[i*2+1] > 0">
+                  {{ station.group_stats[i*2+1] }}
+                </div>
+              </td>
+            }
           </tr>
         </table>
       </div>
@@ -127,136 +137,190 @@
         <div class="infogrid-cell">
           <div class="infogrid-title">PIN</div>
           <div class="infogrid-value">
-            <span *ngIf="station.pin_day != undefined && station.pin_day && station.pin_hour != undefined && station.pin_minute != undefined">
-              D={{ station.pin_day }}, {{ station.pin_hour | number: '2.0-0' }}:{{ station.pin_minute | number: '2.0-0'}}
-            </span> 
+            @if (station.pin_day != undefined && station.pin_day && station.pin_hour != undefined && station.pin_minute != undefined) {
+              <span>
+                D={{ station.pin_day }}, {{ station.pin_hour | number: '2.0-0' }}:{{ station.pin_minute | number: '2.0-0'}}
+              </span>
+            }
           </div>
         </div>
         <div class="infogrid-cell">
           <div class="infogrid-title">Sound Information</div>
           <div class="infogrid-value infogrid-chips">
-            <span *ngIf="station.music">Music</span>
-            <span *ngIf="station.music == false">Speech</span>
-            <span *ngIf="station.di_stereo">Stereo</span>
-            <span *ngIf="station.di_compressed">Compressed</span>
-            <span *ngIf="station.di_artificial_head">Artificial head</span>
-            &nbsp;
+            @if (station.music) {
+              <span>Music</span>
+            }
+            @if (station.music == false) {
+              <span>Speech</span>
+            }
+            @if (station.di_stereo) {
+              <span>Stereo</span>
+            }
+            @if (station.di_compressed) {
+              <span>Compressed</span>
+            }
+            @if (station.di_artificial_head) {
+              <span>Artificial head</span>
+            }
           </div>
         </div>
       </div>
     </div>
     <div><!-- AFs -->
-      <div *ngFor="let e of station.afLists | keyvalue">
-        <strong>AF list, method {{ e.value.method }}:</strong>
-        <ng-container *ngIf="e.value.method == 'A'">
-          {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} 
-        </ng-container>
-        <ng-container *ngIf="e.value.method == 'B'">
-        {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
-        </ng-container>
-        <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
-        <ng-container *ngIf="e.value.method == 'A'">
-          (expected size {{ e.value.expectedSize }}, actual size {{ e.value.afs.size + 1 }})
-        </ng-container>  
-      </div>
+      @for (e of station.afLists | keyvalue; track e.key) {
+        <div>
+          <strong>AF list, method {{ e.value.method }}:</strong>
+          @if (e.value.method == 'A') {
+            {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
+          }
+          @if (e.value.method == 'B') {
+            {{ e.value.transmitterFrequency/10 | number: '1.1-1' }} →
+          }
+          @for (af of e.value.afs; track af) {
+            <span>{{ af/10 | number: '1.1-1' }}  </span>
+          }
+          @if (e.value.method == 'A') {
+            (expected size {{ e.value.expectedSize }}, actual size {{ e.value.afs.size + 1 }})
+          }
+        </div>
+      }
     </div>
   </mat-tab>
   <mat-tab label="RT">
     <mat-list role="list">
-      <mat-list-item role="listitem" class="rt-item" *ngFor="let msg of getRThistory()">
-        <div>{{ msg.rt }}</div>
-        <div *ngIf="msg.rtPlus != null" class="rtplus-tags">
-          <span *ngFor="let tag of msg.rtPlus">{{ tag }}</span>
-        </div>
-      </mat-list-item>
-    </mat-list>    
+      @for (msg of getRThistory(); track msg.id) {
+        <mat-list-item role="listitem" class="rt-item">
+          <div>{{ msg.rt }}</div>
+          @if (msg.rtPlus != null) {
+            <div class="rtplus-tags">
+              @for (tag of msg.rtPlus; track $index) {
+                <span>{{ tag }}</span>
+              }
+            </div>
+          }
+        </mat-list-item>
+      }
+    </mat-list>
   </mat-tab>
   <mat-tab label="EON">
     <div>
       <table class="data-table">
         <tr><th>PI</th><th>PS</th><th>PTY</th><th>Traffic</th><th>Frequencies</th><th>PIN</th></tr>
-        <tr *ngFor="let s of station.other_networks | keyvalue">
-          <ng-container *ngIf="s.key != station.pi">
-            <!-- The current station might have an EON entry for transmitting linkage information.
-                 Do not display this. -->
-            <td>{{ s.key | hex:4 }}</td>
-            <td class="mono">{{ s.value.getPS() }}</td>
-            <td>{{ getPtyString(s.value) }}</td>
-            <td>{{ getTrafficString(s.value) }}</td>
-            <td>
-              <!-- AFs -->
-              <span *ngFor="let e of s.value.afLists | keyvalue">
-                List:
-                {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
-                <span *ngFor="let af of e.value.afs">{{ af/10 | number: '1.1-1' }}  </span>
-              </span>
-              <span *ngIf="s.value.mappedAFs.size > 0">
-                Mapped:
-                <span *ngFor="let m of s.value.mappedAFs | keyvalue">
-                  [{{ m.key/10 | number: '1.1-1' }} → <ng-container
-                   *ngFor="let af of m.value; let last=last">{{ af/10 | number: '1.1-1' }}<ng-container *ngIf="!last"> </ng-container></ng-container>]
+        @for (s of station.other_networks | keyvalue; track s.key) {
+          <tr>
+            @if (s.key != station.pi) {
+              <!-- The current station might have an EON entry for transmitting linkage information.
+              Do not display this. -->
+              <td>{{ s.key | hex:4 }}</td>
+              <td class="mono">{{ s.value.getPS() }}</td>
+              <td>{{ getPtyString(s.value) }}</td>
+              <td>{{ getTrafficString(s.value) }}</td>
+              <td>
+                <!-- AFs -->
+                @for (e of s.value.afLists | keyvalue; track e.key) {
+                  <span>
+                    List:
+                    {{ e.value.transmitterFrequency/10 | number: '1.1-1' }}
+                    @for (af of e.value.afs; track af) {
+                      <span>{{ af/10 | number: '1.1-1' }}  </span>
+                    }
+                  </span>
+                }
+                @if (s.value.mappedAFs.size > 0) {
+                  <span>
+                    Mapped:
+                    @for (m of s.value.mappedAFs | keyvalue; track m.key) {
+                      <span>
+                        [{{ m.key/10 | number: '1.1-1' }} → @for (af of m.value; track af; let last = $last) {
+                        {{ af/10 | number: '1.1-1' }}@if (!last) {
+                      }
+                      }]
+                    </span>
+                  }
                 </span>
-              </span>
+              }
             </td>
             <td>
-              <span *ngIf="s.value.pin_day != undefined && s.value.pin_day != 0 && s.value.pin_hour != undefined && s.value.pin_minute != undefined">
-                D={{ s.value.pin_day }}, {{ s.value.pin_hour | number: '2.0-0' }}:{{ s.value.pin_minute | number: '2.0-0'}}
-              </span>
+              @if (s.value.pin_day != undefined && s.value.pin_day != 0 && s.value.pin_hour != undefined && s.value.pin_minute != undefined) {
+                <span>
+                  D={{ s.value.pin_day }}, {{ s.value.pin_hour | number: '2.0-0' }}:{{ s.value.pin_minute | number: '2.0-0'}}
+                </span>
+              }
             </td>
-          </ng-container>
+          }
         </tr>
-      </table>
-    </div>
-  </mat-tab>
-  <mat-tab label="Traffic">
-    <div *ngFor="let e of station.trafficEvents">
+      }
+    </table>
+  </div>
+</mat-tab>
+<mat-tab label="Traffic">
+  @for (e of station.trafficEvents; track e) {
+    <div>
       {{ e }}
     </div>
-  </mat-tab>
-  <mat-tab label="ODA">
-    <table class="data-table">
-      <tr><th>Group or channel</th><th>AID</th><th>ODA name</th></tr>
-      <tr *ngFor="let e of station.transmitted_odas | keyvalue">
+  }
+</mat-tab>
+<mat-tab label="ODA">
+  <table class="data-table">
+    <tr><th>Group or channel</th><th>AID</th><th>ODA name</th></tr>
+    @for (e of station.transmitted_odas | keyvalue; track e.key) {
+      <tr>
         <td>Group {{ formatGroupType(e.key) }}</td>
         <td>{{ e.value | hex:4 }}</td>
         <td>{{ getOdaName(e.value) }}</td>
       </tr>
-      <tr *ngFor="let e of station.transmitted_channel_odas | keyvalue">
+    }
+    @for (e of station.transmitted_channel_odas | keyvalue; track e.key) {
+      <tr>
         <td>Channel {{ e.key }}</td>
         <td>{{ e.value | hex:4 }}</td>
         <td>{{ getOdaName(e.value) }}</td>
       </tr>
-    </table>    
-  </mat-tab>
-  <mat-tab label="Radio Paging" *ngIf="station.rp_app.enabled">
+    }
+  </table>
+</mat-tab>
+@if (station.rp_app.enabled) {
+  <mat-tab label="Radio Paging">
     <table class="data-table">
       <tr><th>Address</th><th>Flag</th><th>Type</th><th>Message</th></tr>
-      <tr *ngFor="let m of station.rp_app.messages">
-        <td>{{ m.address }}</td>
-        <td>{{ m.flag_ab ? 'A' : 'B' }}</td>
-        <td>{{ m.type }}</td>
-        <td>{{ m.message }}</td>
-      </tr>
-    </table>    
-  </mat-tab>
-  <mat-tab label="eRT" *ngIf="station.ert_app.enabled">
-    <mat-list role="list">
-      <mat-list-item role="listitem" class="rt-item" *ngFor="let msg of station.ert_app.ert.getPastMessages(true)">
-        <div>{{ msg.message }}</div>
-      </mat-list-item>
-    </mat-list>
-  </mat-tab>
-  <mat-tab label="DAB cross-reference" *ngIf="station.dab_cross_ref_app.enabled">
-    <table class="data-table">
-      <tr><th>Mode</th><th>Frequency</th><th>EId</th></tr>
-      <tr *ngFor="let e of station.dab_cross_ref_app.ensembleTable">
-        <td>{{ e.mode }}</td>
-        <td>{{ e.freqKhz }} kHz</td>
-        <td>{{ e.eid | hex:4 }}</td>
-      </tr>
+      @for (m of station.rp_app.messages; track m) {
+        <tr>
+          <td>{{ m.address }}</td>
+          <td>{{ m.flag_ab ? 'A' : 'B' }}</td>
+          <td>{{ m.type }}</td>
+          <td>{{ m.message }}</td>
+        </tr>
+      }
     </table>
   </mat-tab>
-  <mat-tab label="Station logo" *ngIf="station.stationLogoPipe != null">
+}
+@if (station.ert_app.enabled) {
+  <mat-tab label="eRT">
+    <mat-list role="list">
+      @for (msg of station.ert_app.ert.getPastMessages(true); track msg) {
+        <mat-list-item role="listitem" class="rt-item">
+          <div>{{ msg.message }}</div>
+        </mat-list-item>
+      }
+    </mat-list>
+  </mat-tab>
+}
+@if (station.dab_cross_ref_app.enabled) {
+  <mat-tab label="DAB cross-reference">
+    <table class="data-table">
+      <tr><th>Mode</th><th>Frequency</th><th>EId</th></tr>
+      @for (e of station.dab_cross_ref_app.ensembleTable; track e) {
+        <tr>
+          <td>{{ e.mode }}</td>
+          <td>{{ e.freqKhz }} kHz</td>
+          <td>{{ e.eid | hex:4 }}</td>
+        </tr>
+      }
+    </table>
+  </mat-tab>
+}
+@if (station.stationLogoPipe != null) {
+  <mat-tab label="Station logo">
     <div class="infogrid">
       <div class="infogrid-row">
         <div class="infogrid-cell">
@@ -281,39 +345,50 @@
         </div>
       </div>
     </div>
-
-    <img *ngIf="station.stationLogoUrl != null" [src]="station.stationLogoUrl">
+    @if (station.stationLogoUrl != null) {
+      <img [src]="station.stationLogoUrl">
+    }
   </mat-tab>
-  <mat-tab label="Internet Connection" *ngIf="station.internet_connection_app.enabled">
+}
+@if (station.internet_connection_app.enabled) {
+  <mat-tab label="Internet Connection">
     <mat-list role="list">
-      <mat-list-item role="listitem" class="rt-item" *ngFor="let url of station.internet_connection_app.url.getPastMessages(true)">
-        <div>{{ humanReadableUrl(url.message) }}</div>
-      </mat-list-item>
+      @for (url of station.internet_connection_app.url.getPastMessages(true); track url) {
+        <mat-list-item role="listitem" class="rt-item">
+          <div>{{ humanReadableUrl(url.message) }}</div>
+        </mat-list-item>
+      }
     </mat-list>
   </mat-tab>
-  <mat-tab label="Group log">
-    <div class="group-log-controls">
-      <label>
-        <input type="checkbox" [checked]="stickToBottom"
-            (change)="stickToBottom = $any($event.target).checked">
-        Auto-scroll to bottom
-      </label>
-    </div>
-    <div class="group-log" #groupLog>
-      <div *ngFor="let m of station.log">
-        <span
-          *ngFor="let p of m.parts"
-          [class]="p.tag ? 'logpart-' + p.tag : ''"
-          [title]="p.details ? p.details : ''"
-        >{{ p.text }}</span>
+}
+<mat-tab label="Group log">
+  <div class="group-log-controls">
+    <label>
+      <input type="checkbox" [checked]="stickToBottom"
+        (change)="stickToBottom = $any($event.target).checked">
+      Auto-scroll to bottom
+    </label>
+  </div>
+  <div class="group-log" #groupLog>
+    @for (m of station.log; track m) {
+      <div>
+        @for (p of m.parts; track p) {
+          <span
+            [class]="p.tag ? 'logpart-' + p.tag : ''"
+            [title]="p.details ? p.details : ''"
+          >{{ p.text }}</span>
+        }
       </div>
-    </div>
-  </mat-tab>
-  <mat-tab label="Diagnostics">
-    <mat-list role="list">
-      <mat-list-item role="listitem" *ngFor="let f of station.diagnostics.findings | keyvalue">
+    }
+  </div>
+</mat-tab>
+<mat-tab label="Diagnostics">
+  <mat-list role="list">
+    @for (f of station.diagnostics.findings | keyvalue; track f.key) {
+      <mat-list-item role="listitem">
         <div>{{ f.key }}</div>
       </mat-list-item>
-    </mat-list>
-  </mat-tab>
+    }
+  </mat-list>
+</mat-tab>
 </mat-tab-group>

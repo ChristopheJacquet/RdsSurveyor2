@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { InputPaneComponent } from './input-pane.component';
 
@@ -8,7 +9,8 @@ describe('InputPaneComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [InputPaneComponent]
+      imports: [InputPaneComponent],
+      providers: [provideRouter([])]
     })
     .compileComponents();
 

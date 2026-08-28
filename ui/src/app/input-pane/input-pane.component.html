@@ -2,7 +2,7 @@
   <mat-tab label="File playback">
     <div class="playback-speed-container">
       <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [value]="prefPlaybackSpeed.value"
-          (change)="setPlaybackSpeed($event)">
+        (change)="setPlaybackSpeed($event)">
         <mat-button-toggle value="fast">Fast</mat-button-toggle>
         <mat-button-toggle value="realtime">Real time</mat-button-toggle>
       </mat-button-toggle-group>
@@ -18,13 +18,14 @@
       (click)="sourceActive ? '' : fileInput.click()"
       (drop)="sourceActive ? '' : onDrop($event)"
       (dragover)="sourceActive ? '' : onDragOver($event)">
-        <ng-content *ngIf="sourceActive; else dropPrompt">
+      @if (sourceActive) {
+        <ng-content>
           Wait for current input to complete.
         </ng-content>
-        <ng-template #dropPrompt>
-          Drop file here or<br>click for selection dialog.
-        </ng-template>
-        <input #fileInput type="file" (change)="onFileSelect($event);">
+      } @else {
+        Drop file here or<br>click for selection dialog.
+      }
+      <input #fileInput type="file" (change)="onFileSelect($event);">
     </div>
   </mat-tab>
   <mat-tab label="Radio source">
@@ -74,7 +75,7 @@
   <div class="max-errors-container">
     <span>Max corrected bit<br> errors per block:</span>
     <mat-button-toggle-group #maxErrors name="maxErrors" [value]="prefMaxErrors.value"
-        (change)="setMaxErrors($event)">
+      (change)="setMaxErrors($event)">
       <mat-button-toggle [value]="0">0</mat-button-toggle>
       <mat-button-toggle [value]="1">1</mat-button-toggle>
       <mat-button-toggle [value]="2">2</mat-button-toggle>
@@ -85,13 +86,15 @@
   </div>
   <table>
     <tr><th></th><th>Demod.</th><th>Bitstream</th><th>Block errors</th><th>Errors</th><th>Corrected</th></tr>
-      <tr *ngFor="let item of [].constructor(4); let i = index">
+    @for (dem of demodulator; track $index; let i = $index) {
+      <tr>
         <td>{{ i }}</td>
-        <td><span class="indicator" [attr.data-on]="demodulator[i].locked ? 1 : 0">LOCK</span></td>
+        <td><span class="indicator" [attr.data-on]="dem.locked ? 1 : 0">LOCK</span></td>
         <td><span class="indicator" [attr.data-on]="synchronizer[i].synced ? 1 : 0">SYNC</span></td>
         <td><app-bler-graph #blerGraph></app-bler-graph></td>
         <td>{{ blerGraph.hasBlocks ? (blerGraph.errorRatePercent | number:'1.1-1') + ' %' : '-' }}</td>
         <td>{{ blerGraph.hasBlocks ? (blerGraph.correctedRatePercent | number:'1.1-1') + ' %' : '-' }}</td>
       </tr>
+    }
   </table>
 </div>

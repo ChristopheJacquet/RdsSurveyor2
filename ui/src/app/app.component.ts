@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
@@ -6,11 +6,11 @@ import { LogMessage, parse_group, StationImpl } from '../../../core/protocol/rds
 import { ReceiverEvent, ReceiverEventKind } from "../../../core/protocol/station_change";
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, InputPaneComponent, StationInfoComponent],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+    selector: 'app-root',
+    imports: [RouterOutlet, InputPaneComponent, StationInfoComponent],
+    templateUrl: './app.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './app.component.scss'
 })
 export class AppComponent {
   title = 'rds-surveyor';

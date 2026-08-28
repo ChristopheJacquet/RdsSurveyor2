@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Group } from '../../../../core/drivers/input';
 
 enum BlockCategory {
@@ -14,11 +14,11 @@ enum BlockCategory {
 const WINDOW_SIZE = 228;
 
 @Component({
-  selector: 'app-bler-graph',
-  standalone: true,
-  imports: [],
-  templateUrl: './bler-graph.component.html',
-  styleUrl: './bler-graph.component.scss'
+    selector: 'app-bler-graph',
+    imports: [],
+    templateUrl: './bler-graph.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './bler-graph.component.scss'
 })
 export class BlerGraphComponent implements AfterViewInit {
   @ViewChild('blerGraph') public blerGraph!: ElementRef;

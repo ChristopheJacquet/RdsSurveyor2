@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatListModule} from '@angular/material/list';
@@ -11,11 +11,11 @@ import { AboutComponent } from '../about/about.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
 
 @Component({
-  selector: 'app-station-info',
-  standalone: true,
-  imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatListModule, MatTabsModule],
-  templateUrl: './station-info.component.html',
-  styleUrl: './station-info.component.scss'
+    selector: 'app-station-info',
+    imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatListModule, MatTabsModule],
+    templateUrl: './station-info.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './station-info.component.scss'
 })
 export class StationInfoComponent implements AfterViewInit, OnDestroy {
   @Input() station!: StationImpl;
@@ -158,6 +158,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		for (let m of messages) {
 			res.push(
 				new RtEntry(
+					m.id,
 					m.message,
 					this.station.rt_plus_app.enabled ?
 						this.station.rt_plus_app.getHistoryEntry(m) :
@@ -191,6 +192,7 @@ export enum RdsVariant {
 
 class RtEntry {
 	constructor(
+		public id: number,
 		public rt: string,
 		public rtPlus: Array<string> | null) {};
 }

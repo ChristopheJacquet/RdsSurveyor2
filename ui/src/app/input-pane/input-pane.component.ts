@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject } from '@angular/core';
+import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -25,11 +25,11 @@ import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
 import { ConstellationDiagramComponent } from "../constellation-diagram/constellation-diagram.component";
 
 @Component({
-  selector: 'app-input-pane',
-  standalone: true,
-  imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
-  templateUrl: './input-pane.component.html',
-  styleUrl: './input-pane.component.scss'
+    selector: 'app-input-pane',
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
+    templateUrl: './input-pane.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './input-pane.component.scss'
 })
 export class InputPaneComponent implements RdsPipeline  {
   @ViewChildren('blerGraph') public blerGraph!: QueryList<BlerGraphComponent>;

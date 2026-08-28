@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { StationInfoComponent } from './station-info.component';
+import { StationImpl } from '../../../../core/protocol/rds_types';
 
 describe('StationInfoComponent', () => {
   let component: StationInfoComponent;
@@ -14,6 +15,7 @@ describe('StationInfoComponent', () => {
 
     fixture = TestBed.createComponent(StationInfoComponent);
     component = fixture.componentInstance;
+    component.station = new StationImpl();
     fixture.detectChanges();
   });
 
