@@ -254,11 +254,13 @@
   </div>
 </mat-tab>
 <mat-tab label="Traffic">
-  @for (e of station.trafficEvents; track e) {
-    <div>
-      {{ e }}
-    </div>
-  }
+  <div class="event-list">
+    @for (e of station.trafficEvents; track e) {
+      <div>
+        {{ e }}
+      </div>
+    }
+  </div>
 </mat-tab>
 <mat-tab label="ODA">
   <table class="data-table">

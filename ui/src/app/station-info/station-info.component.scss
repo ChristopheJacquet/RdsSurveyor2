@@ -79,6 +79,7 @@
   border-radius: 5px;
   margin: 3px 2px;
   background: #AAA;
+  padding: 2px;
 }
 
 .group-stats-any {
@@ -154,6 +155,7 @@
 
 .rt-item:has(.rtplus-tags) {
   margin-bottom: .7em;
+  height: auto;
 }
 
 .rtplus-tags {
@@ -178,4 +180,10 @@
 .dynamic-ps {
   position: absolute;
   right: 0;
+}
+
+.event-list {
+  div {
+    margin-bottom: .3em;
+  }
 }

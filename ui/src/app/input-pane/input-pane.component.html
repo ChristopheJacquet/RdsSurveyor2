@@ -92,8 +92,8 @@
         <td><span class="indicator" [attr.data-on]="dem.locked ? 1 : 0">LOCK</span></td>
         <td><span class="indicator" [attr.data-on]="synchronizer[i].synced ? 1 : 0">SYNC</span></td>
         <td><app-bler-graph #blerGraph></app-bler-graph></td>
-        <td>{{ blerGraph.hasBlocks ? (blerGraph.errorRatePercent | number:'1.1-1') + ' %' : '-' }}</td>
-        <td>{{ blerGraph.hasBlocks ? (blerGraph.correctedRatePercent | number:'1.1-1') + ' %' : '-' }}</td>
+        <td>{{ blerGraph.hasBlocks ? (blerGraph.errorRatePercent | number:'1.0-0') + ' %' : '-' }}</td>
+        <td>{{ blerGraph.hasBlocks ? (blerGraph.correctedRatePercent | number:'1.0-0') + ' %' : '-' }}</td>
       </tr>
     }
   </table>
