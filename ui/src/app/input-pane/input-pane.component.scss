@@ -73,7 +73,8 @@ input {
   text-align: center;
 }
 
-.frequency {
+.tunerDisplay {
+  display: inline-block;
   margin: 0 10px;
   padding: 3px;
   background-color: #448;
@@ -81,8 +82,19 @@ input {
   display: inline-block;
   vertical-align: top;
   width: 9em;
-  height: 2em;
   cursor: pointer;
+}
+
+.frequency {
+  font-size: 110%;
+  margin-bottom: 2px;
+  min-height: 1lh;
+}
+
+.signalStrength {
+  height: 4px;
+  background-color: #AEF;
+  margin: 0;
 }
 
 .processingChain {

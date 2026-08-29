@@ -45,7 +45,8 @@ export interface RdsPipeline {
   processMpxSamples(samples: Float32Array, length?: number): void;
   processBits(bytes: Uint8Array): void;
   processRdsReportEvent(event: RdsReportEvent): void;
-  reportFrequency(frequencyKhz: number): void;
+  // signalStrength is a floating-point number between 0 (min) and 1 (max).
+  reportReceiverStatus(frequencyKhz: number, signalStrength: number, rdsSync: boolean): void;
   // Reports when the source "ended", i.e. completed the work (for example:
   // file playback complete).
   reportSourceEnd(): void;

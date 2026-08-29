@@ -406,8 +406,11 @@ export class Si470x implements RdsSource {
     }
 
     const dongleInfo = this.device.productName;
+    // STATUSRSSI_RSSI is between 0 and 75.
+    const signalStrength = (regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RSSI) / 75;
+    const rdss = (regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSS) != 0;
 
-    this.rdsEventListener.reportFrequency(freq);
+    this.rdsEventListener.reportReceiverStatus(freq, signalStrength, rdss);
 
     if ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSR) == 0) {
       // Do nothing if no new RDS data is ready.

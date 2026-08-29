@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -43,6 +43,10 @@ export class InputPaneComponent implements RdsPipeline  {
   selectedRadioSource?: RdsSource;
   fileSource = new FileSource(this);
   frequency: number = -1;
+  signalStrength: number = 0;
+  // For tuners directly providing RDS data, this indicator (for Stream 0)
+  // replaces the demodulator's locked and the synchronizer's synced indicators.
+  rdsSync: boolean = false;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
   synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
@@ -106,6 +110,8 @@ export class InputPaneComponent implements RdsPipeline  {
 
   private unsetSource() {
     this.currentSource = undefined;
+    this.signalStrength = 0;
+    this.rdsSync = false;
   }
 
   get sourceActive(): boolean {
@@ -229,9 +235,11 @@ export class InputPaneComponent implements RdsPipeline  {
     }
   }
 
-  reportFrequency(frequencyKhz: number) {
+  reportReceiverStatus(frequencyKhz: number, signalStrength: number, rdsSync: boolean) {
     this.prefTunedFrequency.setValue(frequencyKhz);
     this.frequency = frequencyKhz;
+    this.signalStrength = Math.min(Math.max(signalStrength * 100, 0), 100);
+    this.rdsSync = rdsSync;
   }
 
   reportSourceEnd(): void {

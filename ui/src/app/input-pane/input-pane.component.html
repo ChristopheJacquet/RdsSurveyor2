@@ -52,7 +52,10 @@
       <button mat-icon-button (click)="tuneDown()">
         <mat-icon>keyboard_arrow_left</mat-icon>
       </button>
-      <span class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</span>
+      <span class="tunerDisplay">
+        <div class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</div>
+        <div class="signalStrength" [style.width.%]="signalStrength"></div>
+      </span>
       <button mat-icon-button (click)="tuneUp()">
         <mat-icon>keyboard_arrow_right</mat-icon>
       </button>
@@ -89,8 +92,8 @@
     @for (dem of demodulator; track $index; let i = $index) {
       <tr>
         <td>{{ i }}</td>
-        <td><span class="indicator" [attr.data-on]="dem.locked ? 1 : 0">LOCK</span></td>
-        <td><span class="indicator" [attr.data-on]="synchronizer[i].synced ? 1 : 0">SYNC</span></td>
+        <td><span class="indicator" [attr.data-on]="(i == 0 && rdsSync) || dem.locked ? 1 : 0">LOCK</span></td>
+        <td><span class="indicator" [attr.data-on]="(i == 0 && rdsSync) || synchronizer[i].synced ? 1 : 0">SYNC</span></td>
         <td><app-bler-graph #blerGraph></app-bler-graph></td>
         <td>{{ blerGraph.hasBlocks ? (blerGraph.errorRatePercent | number:'1.0-0') + ' %' : '-' }}</td>
         <td>{{ blerGraph.hasBlocks ? (blerGraph.correctedRatePercent | number:'1.0-0') + ' %' : '-' }}</td>

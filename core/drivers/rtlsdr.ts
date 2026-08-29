@@ -32,7 +32,7 @@ export class RtlSdr implements RdsSource {
     }
 
     this.rtlSdrRadio.setFrequency(frequencyKhz * 1000);
-    this.pipeline.reportFrequency(frequencyKhz);
+    this.pipeline.reportReceiverStatus(frequencyKhz, 0, false);
   }
 
   public async start(): Promise<boolean> {

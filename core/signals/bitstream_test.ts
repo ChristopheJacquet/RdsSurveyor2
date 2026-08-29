@@ -8,7 +8,7 @@ class RdsListener implements RdsPipeline {
   processBits(bytes: Uint8Array): void {
   }
 
-  reportFrequency(frequencyKhz: number): void {
+  reportReceiverStatus(frequencyKhz: number): void {
   }
 
   reportSourceEnd(): void {
