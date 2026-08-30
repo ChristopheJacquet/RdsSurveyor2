@@ -37,6 +37,7 @@ export interface Station {
 	language_code?: number;
 	other_networks: Map<number, StationImpl>;
 	addToGroupStats(type: number): void;
+	addToChannelStats(channel: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
 	addMappedAF(channel: number, mapped_channel: number): void;
@@ -782,6 +783,9 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 	if ((addr != null)) {
 		log.add(`addr ${addr}`);
 	}
+	if ((pipe != null) && (station != null)) {
+		station.addToChannelStats(pipe);
+	}
 	if ((addr != null) && (byte1 != null) && (byte2 != null) && (byte3 != null) && (byte4 != null) && (byte5 != null) && (pipe != null) && (station != null)) {
 		station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5);
 	}
@@ -798,6 +802,9 @@ export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMes
 	// Actions.
 	if ((channel != null)) {
 		log.add(`ODA channel ${channel}`);
+	}
+	if ((channel != null) && (station != null)) {
+		station.addToChannelStats(channel);
 	}
 	if ((channel != null)) {
 		get_parse_function(station.channel_app_mapping.get(channel) ?? "group_unknown")(block, ok, log, station);

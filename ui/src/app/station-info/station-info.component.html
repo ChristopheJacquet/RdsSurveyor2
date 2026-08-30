@@ -87,8 +87,19 @@
 
   <div class="infogrid-row">
     <div class="infogrid-cell">
-      <div class="infogrid-title">Group statistics</div>
-      <div class="infogrid-title">
+      <div class="infogrid-title stats-title-row">
+        <span>Group and Channel statistics</span>
+        <mat-button-toggle-group name="statsUi" [value]="prefStatsUi.value" (change)="setStatsUi($event)">
+          <mat-button-toggle value="all_groups" matTooltip="All groups" aria-label="All groups">
+            <mat-icon>grid_on</mat-icon>
+          </mat-button-toggle>
+          <mat-button-toggle value="used_groups_channels" matTooltip="Groups and channels actually received" aria-label="Groups and channels actually received">
+            <mat-icon>view_list</mat-icon>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      @if (prefStatsUi.value == 'all_groups') {
         <table class="group-stats">
           <tr>
             <th></th>
@@ -117,7 +128,40 @@
             }
           </tr>
         </table>
-      </div>
+      }
+
+      @if (prefStatsUi.value == 'used_groups_channels') {
+        <div class="stat-list">
+          @for (type of all_group_types; track type) {
+            @if (station.group_stats[type] > 0) {
+              @let oda = getGroupOdaName(type);
+              <div class="stat-item">
+                <span class="stat-label">
+                  {{ formatGroupType(type) }}
+                  @if (oda) {
+                    <span class="stat-oda">· {{ oda }}</span>
+                  }
+                </span>
+                <span class="stat-chip">{{ station.group_stats[type] }}</span>
+              </div>
+            }
+          }
+          @for (channel of all_channels; track channel) {
+            @if (station.channel_stats[channel] > 0) {
+              @let oda = getChannelOdaName(channel);
+              <div class="stat-item">
+                <span class="stat-label">
+                  Ch {{ channel }}
+                  @if (oda) {
+                    <span class="stat-oda">· {{ oda }}</span>
+                  }
+                </span>
+                <span class="stat-chip">{{ station.channel_stats[channel] }}</span>
+              </div>
+            }
+          }
+        </div>
+      }
     </div>
   </div>
 </div>

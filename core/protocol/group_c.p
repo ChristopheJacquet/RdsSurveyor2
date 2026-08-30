@@ -67,6 +67,10 @@ bitstruct group_c_rft(station: Station) {
   log "RFT pipe {pipe:u}"
   log "toggle {toggle:u}"
   log "addr {addr:u}"
+  # An RFT pipe is identified by the same number as the channel that
+  # declared it (see group_c_oda_rft_assignment), so RFT chunks count as
+  # reception of that channel.
+  station.addToChannelStats(pipe)
   station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5)
 }
 
@@ -78,6 +82,7 @@ bitstruct group_c_oda(station: Station) {
   app_data: unparsed<56>
 } action {
   log "ODA channel {channel:u}"
+  station.addToChannelStats(channel)
   parse _ lookup(station.channel_app_mapping, channel, "group_unknown")
 }
 

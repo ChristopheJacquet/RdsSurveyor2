@@ -56,6 +56,7 @@ export class StationImpl implements Station {
   transmitted_channel_odas: Map<number, number> = new Map<number, number>();
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
+  channel_stats: number[] = new Array<number>(64);
 	linkage_actuator?: boolean;
 	pin_day?: number;
 	pin_hour?: number;
@@ -202,6 +203,10 @@ export class StationImpl implements Station {
     this.group_stats[type]++;
   }
 
+  addToChannelStats(channel: number): void {
+    this.channel_stats[channel]++;
+  }
+
   tickGroupDuration() {
     if (this.date != null) {
       this.date.setTime(this.date.getTime() + 1000/(1187.5/104));
@@ -270,6 +275,7 @@ export class StationImpl implements Station {
     this.datetime = "";
     this.date = null;
     this.group_stats.fill(0);
+    this.channel_stats.fill(0);
 
     // Reset ODAs and apps.
     this.rt_plus_app.reset();

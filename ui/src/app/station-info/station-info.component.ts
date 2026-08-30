@@ -1,8 +1,10 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatIconModule} from '@angular/material/icon';
 import {MatListModule} from '@angular/material/list';
 import {MatTabsModule} from '@angular/material/tabs';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { Pref } from '../prefs';
@@ -12,7 +14,7 @@ import { humanReadableUrl } from '../../../../core/protocol/internet_connection'
 
 @Component({
     selector: 'app-station-info',
-    imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatListModule, MatTabsModule],
+    imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatIconModule, MatListModule, MatTabsModule, MatTooltipModule],
     templateUrl: './station-info.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './station-info.component.scss'
@@ -20,8 +22,11 @@ import { humanReadableUrl } from '../../../../core/protocol/internet_connection'
 export class StationInfoComponent implements AfterViewInit, OnDestroy {
   @Input() station!: StationImpl;
   group_ids = Array(16).fill(0).map((x,i)=>i);
+  all_group_types = Array(32).fill(0).map((x,i)=>i);
+  all_channels = Array(64).fill(0).map((x,i)=>i);
 	rdsVariant: RdsVariant = RdsVariant.RDS;
 	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
+	prefStatsUi = new Pref<string>("pref.stats_ui", "used_groups_channels");
 	readonly aboutDialog = inject(MatDialog);
 
 	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
@@ -31,6 +36,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	ngOnInit() {
 		this.prefRdsVariant.init();
 		this.rdsVariant = this.prefRdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+		this.prefStatsUi.init();
 	}
 
 	ngAfterViewInit() {
@@ -56,6 +62,10 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	setRdsVariant(event: any) {
     this.rdsVariant = event.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
 		this.prefRdsVariant.setValue(event.value);
+	}
+
+	setStatsUi(event: any) {
+		this.prefStatsUi.setValue(event.value);
 	}
 
 	rdsPtyLabels = new Array<string>(
@@ -173,6 +183,16 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	
 	public getOdaName(aid: number) {
 		return WELL_KNOWN_ODAS.get(aid) || 'Unknown';
+	}
+
+	public getGroupOdaName(type: number): string {
+		const aid = this.station.transmitted_odas.get(type);
+		return aid != undefined ? this.getOdaName(aid) : '';
+	}
+
+	public getChannelOdaName(channel: number): string {
+		const aid = this.station.transmitted_channel_odas.get(channel);
+		return aid != undefined ? this.getOdaName(aid) : '';
 	}
 	
 	showAbout() {
