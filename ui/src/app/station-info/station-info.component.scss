@@ -202,6 +202,28 @@
   margin-bottom: 4px;
   background: #FFF;
   font-size: 90%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  label {
+    margin-right: auto;
+  }
+}
+
+// Match the compact 14px used for buttons/tabs elsewhere in the UI, and
+// shrink the field itself well below Material's minimum density, via the
+// component's own CSS custom properties (M3 tokens) rather than overriding
+// internal Material classes.
+.group-log-filter {
+  margin-top: 4px;
+  --mat-form-field-container-height: 32px;
+  --mat-form-field-container-vertical-padding: 6px;
+  --mat-form-field-container-text-size: 14px;
+  --mat-form-field-container-text-line-height: 20px;
+  --mat-form-field-outlined-label-text-size: 14px;
+  --mat-select-trigger-text-size: 14px;
+  --mat-select-trigger-text-line-height: 20px;
 }
 
 .group-log {

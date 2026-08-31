@@ -31,3 +31,16 @@ table.data-table {
     white-space: pre;
   }
 }
+
+// Applied via [panelClass] on the mat-select filters in the Group log panel.
+// The option list is rendered in a CDK overlay outside the component's own
+// DOM, so it can't be reached with a component-scoped style; match the 14px
+// used for buttons/tabs elsewhere and tighten the row height to make the
+// panel more compact.
+.group-log-select-panel {
+  --mat-option-label-text-size: 14px;
+
+  .mat-mdc-option {
+    min-height: 32px;
+  }
+}

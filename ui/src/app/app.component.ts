@@ -21,6 +21,7 @@ export class AppComponent {
     switch (evt.kind) {
       case ReceiverEventKind.GroupEvent:
         const log = new LogMessage();
+        log.stream = evt.stream;
         log.add(evt.stream + ':[', false);
         const blocks = evt.hexDumpParts();
         blocks.forEach((b, i) => {
@@ -32,7 +33,9 @@ export class AppComponent {
           if (i < blocks.length - 1) log.add(' ', false);
         });
         log.add('] ', false);
+        this.station.currentLogMessage = log;
         parse_group(evt.stream, evt.group, log, this.station);
+        this.station.currentLogMessage = null;
         this.station.addLogMessage(log);
         this.station.tickGroupDuration();
         break;

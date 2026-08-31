@@ -68,6 +68,10 @@ export class StationImpl implements Station {
   stationLogoPipe: RftPipe | null = null;
   stationLogoUrl: string | null = null;
   log = new Array<LogMessage>();
+  // Set by the caller before parsing a group, so that addToGroupStats() and
+  // addToChannelStats() can tag the group/channel they pertain to onto the
+  // log message currently being built (used for filtering the group log).
+  currentLogMessage: LogMessage | null = null;
   rp_app = new RpAppImpl(this);
 
   // ODAs.
@@ -201,10 +205,16 @@ export class StationImpl implements Station {
 
   addToGroupStats(type: number): void {
     this.group_stats[type]++;
+    if (this.currentLogMessage) {
+      this.currentLogMessage.groupType = type;
+    }
   }
 
   addToChannelStats(channel: number): void {
     this.channel_stats[channel]++;
+    if (this.currentLogMessage) {
+      this.currentLogMessage.channel = channel;
+    }
   }
 
   tickGroupDuration() {
@@ -759,6 +769,13 @@ export interface LogPart {
 export class LogMessage {
   parts: Array<LogPart> = [];
   addSeparator = false;
+  // The stream the group was received on, and the group type / ODA channel
+  // it reported (if any). Populated by the caller and by
+  // StationImpl.addToGroupStats()/addToChannelStats(); used to filter the
+  // group log in the UI.
+  stream?: number;
+  groupType?: number;
+  channel?: number;
 
   add(message: string, addSeparator=true, tag?: string, details?: string) {
     if (this.addSeparator) {

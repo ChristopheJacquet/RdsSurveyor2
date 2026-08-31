@@ -414,9 +414,44 @@
         (change)="stickToBottom = $any($event.target).checked">
       Auto-scroll to bottom
     </label>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="group-log-filter">
+      <mat-label>Group or channel</mat-label>
+      <mat-select [(ngModel)]="logGroupChannelFilter" panelClass="group-log-select-panel">
+        <mat-option value="">All</mat-option>
+        <mat-optgroup label="Groups">
+          @for (type of all_group_types; track type) {
+            @if (station.group_stats[type] > 0) {
+              <mat-option [value]="'type-' + type">
+                {{ formatGroupType(type) }}
+              </mat-option>
+            }
+          }
+        </mat-optgroup>
+        <mat-optgroup label="Channels">
+          @for (channel of all_channels; track channel) {
+            @if (station.channel_stats[channel] > 0) {
+              <mat-option [value]="'channel-' + channel">
+                Ch {{ channel }}
+              </mat-option>
+            }
+          }
+        </mat-optgroup>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="group-log-filter">
+      <mat-label>Stream</mat-label>
+      <mat-select [(ngModel)]="logStreamFilter" panelClass="group-log-select-panel">
+        <mat-option value="">All</mat-option>
+        @for (stream of all_streams; track stream) {
+          <mat-option [value]="'' + stream">Stream {{ stream }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
   </div>
   <div class="group-log" #groupLog>
-    @for (m of station.log; track m) {
+    @for (m of filteredLog(); track m) {
       <div>
         @for (p of m.parts; track p) {
           <span

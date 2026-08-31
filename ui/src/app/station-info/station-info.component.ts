@@ -1,20 +1,23 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatListModule} from '@angular/material/list';
+import {MatSelectModule} from '@angular/material/select';
 import {MatTabsModule} from '@angular/material/tabs';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { Pref } from '../prefs';
-import { StationImpl } from '../../../../core/protocol/rds_types';
+import { LogMessage, StationImpl } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
 
 @Component({
     selector: 'app-station-info',
-    imports: [CommonModule, HexPipe, MatButtonToggleModule, MatDialogModule, MatIconModule, MatListModule, MatTabsModule, MatTooltipModule],
+    imports: [CommonModule, HexPipe, FormsModule, MatButtonToggleModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatListModule, MatSelectModule, MatTabsModule, MatTooltipModule],
     templateUrl: './station-info.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './station-info.component.scss'
@@ -24,6 +27,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
   group_ids = Array(16).fill(0).map((x,i)=>i);
   all_group_types = Array(32).fill(0).map((x,i)=>i);
   all_channels = Array(64).fill(0).map((x,i)=>i);
+  all_streams = Array(4).fill(0).map((x,i)=>i);
 	rdsVariant: RdsVariant = RdsVariant.RDS;
 	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
 	prefStatsUi = new Pref<string>("pref.stats_ui", "used_groups_channels");
@@ -32,6 +36,10 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
 	stickToBottom = true;
 	private groupLogObserver?: MutationObserver;
+
+	// Group log filters. Empty string means "no filter".
+	logGroupChannelFilter = '';
+	logStreamFilter = '';
 
 	ngOnInit() {
 		this.prefRdsVariant.init();
@@ -194,7 +202,28 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		const aid = this.station.transmitted_channel_odas.get(channel);
 		return aid != undefined ? this.getOdaName(aid) : '';
 	}
-	
+
+	filteredLog(): LogMessage[] {
+		if (this.logGroupChannelFilter === '' && this.logStreamFilter === '') {
+			return this.station.log;
+		}
+		return this.station.log.filter(m => {
+			if (this.logStreamFilter !== '' && String(m.stream) !== this.logStreamFilter) {
+				return false;
+			}
+			if (this.logGroupChannelFilter !== '') {
+				const [kind, value] = this.logGroupChannelFilter.split('-');
+				if (kind === 'type' && String(m.groupType) !== value) {
+					return false;
+				}
+				if (kind === 'channel' && String(m.channel) !== value) {
+					return false;
+				}
+			}
+			return true;
+		});
+	}
+
 	showAbout() {
 		const dialog = this.aboutDialog.open(AboutComponent);
 		return false;
