@@ -409,11 +409,7 @@
 }
 <mat-tab label="Group log">
   <div class="group-log-controls">
-    <label>
-      <input type="checkbox" [checked]="stickToBottom"
-        (change)="stickToBottom = $any($event.target).checked">
-      Auto-scroll to bottom
-    </label>
+    <mat-checkbox [(ngModel)]="stickToBottom">Auto-scroll to bottom</mat-checkbox>
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="group-log-filter">
       <mat-label>Group or channel</mat-label>

@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inje
 import { CommonModule } from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatListModule} from '@angular/material/list';
@@ -17,7 +18,7 @@ import { humanReadableUrl } from '../../../../core/protocol/internet_connection'
 
 @Component({
     selector: 'app-station-info',
-    imports: [CommonModule, HexPipe, FormsModule, MatButtonToggleModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatListModule, MatSelectModule, MatTabsModule, MatTooltipModule],
+    imports: [CommonModule, HexPipe, FormsModule, MatButtonToggleModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatListModule, MatSelectModule, MatTabsModule, MatTooltipModule],
     templateUrl: './station-info.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './station-info.component.scss'
