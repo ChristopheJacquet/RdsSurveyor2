@@ -42,6 +42,7 @@ export class InputPaneComponent implements RdsPipeline  {
   radioSources = [new Si470x(this), new RtlSdr(this)];
   selectedRadioSource?: RdsSource;
   fileSource = new FileSource(this);
+  private lastSourceWasFile = false;
   frequency: number = -1;
   signalStrength: number = 0;
   // For tuners directly providing RDS data, this indicator (for Stream 0)
@@ -104,6 +105,7 @@ export class InputPaneComponent implements RdsPipeline  {
 
   private setSource(source: RdsSource) {
     this.currentSource = source;
+    this.lastSourceWasFile = source === this.fileSource;
     // Clear constellation diagram.
     this.constellationDiagram.updateConstellationDiagram([], []);
   }
@@ -116,6 +118,10 @@ export class InputPaneComponent implements RdsPipeline  {
 
   get sourceActive(): boolean {
     return this.currentSource != undefined;
+  }
+
+  get canReplay(): boolean {
+    return this.lastSourceWasFile && !this.sourceActive;
   }
 
   async emitGroup(stream: number, group: Group, maxErrors: number) {
@@ -188,6 +194,14 @@ export class InputPaneComponent implements RdsPipeline  {
 
   onFileSelect(event: any) {
     this.handleFileDrop(event.target.files);
+  }
+
+  replayFile() {
+    if (!this.canReplay) {
+      return;
+    }
+    this.setSource(this.fileSource);
+    this.fileSource.start();
   }
 
   setPlaybackSpeed(event: any) {

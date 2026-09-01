@@ -1,12 +1,15 @@
 <mat-tab-group class="input_tabs">
   <mat-tab label="File playback">
-    <div class="playback-speed-container">
+    <div class="playback-control-container">
       <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [value]="prefPlaybackSpeed.value"
         (change)="setPlaybackSpeed($event)">
         <mat-button-toggle value="fast">Fast</mat-button-toggle>
         <mat-button-toggle value="realtime">Real time</mat-button-toggle>
       </mat-button-toggle-group>
       <div class="playback-speed-expander"></div>
+      <button mat-stroked-button [disabled]="!canReplay" (click)="replayFile()">
+        Replay <mat-icon>replay</mat-icon>
+      </button>
       <button mat-stroked-button [disabled]="!sourceActive" (click)="stopSource()">
         Stop <mat-icon>stop_circle</mat-icon>
       </button>
