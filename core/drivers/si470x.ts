@@ -194,6 +194,9 @@ export class Si470x implements RdsSource {
   chipRev: string = "";
   firmware: number = 0;
   private rdsEventListener: RdsPipeline;
+  // We expect to see an interrupt report with RDSR = 0 before being
+  // ready to receive the next group. We track that with readyForNextGroup.
+  private readyForNextGroup = true;
 
   public name = "Si470x USB dongle";
 
@@ -413,7 +416,13 @@ export class Si470x implements RdsSource {
     this.rdsEventListener.reportReceiverStatus(freq, signalStrength, rdss);
 
     if ((regs[STATUSRSSI - RDS_REPORT_BASE] & STATUSRSSI_RDSR) == 0) {
-      // Do nothing if no new RDS data is ready.
+      // Do nothing if no new RDS data is ready, but we know the reporting of
+      // the previous group is over.
+      this.readyForNextGroup = true;
+      return;
+    }
+
+    if (!this.readyForNextGroup) {
       return;
     }
 
@@ -443,6 +452,7 @@ export class Si470x implements RdsSource {
       sourceInfo: dongleInfo,
       group: group,
     })
+    this.readyForNextGroup = false;
   }
 }
 
