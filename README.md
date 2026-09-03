@@ -66,14 +66,39 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 * RDS2 Internet connection ODA.
 * New input source: I/Q signal (from WAV or FLAC files).
 
+### Milestone 8 (Reached on 2 Sep 2026)
+
+* Support error correction (all input sources).
+* MPX demodulation improvements: more reliable.
+* Improved group log view: optional auto-scroll to the bottom, group/channel and stream filters.
+* Si470x driver improvements: display signal strength, fix bug with occasional duplicated groups.
+* UI for historical Radio Paging protocol.
+* Misc UI improvements: render better on small screens, replay button for playback.
+
 ## Rough future plans
 
-### Milestone 8
-
-* New input source: clock/data from sound card.
-* User interface improvements
-
 ### Milestone 9
+
+* New input sources: clock/data and MPX from sound card.
+* MPX spectrum display.
+
+### Milestone 10
+
+* SDR++ bridge.
+
+### Milestone 11
+
+* Best practice diagnoses and recommendations (for broadcasters).
+
+### Milestone 12
+
+* Improved logging to files.
+
+### Milestone 13
+
+* Performance improvements
+
+### Milestone 14
 
 * TMC support.
 
@@ -81,8 +106,6 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 
 * Display of groups sequence.
 * Variant support for historical features.
-* RP support (with own tab in UI).
-* Broadcaster-specific TDC/IH data support: CATRADIO.
 * Audio out support in playback mode.
 
 ## Building and Running
