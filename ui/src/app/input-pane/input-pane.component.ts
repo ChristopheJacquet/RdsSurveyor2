@@ -9,7 +9,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
-import {MatRadioModule} from '@angular/material/radio';
+import {MatExpansionModule, MatExpansionPanel} from '@angular/material/expansion';
 
 
 import { Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
@@ -26,7 +26,7 @@ import { ConstellationDiagramComponent } from "../constellation-diagram/constell
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -40,7 +40,7 @@ export class InputPaneComponent implements RdsPipeline  {
   stationChangeDetector = new StationChangeDetector();
   private currentSource?: RdsSource;
   radioSources = [new Si470x(this), new RtlSdr(this)];
-  selectedRadioSource?: RdsSource;
+  selectedRadioSource: RdsSource = this.radioSources[0];
   fileSource = new FileSource(this);
   private lastSourceWasFile = false;
   frequency: number = -1;
@@ -211,6 +211,14 @@ export class InputPaneComponent implements RdsPipeline  {
 
   setMaxErrors(event: any) {
     this.prefMaxErrors.setValue(event.value);
+  }
+
+  // Exactly one radio source panel must stay expanded at all times, so undo
+  // an attempt to collapse the currently selected one.
+  keepSelectedPanelOpen(panel: MatExpansionPanel, source: RdsSource) {
+    if (this.selectedRadioSource === source) {
+      panel.open();
+    }
   }
 
   async startSelectedRadioSource() {

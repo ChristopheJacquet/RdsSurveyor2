@@ -33,13 +33,19 @@
   </mat-tab>
   <mat-tab label="Radio source">
     <div class="radio-connect-pane">
-      <mat-radio-group
-        class="radio-sources-list"
-        [(ngModel)]="selectedRadioSource">
+      <mat-accordion class="radio-sources-list">
         @for (s of radioSources; track s) {
-          <mat-radio-button class="source-radio-button" [value]="s">{{s.name}}</mat-radio-button>
+          <mat-expansion-panel
+            #panel="matExpansionPanel"
+            [expanded]="selectedRadioSource === s"
+            (opened)="selectedRadioSource = s"
+            (closed)="keepSelectedPanelOpen(panel, s)">
+            <mat-expansion-panel-header>
+              <mat-panel-title>{{s.name}}</mat-panel-title>
+            </mat-expansion-panel-header>
+          </mat-expansion-panel>
         }
-      </mat-radio-group>
+      </mat-accordion>
       <button mat-stroked-button [disabled]="sourceActive || selectedRadioSource == undefined" (click)="startSelectedRadioSource()">
         Start selected source <mat-icon>play_circle</mat-icon>
       </button>

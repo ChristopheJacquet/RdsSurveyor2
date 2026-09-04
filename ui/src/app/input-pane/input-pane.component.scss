@@ -51,14 +51,42 @@ input {
 }
 
 .radio-sources-list {
-  display: flex;
-  flex-direction: column;
-  margin: 15px 0;
-  align-items: flex-start;
-}
+  display: block;
+  margin: 15px 0 20px;
 
-.source-radio-button {
-  margin: 0;
+  // Keep the expanded header the same height as a collapsed one, since our
+  // panels carry no title-row content that needs the taller expanded style.
+  --mat-expansion-header-expanded-state-height: 48px;
+
+  ::ng-deep .mat-expansion-panel {
+    margin: 0 !important;
+    box-shadow: none;
+    // Only the accordion as a whole should look rounded, not each panel:
+    // clear the radius here, then restore it on the outer edges below.
+    border-radius: 0 !important;
+  }
+
+  ::ng-deep .mat-expansion-panel:first-of-type {
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  ::ng-deep .mat-expansion-panel:last-of-type {
+    border-radius: 0 0 8px 8px !important;
+  }
+
+  ::ng-deep .mat-expansion-panel:not(:last-child) {
+    border-bottom: 1px solid #ddd;
+  }
+
+  ::ng-deep .mat-expansion-panel.mat-expanded {
+    background-color: #e8ecf9;
+  }
+
+  // The panels carry no body content, so remove the body's padding entirely
+  // rather than just shrinking it.
+  ::ng-deep .mat-expansion-panel-body {
+    padding: 0;
+  }
 }
 
 .radio-connect-pane, .logging-pane {
