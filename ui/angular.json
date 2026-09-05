@@ -21,7 +21,8 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
-              "zone.js"
+              "zone.js",
+              "zone.js/plugins/zone-patch-message-port"
             ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
@@ -81,6 +82,7 @@
           "options": {
             "polyfills": [
               "zone.js",
+              "zone.js/plugins/zone-patch-message-port",
               "zone.js/testing"
             ],
             "tsConfig": "tsconfig.spec.json",

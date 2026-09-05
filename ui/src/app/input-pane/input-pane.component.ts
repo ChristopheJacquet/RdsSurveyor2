@@ -13,6 +13,7 @@ import {MatExpansionModule, MatExpansionPanel} from '@angular/material/expansion
 
 
 import { Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
+import { AudioBitstream } from "../../../../core/drivers/audio";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
@@ -39,7 +40,7 @@ export class InputPaneComponent implements RdsPipeline  {
 
   stationChangeDetector = new StationChangeDetector();
   private currentSource?: RdsSource;
-  radioSources = [new Si470x(this), new RtlSdr(this)];
+  radioSources = [new Si470x(this), new RtlSdr(this), new AudioBitstream(this)];
   selectedRadioSource: RdsSource = this.radioSources[0];
   fileSource = new FileSource(this);
   private lastSourceWasFile = false;
@@ -160,6 +161,10 @@ export class InputPaneComponent implements RdsPipeline  {
     }
     // TODO: allow selection of stream(s).
     this.constellationDiagram.updateConstellationDiagram(this.demodulator[0].syncOutI, this.demodulator[0].syncOutQ);
+  }
+
+  async processBit(bit: boolean) {
+    this.synchronizer[0].addBit(bit);    // TODO: need to choose stream?
   }
 
   async processBits(bytes: Uint8Array) {

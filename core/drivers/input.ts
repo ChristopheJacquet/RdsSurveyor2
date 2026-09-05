@@ -43,6 +43,7 @@ export enum RdsReportEventType {
 
 export interface RdsPipeline {
   processMpxSamples(samples: Float32Array, length?: number): void;
+  processBit(bit: boolean): void;
   processBits(bytes: Uint8Array): void;
   processRdsReportEvent(event: RdsReportEvent): void;
   // signalStrength is a floating-point number between 0 (min) and 1 (max).

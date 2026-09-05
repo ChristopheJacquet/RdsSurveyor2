@@ -5,6 +5,9 @@ class RdsListener implements RdsPipeline {
   processMpxSamples(samples: Float32Array, length?: number): void {
   }
 
+  processBit(bit: boolean): void {
+  }
+
   processBits(bytes: Uint8Array): void {
   }
 
