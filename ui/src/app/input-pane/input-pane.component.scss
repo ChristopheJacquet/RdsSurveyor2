@@ -82,11 +82,34 @@ input {
     background-color: #e8ecf9;
   }
 
-  // The panels carry no body content, so remove the body's padding entirely
-  // rather than just shrinking it.
+  // Most panels carry no body content, so remove the body's padding
+  // entirely rather than just shrinking it; panels that do have content
+  // (e.g. .audio-source-settings) restore their own.
   ::ng-deep .mat-expansion-panel-body {
     padding: 0;
   }
+}
+
+.audio-source-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0 24px 16px;
+}
+
+.audio-source-settings mat-radio-group {
+  display: flex;
+  flex-direction: column;
+  // Without this, flex's default "stretch" widens each radio button to the
+  // group's full width, and Material then centers its (shrink-to-fit) label
+  // within that extra space instead of leaving it flush left.
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.audio-source-settings mat-form-field {
+  width: 100%;
 }
 
 .radio-connect-pane, .logging-pane {

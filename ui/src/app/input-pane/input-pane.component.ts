@@ -10,10 +10,13 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
 import {MatExpansionModule, MatExpansionPanel} from '@angular/material/expansion';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatSelectModule} from '@angular/material/select';
+import {MatRadioModule} from '@angular/material/radio';
 
 
 import { Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
-import { AudioBitstream } from "../../../../core/drivers/audio";
+import { AudioInput } from "../../../../core/drivers/audio";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
@@ -27,7 +30,7 @@ import { ConstellationDiagramComponent } from "../constellation-diagram/constell
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -40,8 +43,10 @@ export class InputPaneComponent implements RdsPipeline  {
 
   stationChangeDetector = new StationChangeDetector();
   private currentSource?: RdsSource;
-  radioSources = [new Si470x(this), new RtlSdr(this), new AudioBitstream(this)];
+  audioSource = new AudioInput(this);
+  radioSources = [new Si470x(this), new RtlSdr(this), this.audioSource];
   selectedRadioSource: RdsSource = this.radioSources[0];
+  audioDevices: MediaDeviceInfo[] = [];
   fileSource = new FileSource(this);
   private lastSourceWasFile = false;
   frequency: number = -1;
@@ -82,6 +87,10 @@ export class InputPaneComponent implements RdsPipeline  {
     this.prefTunedFrequency.init();
 
     this.prefMaxErrors.init();
+
+    // Populate the audio device list if permission was already granted in a
+    // previous session; otherwise the settings panel offers a button to ask.
+    this.refreshAudioDevices();
 
     // If a play_url param is provided, try to load a file from the provided URL.
     const httpClient = this.httpClient;
@@ -223,6 +232,73 @@ export class InputPaneComponent implements RdsPipeline  {
   keepSelectedPanelOpen(panel: MatExpansionPanel, source: RdsSource) {
     if (this.selectedRadioSource === source) {
       panel.open();
+    }
+  }
+
+  // Whether we currently have a real device list to show, as opposed to an
+  // unlabeled placeholder returned before input permission was granted.
+  get hasAudioDeviceAccess(): boolean {
+    return this.audioDevices.length > 0 && this.audioDevices.every((d) => d.label !== "");
+  }
+
+  // Devices usable in the audio source's currently selected mode.
+  get usableAudioDevices(): MediaDeviceInfo[] {
+    return this.audioSource.mode === "bitstream"
+      ? this.audioDevices.filter((d) => this.isStereoCapable(d))
+      : this.audioDevices;
+  }
+
+  // Whether a device is known to support the 2 channels a data/clock
+  // bitstream needs. Browsers that don't expose per-device capabilities are
+  // assumed to qualify, since we have no way to tell otherwise.
+  private isStereoCapable(device: MediaDeviceInfo): boolean {
+    if (typeof InputDeviceInfo === "undefined" || !(device instanceof InputDeviceInfo)) {
+      return true;
+    }
+    const channelCount = device.getCapabilities().channelCount;
+    return channelCount?.max == undefined || channelCount.max >= 2;
+  }
+
+  // Lists available audio input devices. Device labels (and, where the
+  // browser supports it, the capabilities used by isStereoCapable()) are
+  // only populated once input permission has been granted; call
+  // requestAudioAccess() first if needed.
+  private async listAudioDevices(): Promise<MediaDeviceInfo[]> {
+    if (!("mediaDevices" in navigator)) {
+      return [];
+    }
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter((d) => d.kind === "audioinput");
+  }
+
+  async refreshAudioDevices() {
+    this.audioDevices = await this.listAudioDevices();
+    this.ensureAudioDeviceSelected();
+  }
+
+  // Prompts the browser's input-permission dialog, so the device list above
+  // starts returning real device labels and capabilities.
+  async requestAudioAccess() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+    } catch (e) {
+      console.log("audio: could not get input permission.", e);
+    }
+    await this.refreshAudioDevices();
+  }
+
+  // Re-run device selection when the mode changes, since it may make the
+  // currently selected device unusable (e.g. a mono device while in
+  // bitstream mode).
+  onAudioModeChange() {
+    this.ensureAudioDeviceSelected();
+  }
+
+  private ensureAudioDeviceSelected() {
+    const usable = this.usableAudioDevices;
+    if (!usable.some((d) => d.deviceId === this.audioSource.deviceId)) {
+      this.audioSource.deviceId = usable[0]?.deviceId;
     }
   }
 

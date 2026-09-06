@@ -43,6 +43,29 @@
             <mat-expansion-panel-header>
               <mat-panel-title>{{s.name}}</mat-panel-title>
             </mat-expansion-panel-header>
+            @if (s === audioSource) {
+              <div class="audio-source-settings">
+                <mat-radio-group [(ngModel)]="audioSource.mode" (ngModelChange)="onAudioModeChange()">
+                  <mat-radio-button value="bitstream">Data/clock bitstream (stereo)</mat-radio-button>
+                  <mat-radio-button value="mpx">MPX signal (mono)</mat-radio-button>
+                </mat-radio-group>
+
+                @if (hasAudioDeviceAccess) {
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Audio interface</mat-label>
+                    <mat-select [(ngModel)]="audioSource.deviceId">
+                      @for (device of usableAudioDevices; track device.deviceId) {
+                        <mat-option [value]="device.deviceId">{{device.label}}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <button mat-stroked-button (click)="requestAudioAccess()">
+                    Grant audio input (“microphone”) access <mat-icon>mic</mat-icon>
+                  </button>
+                }
+              </div>
+            }
           </mat-expansion-panel>
         }
       </mat-accordion>
