@@ -58,6 +58,7 @@ export class InputPaneComponent implements RdsPipeline  {
   logFileStream: FileSystemWritableFileStream | null = null;
   synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
   demodulator = new Array<Demodulator>(FREQ_STREAMS.length);
+  private constellationRedrawScheduled = false;
 
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
@@ -168,8 +169,22 @@ export class InputPaneComponent implements RdsPipeline  {
         
       }
     }
-    // TODO: allow selection of stream(s).
-    this.constellationDiagram.updateConstellationDiagram(this.demodulator[0].syncOutI, this.demodulator[0].syncOutQ);
+    this.scheduleConstellationRedraw();
+  }
+
+  // Coalesces bursts of processMpxSamples() calls (which can arrive much
+  // faster than the display can usefully show) into at most one redraw per
+  // animation frame.
+  private scheduleConstellationRedraw() {
+    if (this.constellationRedrawScheduled) {
+      return;
+    }
+    this.constellationRedrawScheduled = true;
+    requestAnimationFrame(() => {
+      this.constellationRedrawScheduled = false;
+      // TODO: allow selection of stream(s).
+      this.constellationDiagram.updateConstellationDiagram(this.demodulator[0].syncOutI, this.demodulator[0].syncOutQ);
+    });
   }
 
   async processBit(bit: boolean) {
