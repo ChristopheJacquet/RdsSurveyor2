@@ -2,18 +2,53 @@ import { RdsPipeline, RdsSource, SeekDirection } from "./input";
 
 const WORKLET_NAME = "audio-input-source-forwarder";
 
-// AudioWorkletProcessor that forwards each input channel, untouched, to the
-// main thread. Inlined as a string (loaded via a Blob URL) so this class
-// stays self-contained, with no separate worklet module file to ship or host.
+// AudioWorkletProcessor.process() is called once per render quantum, which
+// the Web Audio API fixes at 128 frames regardless of sample rate — not
+// configurable. At a high MPX sample rate (250kHz) that's ~1950 calls/sec,
+// each incurring a postMessage() to the main thread and a UI update there;
+// batching several quanta per message cuts that overhead drastically. At a
+// low bitstream sample rate this same duration is only a handful of
+// samples, so batching by a fixed sample count would barely help there —
+// batching by this fixed *duration* instead keeps the flush rate constant
+// (and comfortably above the several-updates-per-second the UI needs)
+// however low the sample rate goes.
+const FLUSH_INTERVAL_SECONDS = 0.05;
+
+// AudioWorkletProcessor that forwards each input channel to the main
+// thread, batched into chunks of about FLUSH_INTERVAL_SECONDS each so the
+// number of postMessage() calls stays reasonable at any sample rate.
+// Inlined as a string (loaded via a Blob URL) so this class stays
+// self-contained, with no separate worklet module file to ship or host.
 const WORKLET_SOURCE = `
 class Forwarder extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    // One render quantum is 128 frames; size the buffer for the target
+    // flush duration plus headroom for the one quantum that can be added
+    // right after that target is reached.
+    this.flushSize = Math.max(128, Math.round(sampleRate * ${FLUSH_INTERVAL_SECONDS}));
+    this.buffers = null;
+    this.length = 0;
+  }
+
   process(inputs) {
     const input = inputs[0];
     if (!input || input.length === 0) {
       return true;
     }
-    const channels = input.map((channel) => channel.slice());
-    this.port.postMessage({ channels }, channels.map((channel) => channel.buffer));
+    if (this.buffers == null) {
+      this.buffers = input.map(() => new Float32Array(this.flushSize + 128));
+    }
+    for (let ch = 0; ch < input.length; ch++) {
+      this.buffers[ch].set(input[ch], this.length);
+    }
+    this.length += input[0].length;
+    if (this.length >= this.flushSize) {
+      const channels = this.buffers.map((buffer) => buffer.slice(0, this.length));
+      this.port.postMessage({ channels }, channels.map((channel) => channel.buffer));
+      this.buffers = null;
+      this.length = 0;
+    }
     return true;
   }
 }
