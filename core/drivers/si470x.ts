@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Block, ErrorCount, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection, UNCORRECTABLE_ERRORS } from "./input";
+import { Block, DecoderLevel, ErrorCount, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, UNCORRECTABLE_ERRORS } from "./input";
 
 /**************************************************************************
  * Register Definitions
@@ -199,6 +199,17 @@ export class Si470x implements RdsSource {
   private readyForNextGroup = true;
 
   public name = "Si470x USB dongle";
+  public readonly capabilities: RdsSourceCapabilities = {
+    reportsFrequency: true,
+    supportsTune: true,
+    supportsSeek: true,
+    // The chip decodes RDS onboard and hands us already-assembled groups.
+    decoderLevel: DecoderLevel.GROUPSTREAM,
+    // Reported from the RDSS (RDS Synchronized) status bit.
+    reportsSync: true,
+    reportsLock: false,
+    supportedStreams: SupportedStreams.STREAM_0,
+  };
 
   constructor(rdsEventListener: RdsPipeline) {
     this.rdsEventListener = rdsEventListener;

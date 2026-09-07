@@ -1,13 +1,29 @@
 import { FMDemodulator } from "@jtarrio/webrtlsdr/dsp/demodulators";
-import { RdsPipeline, RdsSource, SeekDirection, parseHexGroup } from "./input";
+import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, parseHexGroup } from "./input";
 
 export class FileSource implements RdsSource {
   public name = "File";
+  // Which stage of the chain the loaded file feeds depends on its detected
+  // type; updated by start() once a file is loaded. Defaults to the level
+  // for the most common case, hex-groups text files, until then.
+  private detectedLevel: DecoderLevel = DecoderLevel.GROUPSTREAM;
   public realtimePlayback: boolean = false;
   private blob?: Blob;
   private stoppingPlayback = true;
 
   constructor (private pipeline: RdsPipeline) {}
+
+  public get capabilities(): RdsSourceCapabilities {
+    return {
+      reportsFrequency: false,
+      supportsTune: false,
+      supportsSeek: false,
+      decoderLevel: this.detectedLevel,
+      reportsSync: false,
+      reportsLock: false,
+      supportedStreams: SupportedStreams.ALL_STREAMS,
+    };
+  }
 
   seek(direction: SeekDirection): Promise<void> {
     throw new Error("Method not implemented.");
@@ -26,12 +42,14 @@ export class FileSource implements RdsSource {
     const header = await this.blob.slice(0, 16).arrayBuffer();
     switch (guessFileType(new Uint8Array(header))) {
       case FileType.HEX_GROUPS: {
+        this.detectedLevel = DecoderLevel.GROUPSTREAM;
         const text = await this.blob.text();
         this.processTextualGroups(text);
         return true;
       }
 
       case FileType.UNSYNCED_BINARY_RDS: {
+        this.detectedLevel = DecoderLevel.BITSTREAM;
         const bytes = await this.blob.arrayBuffer();
         this.processBinaryGroups(new Uint8Array(bytes));
         return true;
@@ -39,6 +57,7 @@ export class FileSource implements RdsSource {
 
       case FileType.AUDIO_FLAC:
       case FileType.AUDIO_WAV: {
+        this.detectedLevel = DecoderLevel.MPX;
         const buffer = await this.blob.arrayBuffer();
         this.processAudio(buffer);
         return true;

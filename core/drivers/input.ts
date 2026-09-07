@@ -58,8 +58,41 @@ export enum SeekDirection {
   DOWN
 }
 
+// Whether a source supports only Stream 0 (RDS 1) or the four RDS 2 streams.
+export enum SupportedStreams {
+  STREAM_0,
+  ALL_STREAMS
+}
+
+// What stage of the demodulation chain a source's data enters at: raw MPX
+// samples, a data/clock bitstream, or already-decoded RDS groups.
+export enum DecoderLevel {
+  MPX,
+  BITSTREAM,
+  GROUPSTREAM
+}
+
+export interface RdsSourceCapabilities {
+  // Whether reportReceiverStatus() reports the receiver's frequency.
+  reportsFrequency: boolean;
+  // Whether the driver can set receiver's frequency.
+  supportsTune: boolean;
+  // Whether the receiver can automatically seek stations.
+  supportsSeek: boolean;
+  decoderLevel: DecoderLevel;
+  // Whether reportReceiverStatus() reports the RDS decoder sync status.
+  reportsSync: boolean;
+  // Whether the source can report the RDS decoder carrier lock status.
+  reportsLock: boolean;
+  supportedStreams: SupportedStreams;
+}
+
 export interface RdsSource {
-  name: string;
+  readonly name: string;
+  // Implementations may provide this as a plain field (most sources have
+  // fixed capabilities) or as a getter (for sources whose capabilities
+  // are determined at runtime).
+  readonly capabilities: RdsSourceCapabilities;
   seek(direction: SeekDirection): Promise<void>;
   tune(frequencyKhz: number): Promise<void>;
   start(): Promise<boolean>;

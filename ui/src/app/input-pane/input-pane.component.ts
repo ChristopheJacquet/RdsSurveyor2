@@ -15,7 +15,7 @@ import {MatSelectModule} from '@angular/material/select';
 import {MatRadioModule} from '@angular/material/radio';
 
 
-import { Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
+import { DecoderLevel, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
 import { AudioInput } from "../../../../core/drivers/audio";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
@@ -41,8 +41,11 @@ export class InputPaneComponent implements RdsPipeline  {
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
+  // Exposed for the template, so it can compare against capabilities.decoderLevel.
+  readonly DecoderLevel = DecoderLevel;
+
   stationChangeDetector = new StationChangeDetector();
-  private currentSource?: RdsSource;
+  currentSource?: RdsSource;
   audioSource = new AudioInput(this);
   radioSources = [new Si470x(this), new RtlSdr(this), this.audioSource];
   selectedRadioSource: RdsSource = this.radioSources[0];

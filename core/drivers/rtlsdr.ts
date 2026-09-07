@@ -5,13 +5,22 @@ import { RealDownsampler } from "@jtarrio/webrtlsdr/dsp/resamplers";
 import { Radio } from "@jtarrio/webrtlsdr/radio";
 import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr";
 
-import { RdsPipeline, RdsSource, SeekDirection } from "./input";
+import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams } from "./input";
 
 export class RtlSdr implements RdsSource {
   rtlSdrRadio?: Radio;
   pipeline: RdsPipeline;
 
   public name = "RTL-SDR USB dongle";
+  public readonly capabilities: RdsSourceCapabilities = {
+    reportsFrequency: true,
+    supportsTune: true,
+    supportsSeek: false,
+    decoderLevel: DecoderLevel.MPX,
+    reportsSync: true,
+    reportsLock: true,
+    supportedStreams: SupportedStreams.ALL_STREAMS,
+  };
 
   public constructor(input: RdsPipeline) {
     this.pipeline = input;

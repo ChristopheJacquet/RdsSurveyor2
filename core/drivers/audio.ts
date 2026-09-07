@@ -1,4 +1,4 @@
-import { RdsPipeline, RdsSource, SeekDirection } from "./input";
+import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams } from "./input";
 
 const WORKLET_NAME = "audio-input-source-forwarder";
 
@@ -72,6 +72,18 @@ const MPX_SAMPLE_RATE = 250000;
 // into a sound card) or a demodulated MPX signal.
 export class AudioInput implements RdsSource {
   public name = "Audio input";
+  public get capabilities(): RdsSourceCapabilities {
+    const decoderLevel = this.mode === "mpx" ? DecoderLevel.MPX : DecoderLevel.BITSTREAM;
+    return {
+      reportsFrequency: false,
+      supportsTune: false,
+      supportsSeek: false,
+      decoderLevel: this.mode === "mpx" ? DecoderLevel.MPX : DecoderLevel.BITSTREAM,
+      reportsSync: true,
+      reportsLock: this.mode === "mpx",
+      supportedStreams: this.mode === "mpx" ? SupportedStreams.ALL_STREAMS : SupportedStreams.STREAM_0,
+    };
+  }
   public mode: AudioInputMode = "bitstream";
   // Id of the input device to use, as returned by mediaDevices.enumerateDevices().
   public deviceId?: string;

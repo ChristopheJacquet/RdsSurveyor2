@@ -77,24 +77,34 @@
       </button>
     </div>
 
-    <div class="tuner-pane">
-      <button mat-icon-button (click)="seekDown()">
-        <mat-icon>keyboard_double_arrow_left</mat-icon>
-      </button>
-      <button mat-icon-button (click)="tuneDown()">
-        <mat-icon>keyboard_arrow_left</mat-icon>
-      </button>
-      <span class="tunerDisplay">
-        <div class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</div>
-        <div class="signalStrength" [style.width.%]="signalStrength"></div>
-      </span>
-      <button mat-icon-button (click)="tuneUp()">
-        <mat-icon>keyboard_arrow_right</mat-icon>
-      </button>
-      <button mat-icon-button (click)="seekUp()">
-        <mat-icon>keyboard_double_arrow_right</mat-icon>
-      </button>
-    </div>
+    @if (currentSource?.capabilities.reportsFrequency) {
+      <div class="tuner-pane">
+        @if (currentSource?.capabilities.supportsSeek) {
+          <button mat-icon-button (click)="seekDown()">
+            <mat-icon>keyboard_double_arrow_left</mat-icon>
+          </button>
+        }
+        @if (currentSource?.capabilities.supportsTune) {
+          <button mat-icon-button (click)="tuneDown()">
+            <mat-icon>keyboard_arrow_left</mat-icon>
+          </button>
+        }
+        <span class="tunerDisplay">
+          <div class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</div>
+          <div class="signalStrength" [style.width.%]="signalStrength"></div>
+        </span>
+        @if (currentSource?.capabilities.supportsTune) {
+          <button mat-icon-button (click)="tuneUp()">
+            <mat-icon>keyboard_arrow_right</mat-icon>
+          </button>
+        }
+        @if (currentSource?.capabilities.supportsSeek) {
+          <button mat-icon-button (click)="seekUp()">
+            <mat-icon>keyboard_double_arrow_right</mat-icon>
+          </button>
+        }
+      </div>
+    }
 
     <div class="logging-pane">
       <button mat-stroked-button (click)="selectLogDir()">Select log directory</button>
@@ -103,7 +113,7 @@
 </mat-tab-group>
 
 <div class="processingChain">
-  <div [class.hidden]="demodulator == null">
+  <div [class.hidden]="currentSource?.capabilities.decoderLevel !== DecoderLevel.MPX">
     <div>Constellation diagram</div>
     <app-constellation-diagram #constellationDiagram></app-constellation-diagram>
   </div>
