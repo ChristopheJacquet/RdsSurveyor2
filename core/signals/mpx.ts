@@ -87,6 +87,10 @@ export class Demodulator {
     this.bitstreamSynchronizer = bitstreamSynchronizer;
   }
 
+  reset() {
+    this.locked = false;
+  }
+
   addSample(sample: number) {
     // Automatic Gain Control (AGC).
     const sampleAbs = Math.abs(sample);

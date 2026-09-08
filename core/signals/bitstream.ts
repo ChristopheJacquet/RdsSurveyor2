@@ -121,6 +121,10 @@ export class BitStreamSynchronizer {
 		this.eraseSyncArray();
 	}
 	
+  reset() {
+    this.synced = false;
+  }
+
 	private eraseSyncArray() {
     this.nbSyncAtOffset = new Array(BLOCK_SIZE);
 		for (let i=0; i<this.nbSyncAtOffset.length; i++) {

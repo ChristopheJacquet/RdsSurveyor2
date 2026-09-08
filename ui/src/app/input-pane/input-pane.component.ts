@@ -124,10 +124,18 @@ export class InputPaneComponent implements RdsPipeline  {
     this.constellationDiagram.updateConstellationDiagram([], []);
   }
 
+  private resetDemodulationChain() {
+    for (let i=0; i<4; i++) {
+      this.demodulator[i].reset();
+      this.synchronizer[i].reset();
+    }
+  }
+
   private unsetSource() {
     this.currentSource = undefined;
     this.signalStrength = 0;
     this.rdsSync = false;
+    this.resetDemodulationChain();
   }
 
   get sourceActive(): boolean {
