@@ -114,6 +114,8 @@
 
 <div class="processingChain">
   <div [class.hidden]="currentSource?.capabilities.decoderLevel !== DecoderLevel.MPX">
+    <div>MPX spectrum</div>
+    <app-spectrum-diagram #spectrumDiagram></app-spectrum-diagram>
     <div>Constellation diagram</div>
     <app-constellation-diagram #constellationDiagram></app-constellation-diagram>
   </div>

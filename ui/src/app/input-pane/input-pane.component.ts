@@ -21,16 +21,17 @@ import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
-import { Demodulator, FREQ_STREAMS } from "../../../../core/signals/mpx";
+import { Demodulator, FREQ_STREAMS, SpectrumAnalyzer } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
 import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
 import { ConstellationDiagramComponent } from "../constellation-diagram/constellation-diagram.component";
+import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.component";
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -38,6 +39,7 @@ import { ConstellationDiagramComponent } from "../constellation-diagram/constell
 export class InputPaneComponent implements RdsPipeline  {
   @ViewChildren('blerGraph') public blerGraph!: QueryList<BlerGraphComponent>;
   @ViewChild('constellationDiagram') public constellationDiagram!: ConstellationDiagramComponent;
+  @ViewChild('spectrumDiagram') public spectrumDiagram!: SpectrumDiagramComponent;
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
@@ -61,6 +63,7 @@ export class InputPaneComponent implements RdsPipeline  {
   logFileStream: FileSystemWritableFileStream | null = null;
   synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
   demodulator = new Array<Demodulator>(FREQ_STREAMS.length);
+  spectrumAnalyzer = new SpectrumAnalyzer();
   private constellationRedrawScheduled = false;
 
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
@@ -122,6 +125,9 @@ export class InputPaneComponent implements RdsPipeline  {
     this.lastSourceWasFile = source === this.fileSource;
     // Clear constellation diagram.
     this.constellationDiagram.updateConstellationDiagram([], []);
+    // Clear spectrum diagram.
+    this.spectrumAnalyzer.reset();
+    this.spectrumDiagram.updateSpectrumDiagram([]);
   }
 
   private resetDemodulationChain() {
@@ -129,6 +135,7 @@ export class InputPaneComponent implements RdsPipeline  {
       this.demodulator[i].reset();
       this.synchronizer[i].reset();
     }
+    this.spectrumAnalyzer.reset();
   }
 
   private unsetSource() {
@@ -177,9 +184,10 @@ export class InputPaneComponent implements RdsPipeline  {
       const dem = this.demodulator[demIndex];
       for (let i=0; i<length; i++) {
         dem.addSample(samples[i]);
-        
+
       }
     }
+    this.spectrumAnalyzer.addSamples(samples, length);
     this.scheduleConstellationRedraw();
   }
 
@@ -195,6 +203,7 @@ export class InputPaneComponent implements RdsPipeline  {
       this.constellationRedrawScheduled = false;
       // TODO: allow selection of stream(s).
       this.constellationDiagram.updateConstellationDiagram(this.demodulator[0].syncOutI, this.demodulator[0].syncOutQ);
+      this.spectrumDiagram.updateSpectrumDiagram(this.spectrumAnalyzer.spectrum);
     });
   }
 
