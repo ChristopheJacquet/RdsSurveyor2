@@ -23,15 +23,34 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     // Initialize spectrum diagram.
     const diagramEl: HTMLCanvasElement = this.spectrumDiagram.nativeElement;
     this.spectrumDiagramCx = diagramEl.getContext('2d');
+    this.syncCanvasSize();
+    return this.spectrumDiagramCx;
+  }
+
+  // Adopts the canvas's current on-screen size (e.g. after its container was resized) as the
+  // backing-store resolution, scaled for device pixel density so the drawing stays crisp. Only
+  // takes effect here, i.e. the next time a redraw happens, rather than eagerly on resize.
+  private syncCanvasSize() {
+    const diagramEl: HTMLCanvasElement = this.spectrumDiagram.nativeElement;
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = Math.round(diagramEl.clientWidth * dpr);
+    const displayHeight = Math.round(diagramEl.clientHeight * dpr);
+    if (displayWidth > 0 && displayHeight > 0 &&
+        (diagramEl.width !== displayWidth || diagramEl.height !== displayHeight)) {
+      diagramEl.width = displayWidth;
+      diagramEl.height = displayHeight;
+    }
     this.spectrumDiagramWidth = diagramEl.width;
     this.spectrumDiagramHeight = diagramEl.height;
-    return this.spectrumDiagramCx;
   }
 
   updateSpectrumDiagram(spectrum: ArrayLike<number>) {
     if (this.spectrumDiagramCx == null) {
       return;
     }
+
+    this.syncCanvasSize();
+    console.log(this.spectrumDiagramWidth, this.spectrumDiagramHeight);
 
     this.spectrumDiagramCx.clearRect(
       0, 0, this.spectrumDiagramWidth, this.spectrumDiagramHeight);
