@@ -2,7 +2,7 @@ import { AfterViewInit, Component, ElementRef, ViewChild, ChangeDetectionStrateg
 
 // Fixed vertical scale, in dB, so a given signal level is always drawn at the same height
 // instead of the scale rescaling to the current frame's minimum/maximum.
-const SPECTRUM_DB_MIN = -60;
+const SPECTRUM_DB_MIN = -10;
 const SPECTRUM_DB_MAX = 90;
 
 @Component({
@@ -60,14 +60,15 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     for (let p = 0; p < numPoints; p++) {
       const start = Math.floor(p * binsPerPoint);
       const end = Math.max(start + 1, Math.floor((p + 1) * binsPerPoint));
-      let sum = 0;
+      let max = 0;
       for (let bin = start; bin < end; bin++) {
-        sum += spectrum[bin];
+        if (spectrum[bin] > max) {
+          max = spectrum[bin];
+        }
       }
-      const avg = sum / (end - start);
 
       const x = p * xStep;
-      const clamped = Math.min(SPECTRUM_DB_MAX, Math.max(SPECTRUM_DB_MIN, avg));
+      const clamped = Math.min(SPECTRUM_DB_MAX, Math.max(SPECTRUM_DB_MIN, max));
       const y = this.spectrumDiagramHeight - (clamped - SPECTRUM_DB_MIN) * yScale;
       this.spectrumDiagramCx.lineTo(x, y);
     }
