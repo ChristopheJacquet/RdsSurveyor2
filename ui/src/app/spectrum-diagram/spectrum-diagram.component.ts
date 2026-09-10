@@ -1,10 +1,5 @@
 import { AfterViewInit, Component, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
-// Fixed vertical scale, in dB, so a given signal level is always drawn at the same height
-// instead of the scale rescaling to the current frame's minimum/maximum.
-const SPECTRUM_DB_MIN = -10;
-const SPECTRUM_DB_MAX = 90;
-
 @Component({
     selector: 'app-spectrum-diagram',
     imports: [],
@@ -19,12 +14,20 @@ export class SpectrumDiagramComponent implements AfterViewInit {
   spectrumDiagramWidth: number = 0;
   spectrumDiagramHeight: number = 0;
 
+  dbMin: number = Infinity;
+  dbMax: number = -Infinity;
+
   public ngAfterViewInit() {
     // Initialize spectrum diagram.
     const diagramEl: HTMLCanvasElement = this.spectrumDiagram.nativeElement;
     this.spectrumDiagramCx = diagramEl.getContext('2d');
     this.syncCanvasSize();
     return this.spectrumDiagramCx;
+  }
+
+  public reset() {
+    this.dbMin = Infinity;
+    this.dbMax = -Infinity;
   }
 
   // Adopts the canvas's current on-screen size (e.g. after its container was resized) as the
@@ -44,7 +47,7 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     this.spectrumDiagramHeight = diagramEl.height;
   }
 
-  updateSpectrumDiagram(spectrum: ArrayLike<number>) {
+  updateSpectrumDiagram(spectrum: Float32Array) {
     if (this.spectrumDiagramCx == null) {
       return;
     }
@@ -59,13 +62,22 @@ export class SpectrumDiagramComponent implements AfterViewInit {
       return;
     }
 
-    const yScale = this.spectrumDiagramHeight / (SPECTRUM_DB_MAX - SPECTRUM_DB_MIN);
-
-    // Smooth the trace, and cut down the amount drawn, by averaging consecutive bins down to
+    // Smooth the trace, and cut down the amount drawn, by merging consecutive bins down to
     // one point per pixel of canvas width, rather than plotting every FFT bin.
     const numPoints = Math.max(1, Math.round(this.spectrumDiagramWidth));
     const xStep = this.spectrumDiagramWidth / numPoints;
     const binsPerPoint = spectrum.length / numPoints;
+
+    // Adjust vertical scale: compute min and max since reset.
+    for (let sample of spectrum) {
+      if (sample < this.dbMin) {
+        this.dbMin = sample;
+      }
+      if (sample > this.dbMax) {
+        this.dbMax = sample;
+      }
+    }
+    const yScale = this.spectrumDiagramHeight / (this.dbMax - this.dbMin);
 
     // Fill the area between the baseline (the scale's minimum) and the spectrum, rather
     // than just stroking a line, so a noisy trace reads as a solid shape and not as a band
@@ -79,16 +91,15 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     for (let p = 0; p < numPoints; p++) {
       const start = Math.floor(p * binsPerPoint);
       const end = Math.max(start + 1, Math.floor((p + 1) * binsPerPoint));
-      let max = 0;
+      let merged = 0;
       for (let bin = start; bin < end; bin++) {
-        if (spectrum[bin] > max) {
-          max = spectrum[bin];
+        if (spectrum[bin] > merged) {
+          merged = spectrum[bin];
         }
       }
 
       const x = p * xStep;
-      const clamped = Math.min(SPECTRUM_DB_MAX, Math.max(SPECTRUM_DB_MIN, max));
-      const y = this.spectrumDiagramHeight - (clamped - SPECTRUM_DB_MIN) * yScale;
+      const y = this.spectrumDiagramHeight - (merged - this.dbMin) * yScale;
       this.spectrumDiagramCx.lineTo(x, y);
     }
     this.spectrumDiagramCx.lineTo(this.spectrumDiagramWidth, this.spectrumDiagramHeight);

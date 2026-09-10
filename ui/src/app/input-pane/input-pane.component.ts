@@ -136,6 +136,7 @@ export class InputPaneComponent implements RdsPipeline  {
       this.synchronizer[i].reset();
     }
     this.spectrumAnalyzer.reset();
+    this.spectrumDiagram.reset();
   }
 
   private unsetSource() {
