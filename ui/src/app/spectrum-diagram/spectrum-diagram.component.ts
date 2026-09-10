@@ -53,7 +53,6 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     }
 
     this.syncCanvasSize();
-    console.log(this.spectrumDiagramWidth, this.spectrumDiagramHeight);
 
     this.spectrumDiagramCx.clearRect(
       0, 0, this.spectrumDiagramWidth, this.spectrumDiagramHeight);
