@@ -343,7 +343,7 @@
 @if (station.ert_app.enabled) {
   <mat-tab label="eRT">
     <mat-list role="list">
-      @for (msg of station.ert_app.ert.getPastMessages(true); track msg) {
+      @for (msg of station.ert_app.ert.getPastMessages(true); track msg.id) {
         <mat-list-item role="listitem" class="rt-item">
           <div>{{ msg.message }}</div>
         </mat-list-item>
@@ -399,7 +399,7 @@
 @if (station.internet_connection_app.enabled) {
   <mat-tab label="Internet Connection">
     <mat-list role="list">
-      @for (url of station.internet_connection_app.url.getPastMessages(true); track url) {
+      @for (url of station.internet_connection_app.url.getPastMessages(true); track url.id) {
         <mat-list-item role="listitem" class="rt-item">
           <div>{{ humanReadableUrl(url.message) }}</div>
         </mat-list-item>
