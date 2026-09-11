@@ -127,7 +127,7 @@ export class InputPaneComponent implements RdsPipeline  {
     this.constellationDiagram.updateConstellationDiagram([], []);
     // Clear spectrum diagram.
     this.spectrumAnalyzer.reset();
-    this.spectrumDiagram.updateSpectrumDiagram([]);
+    this.spectrumDiagram.updateSpectrumDiagram(new Float32Array());
   }
 
   private resetDemodulationChain() {
