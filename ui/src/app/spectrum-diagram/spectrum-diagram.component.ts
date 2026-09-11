@@ -1,4 +1,12 @@
 import { AfterViewInit, Component, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import {
+  FREQ_STREAM_0, FREQ_STREAM_1, FREQ_STREAM_2, FREQ_STREAM_3, SPECTRUM_MAX_FREQUENCY
+} from '../../../../core/signals/mpx';
+
+// Ticks are labeled with their frequency in kHz.
+function labelOf(freqHz: number): string {
+  return String(freqHz / 1000);
+}
 
 @Component({
     selector: 'app-spectrum-diagram',
@@ -11,11 +19,22 @@ export class SpectrumDiagramComponent implements AfterViewInit {
   // Number of past spectra whose min/max are kept, to smooth out the vertical scale over time.
   private static readonly SCALE_HISTORY_LENGTH = 20;
 
+  // Frequency ticks shown on the horizontal axis: the stereo pilot and its second harmonic
+  // (the boundary of the stereo subcarrier band), and the RDS/ARI subcarrier frequencies.
+  private static readonly AXIS_TICKS: number[] = [
+    19000, 38000, FREQ_STREAM_0, FREQ_STREAM_1, FREQ_STREAM_2, FREQ_STREAM_3,
+  ];
+
   @ViewChild('spectrumDiagram') public spectrumDiagram!: ElementRef;
+  @ViewChild('spectrumAxis') public spectrumAxis!: ElementRef;
 
   spectrumDiagramCx: CanvasRenderingContext2D | null = null;
   spectrumDiagramWidth: number = 0;
   spectrumDiagramHeight: number = 0;
+
+  spectrumAxisCx: CanvasRenderingContext2D | null = null;
+  spectrumAxisWidth: number = 0;
+  spectrumAxisHeight: number = 0;
 
   // Ring buffers of the per-spectrum min/max (of the merged, downsampled values, see
   // updateSpectrumDiagram) over the last SCALE_HISTORY_LENGTH spectra.
@@ -28,7 +47,10 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     // Initialize spectrum diagram.
     const diagramEl: HTMLCanvasElement = this.spectrumDiagram.nativeElement;
     this.spectrumDiagramCx = diagramEl.getContext('2d');
-    this.syncCanvasSize();
+    const axisEl: HTMLCanvasElement = this.spectrumAxis.nativeElement;
+    this.spectrumAxisCx = axisEl.getContext('2d');
+    this.syncCanvasSizes();
+    this.drawAxis();
     return this.spectrumDiagramCx;
   }
 
@@ -37,10 +59,10 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     this.historyCount = 0;
   }
 
-  // Adopts the canvas's current on-screen size (e.g. after its container was resized) as the
+  // Adopts each canvas's current on-screen size (e.g. after its container was resized) as the
   // backing-store resolution, scaled for device pixel density so the drawing stays crisp. Only
   // takes effect here, i.e. the next time a redraw happens, rather than eagerly on resize.
-  private syncCanvasSize() {
+  private syncCanvasSizes() {
     const diagramEl: HTMLCanvasElement = this.spectrumDiagram.nativeElement;
     const dpr = window.devicePixelRatio || 1;
     const displayWidth = Math.round(diagramEl.clientWidth * dpr);
@@ -52,6 +74,71 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     }
     this.spectrumDiagramWidth = diagramEl.width;
     this.spectrumDiagramHeight = diagramEl.height;
+
+    const axisEl: HTMLCanvasElement = this.spectrumAxis.nativeElement;
+    const axisDisplayWidth = Math.round(axisEl.clientWidth * dpr);
+    const axisDisplayHeight = Math.round(axisEl.clientHeight * dpr);
+    if (axisDisplayWidth > 0 && axisDisplayHeight > 0 &&
+        (axisEl.width !== axisDisplayWidth || axisEl.height !== axisDisplayHeight)) {
+      axisEl.width = axisDisplayWidth;
+      axisEl.height = axisDisplayHeight;
+    }
+    this.spectrumAxisWidth = axisEl.width;
+    this.spectrumAxisHeight = axisEl.height;
+  }
+
+  // Draws the horizontal frequency axis below the spectrum: a line with an arrowhead on the
+  // right, and ticks/labels for the frequencies of interest, positioned at the same horizontal
+  // scale as the spectrum plot above (0 Hz to SPECTRUM_MAX_FREQUENCY, left to right).
+  private drawAxis() {
+    const cx = this.spectrumAxisCx;
+    if (cx == null || this.spectrumAxisWidth === 0 || this.spectrumAxisHeight === 0) {
+      return;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = this.spectrumAxisWidth;
+    const lineY = 4 * dpr;
+    const tickLength = 4 * dpr;
+    const arrowLength = 5 * dpr;
+    const arrowHalfWidth = 3 * dpr;
+
+    cx.clearRect(0, 0, this.spectrumAxisWidth, this.spectrumAxisHeight);
+    cx.strokeStyle = '#888';
+    cx.fillStyle = '#888';
+    cx.lineWidth = dpr;
+    cx.font = `${11 * dpr}px sans-serif`;
+    cx.textAlign = 'center';
+    cx.textBaseline = 'top';
+
+    // Axis line, with an arrowhead at the right end.
+    cx.beginPath();
+    cx.moveTo(0, lineY);
+    cx.lineTo(width, lineY);
+    cx.moveTo(width - arrowLength, lineY - arrowHalfWidth);
+    cx.lineTo(width, lineY);
+    cx.lineTo(width - arrowLength, lineY + arrowHalfWidth);
+    cx.stroke();
+
+    // Ticks and their frequency labels, written left to right. A label is only written if it
+    // doesn't overlap the last one written, so labels never crowd each other on a narrow
+    // diagram.
+    const minLabelGap = 4 * dpr;
+    let rightEdgeOfLastLabel = -Infinity;
+    for (const freqHz of SpectrumDiagramComponent.AXIS_TICKS) {
+      const x = (freqHz / SPECTRUM_MAX_FREQUENCY) * width;
+      const label = labelOf(freqHz);
+      const halfLabelWidth = cx.measureText(label).width / 2;
+      if (x - halfLabelWidth < rightEdgeOfLastLabel + minLabelGap) {
+        continue;
+      }
+      cx.beginPath();
+      cx.moveTo(x, lineY);
+      cx.lineTo(x, lineY + tickLength);
+      cx.stroke();
+      cx.fillText(label, x, lineY + tickLength + 2 * dpr);
+      rightEdgeOfLastLabel = x + halfLabelWidth;
+    }
   }
 
   updateSpectrumDiagram(spectrum: Float32Array) {
@@ -59,7 +146,8 @@ export class SpectrumDiagramComponent implements AfterViewInit {
       return;
     }
 
-    this.syncCanvasSize();
+    this.syncCanvasSizes();
+    this.drawAxis();
 
     this.spectrumDiagramCx.clearRect(
       0, 0, this.spectrumDiagramWidth, this.spectrumDiagramHeight);

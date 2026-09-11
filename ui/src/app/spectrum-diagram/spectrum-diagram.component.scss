@@ -1,5 +1,12 @@
 canvas {
   display: block;
   width: 100%;
+}
+
+canvas.spectrum {
   height: 100px;
+}
+
+canvas.axis {
+  height: 20px;
 }

@@ -34,7 +34,7 @@ const SPECTRUM_WINDOW_DURATION = 0.25;
 const SPECTRUM_UPDATES_PER_SECOND = 4;
 
 // Highest frequency, in Hz, kept in the computed spectrum.
-const SPECTRUM_MAX_FREQUENCY = 85000;
+export const SPECTRUM_MAX_FREQUENCY = 85000;
 
 export class Demodulator {
   // Automatic Gain Control.
