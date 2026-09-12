@@ -3,6 +3,8 @@ import {
   FREQ_STREAM_0, FREQ_STREAM_1, FREQ_STREAM_2, FREQ_STREAM_3, SPECTRUM_MAX_FREQUENCY
 } from '../../../../core/signals/mpx';
 
+const SPECTRUM_BOTTOM_MARGIN = 2;
+
 // Ticks are labeled with their frequency in kHz.
 function labelOf(freqHz: number): string {
   return String(freqHz / 1000);
@@ -202,20 +204,20 @@ export class SpectrumDiagramComponent implements AfterViewInit {
         dbMax = this.dbMaxHistory[i];
       }
     }
-    const yScale = this.spectrumDiagramHeight / (dbMax - dbMin);
+    const yScale = (this.spectrumDiagramHeight - SPECTRUM_BOTTOM_MARGIN) / (dbMax - dbMin);
 
     // Fill the area between the baseline (the scale's minimum) and the spectrum, rather
     // than just stroking a line, so a noisy trace reads as a solid shape and not as a band
     // between separate min/max lines.
     const gradient = this.spectrumDiagramCx.createLinearGradient(0, this.spectrumDiagramHeight, 0, 0);
     gradient.addColorStop(0, "#004");
-    gradient.addColorStop(1, "#00F");
+    gradient.addColorStop(1, "#55F");
     this.spectrumDiagramCx.fillStyle = gradient;
     this.spectrumDiagramCx.beginPath();
     this.spectrumDiagramCx.moveTo(0, this.spectrumDiagramHeight);
     for (let p = 0; p < numPoints; p++) {
       const x = p * xStep;
-      const y = this.spectrumDiagramHeight - (merged[p] - dbMin) * yScale;
+      const y = this.spectrumDiagramHeight - SPECTRUM_BOTTOM_MARGIN - (merged[p] - dbMin) * yScale;
       this.spectrumDiagramCx.lineTo(x, y);
     }
     this.spectrumDiagramCx.lineTo(this.spectrumDiagramWidth, this.spectrumDiagramHeight);
