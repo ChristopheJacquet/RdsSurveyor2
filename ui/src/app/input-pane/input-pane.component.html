@@ -77,6 +77,15 @@
       </button>
     </div>
 
+    @if (currentSource) {
+      <div class="source-info">
+        <mat-icon>play_circle</mat-icon>
+        {{ currentSource?.name }}@if (currentSource?.description) {
+          - {{ currentSource?.description }}
+        }
+      </div>
+    }
+
     @if (currentSource?.capabilities.reportsFrequency) {
       <div class="tuner-pane">
         @if (currentSource?.capabilities.supportsSeek) {

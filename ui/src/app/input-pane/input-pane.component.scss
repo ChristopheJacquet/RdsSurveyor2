@@ -121,6 +121,18 @@ input {
   margin: 5px;
 }
 
+.source-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 10px 20px;
+  padding: 8px 12px;
+  background-color: #e8ecf9;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
 .tuner-pane {
   text-align: center;
 }

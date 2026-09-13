@@ -72,6 +72,12 @@ const MPX_SAMPLE_RATE = 250000;
 // into a sound card) or a demodulated MPX signal.
 export class AudioInput implements RdsSource {
   public name = "Audio input";
+  public get description() {
+    switch (this.mode) {
+      case "bitstream": return "Bit stream (data/clock signals)";
+      case "mpx": return "MPX";
+    }
+  }
   public get capabilities(): RdsSourceCapabilities {
     const decoderLevel = this.mode === "mpx" ? DecoderLevel.MPX : DecoderLevel.BITSTREAM;
     return {

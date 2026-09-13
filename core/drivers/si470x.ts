@@ -199,6 +199,12 @@ export class Si470x implements RdsSource {
   private readyForNextGroup = true;
 
   public name = "Si470x USB dongle";
+
+  public get description(): string | undefined {
+    return this.chip != "" && this.chipRev != "" && this.firmware > 0 ?
+      `${this.chip}-${this.chipRev}${this.firmware}` : undefined;
+  }
+
   public readonly capabilities: RdsSourceCapabilities = {
     reportsFrequency: true,
     supportsTune: true,

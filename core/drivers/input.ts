@@ -89,6 +89,7 @@ export interface RdsSourceCapabilities {
 
 export interface RdsSource {
   readonly name: string;
+  readonly description: string | undefined;
   // Implementations may provide this as a plain field (most sources have
   // fixed capabilities) or as a getter (for sources whose capabilities
   // are determined at runtime).

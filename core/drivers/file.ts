@@ -3,6 +3,7 @@ import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirect
 
 export class FileSource implements RdsSource {
   public name = "File";
+  public description: string | undefined = undefined;
   // Which stage of the chain the loaded file feeds depends on its detected
   // type; updated by start() once a file is loaded. Defaults to the level
   // for the most common case, hex-groups text files, until then.
@@ -34,6 +35,7 @@ export class FileSource implements RdsSource {
   }
 
   public async start(): Promise<boolean> {
+    this.description = undefined;
     if (this.blob == undefined) {
       throw new Error("file: Trying to play undefined blob.");
     }
@@ -42,6 +44,7 @@ export class FileSource implements RdsSource {
     const header = await this.blob.slice(0, 16).arrayBuffer();
     switch (guessFileType(new Uint8Array(header))) {
       case FileType.HEX_GROUPS: {
+        this.description = "Hex groups";
         this.detectedLevel = DecoderLevel.GROUPSTREAM;
         const text = await this.blob.text();
         this.processTextualGroups(text);
@@ -49,6 +52,7 @@ export class FileSource implements RdsSource {
       }
 
       case FileType.UNSYNCED_BINARY_RDS: {
+        this.description = "Unsynced bit stream";
         this.detectedLevel = DecoderLevel.BITSTREAM;
         const bytes = await this.blob.arrayBuffer();
         this.processBinaryGroups(new Uint8Array(bytes));
@@ -137,11 +141,13 @@ export class FileSource implements RdsSource {
     switch (audioBuffer.numberOfChannels) {
       case 1:
         console.log("Processing MPX file.");
+        this.description = "Audio (MPX)";
         await this.processMpx(blockSize, delayBetweenBlocks, audioBuffer.getChannelData(0));
         break;
 
       case 2:
         console.log("Processing I/Q file.");
+        this.description = "Audio (I/Q)";
         await this.processIq(sampleRate, blockSize, delayBetweenBlocks, audioBuffer.getChannelData(0), audioBuffer.getChannelData(1));
         break;
 

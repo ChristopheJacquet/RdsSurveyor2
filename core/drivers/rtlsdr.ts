@@ -12,6 +12,7 @@ export class RtlSdr implements RdsSource {
   pipeline: RdsPipeline;
 
   public name = "RTL-SDR USB dongle";
+  public description: string | undefined = undefined;
   public readonly capabilities: RdsSourceCapabilities = {
     reportsFrequency: true,
     supportsTune: true,
