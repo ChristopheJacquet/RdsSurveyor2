@@ -7,7 +7,6 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {MatTabsModule} from '@angular/material/tabs';
 import {FormsModule} from '@angular/forms';
 import {MatExpansionModule, MatExpansionPanel} from '@angular/material/expansion';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -31,7 +30,7 @@ import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.c
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatTabsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -49,10 +48,10 @@ export class InputPaneComponent implements RdsPipeline  {
   stationChangeDetector = new StationChangeDetector();
   currentSource?: RdsSource;
   audioSource = new AudioInput(this);
-  radioSources = [new Si470x(this), new RtlSdr(this), this.audioSource];
-  selectedRadioSource: RdsSource = this.radioSources[0];
-  audioDevices: MediaDeviceInfo[] = [];
   fileSource = new FileSource(this);
+  sources = [this.fileSource, new Si470x(this), new RtlSdr(this), this.audioSource];
+  selectedSource: RdsSource = this.sources[0];
+  audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;
   frequency: number = -1;
   signalStrength: number = 0;
@@ -266,7 +265,7 @@ export class InputPaneComponent implements RdsPipeline  {
   // Exactly one radio source panel must stay expanded at all times, so undo
   // an attempt to collapse the currently selected one.
   keepSelectedPanelOpen(panel: MatExpansionPanel, source: RdsSource) {
-    if (this.selectedRadioSource === source) {
+    if (this.selectedSource === source) {
       panel.open();
     }
   }
@@ -339,18 +338,18 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async startSelectedRadioSource() {
-    console.log(this.selectedRadioSource);
+    console.log(this.selectedSource);
 
-    if (this.selectedRadioSource == undefined) {
+    if (this.selectedSource == undefined || this.selectedSource === this.fileSource) {
       return;
     }
-    const success = await this.selectedRadioSource.start();
+    const success = await this.selectedSource.start();
     if (!success) {
-      console.log("Cannot start source " + this.selectedRadioSource.name);
+      console.log("Cannot start source " + this.selectedSource.name);
       return;
     }
-    this.setSource(this.selectedRadioSource);
-    await this.selectedRadioSource.tune(this.prefTunedFrequency.value);
+    this.setSource(this.selectedSource);
+    await this.selectedSource.tune(this.prefTunedFrequency.value);
   }
 
   async stopSource() {

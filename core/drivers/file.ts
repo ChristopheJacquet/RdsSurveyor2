@@ -2,7 +2,7 @@ import { FMDemodulator } from "@jtarrio/webrtlsdr/dsp/demodulators";
 import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, parseHexGroup } from "./input";
 
 export class FileSource implements RdsSource {
-  public name = "File";
+  public name = "File playback";
   public description: string | undefined = undefined;
   // Which stage of the chain the loaded file feeds depends on its detected
   // type; updated by start() once a file is loaded. Defaults to the level

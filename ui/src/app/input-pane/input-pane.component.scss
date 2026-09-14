@@ -10,8 +10,9 @@
 }
 
 .playback-control-container {
-  padding: 10px 10px;
+  padding: 0 10px 10px;
   display: flex;
+  align-items: center;
   gap: 8px;
   overflow: hidden;
 }
@@ -52,7 +53,7 @@ input {
 
 .radio-sources-list {
   display: block;
-  margin: 15px 0 20px;
+  margin-bottom: 20px;
 
   // Keep the expanded header the same height as a collapsed one, since our
   // panels carry no title-row content that needs the taller expanded style.
@@ -114,7 +115,6 @@ input {
 
 .radio-connect-pane, .logging-pane {
   text-align: center;
-  padding: 20px 10px;
 }
 
 .radio-connect-pane button {
@@ -186,10 +186,6 @@ app-spectrum-diagram {
 
 .hidden {
   display: none;
-}
-
-::ng-deep .input_tabs .mat-mdc-tab-body-wrapper {
-  display: block !important;
 }
 
 .indicator {
