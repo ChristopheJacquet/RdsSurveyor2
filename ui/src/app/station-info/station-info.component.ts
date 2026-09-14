@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {FormsModule} from '@angular/forms';
+import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -18,7 +19,7 @@ import { humanReadableUrl } from '../../../../core/protocol/internet_connection'
 
 @Component({
     selector: 'app-station-info',
-    imports: [CommonModule, HexPipe, FormsModule, MatButtonToggleModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatListModule, MatSelectModule, MatTabsModule, MatTooltipModule],
+    imports: [CommonModule, HexPipe, FormsModule, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatListModule, MatSelectModule, MatTabsModule, MatTooltipModule],
     templateUrl: './station-info.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './station-info.component.scss'
@@ -223,6 +224,10 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 			}
 			return true;
 		});
+	}
+
+	resetStation() {
+		this.station.reset();
 	}
 
 	showAbout() {

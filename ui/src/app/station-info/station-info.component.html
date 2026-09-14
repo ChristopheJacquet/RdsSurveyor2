@@ -11,6 +11,9 @@
   </div>
 
   <div class="top-controls">
+    <button mat-stroked-button (click)="resetStation()">
+      Reset <mat-icon>restart_alt</mat-icon>
+    </button>
     <mat-button-toggle-group name="rdsVariant" [value]="prefRdsVariant.value"
       (change)="setRdsVariant($event)">
       <mat-button-toggle value="rds">RDS</mat-button-toggle>

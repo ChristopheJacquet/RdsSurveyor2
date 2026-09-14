@@ -153,6 +153,12 @@
   display: flex;
 }
 
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .app-icon {
   position: absolute;
   top: 2px;
