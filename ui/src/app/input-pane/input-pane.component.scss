@@ -10,7 +10,8 @@
 }
 
 .playback-control-container {
-  padding: 0 10px 10px;
+  align-self: stretch;
+  padding: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -22,9 +23,10 @@
 }
 
 .dropzone {
+  box-sizing: border-box;
   background-color: #e8ecf9;
   padding: 2em 1em;
-  margin: 10px;
+  margin: 10px 0;
   text-align: center;
 
   // Vertical center text.
@@ -36,7 +38,8 @@
   cursor: default;
   border-radius: 20px;
   border: 2px dashed #555;
-  height: 50px;
+  height: 100px;
+  width: 100%;
 }
 
 .dragging {
@@ -85,13 +88,13 @@ input {
 
   // Most panels carry no body content, so remove the body's padding
   // entirely rather than just shrinking it; panels that do have content
-  // (e.g. .audio-source-settings) restore their own.
+  // (e.g. .source-settings) restore their own.
   ::ng-deep .mat-expansion-panel-body {
     padding: 0;
   }
 }
 
-.audio-source-settings {
+.source-settings {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -99,7 +102,7 @@ input {
   padding: 0 24px 16px;
 }
 
-.audio-source-settings mat-radio-group {
+.source-settings mat-radio-group {
   display: flex;
   flex-direction: column;
   // Without this, flex's default "stretch" widens each radio button to the
@@ -109,7 +112,7 @@ input {
   gap: 4px;
 }
 
-.audio-source-settings mat-form-field {
+.source-settings mat-form-field {
   width: 100%;
 }
 
