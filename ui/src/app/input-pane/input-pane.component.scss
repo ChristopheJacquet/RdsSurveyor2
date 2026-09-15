@@ -37,17 +37,20 @@
 
   cursor: default;
   border-radius: 20px;
-  border: 2px dashed #555;
+  border: 2px dashed #8fa0d9;
   height: 100px;
   width: 100%;
 }
 
 .dragging {
   background-color: #c5d0f3;
+  border-color: #3f5bb0;
 }
 
 .disabled {
-  background-color: #CCC;
+  background-color: #eee;
+  border-color: #bbb;
+  color: #999;
 }
 
 input {
@@ -82,8 +85,10 @@ input {
     border-bottom: 1px solid #ddd;
   }
 
+  // Kept lighter/more neutral than its contents, so that the panel
+  // chrome recedes in the background.
   ::ng-deep .mat-expansion-panel.mat-expanded {
-    background-color: #e8ecf9;
+    background-color: #eef1f8;
   }
 
   // Most panels carry no body content, so remove the body's padding
@@ -131,7 +136,8 @@ input {
   gap: 6px;
   margin: 0 10px 20px;
   padding: 8px 12px;
-  background-color: #e8ecf9;
+  background-color: #e3f6e3;
+  color: #2e7d32;
   border-radius: 8px;
   font-weight: 500;
 }
