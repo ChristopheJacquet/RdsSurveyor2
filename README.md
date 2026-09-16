@@ -75,24 +75,27 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 * UI for historical Radio Paging protocol.
 * Misc UI improvements: render better on small screens, replay button for playback.
 
-## Rough future plans
+### Milestone 9 (Reached on 15 Sep 2026)
 
-### Milestone 9
-
-* New input sources: clock/data and MPX from sound card.
+* New input sources: audio from sound card (for MPX or clock/data bitstream).
 * MPX spectrum display.
+* Improved Si470x driver, notably with signal strength reporting.
+* New convenience buttons: station reset, input file replay.
+* Unified input source selector, for both file playback and "live" sources.
+
+## Rough future plans
 
 ### Milestone 10
 
-* SDR++ bridge.
+* Improved logging to files.
 
 ### Milestone 11
 
-* Best practice diagnoses and recommendations (for broadcasters).
+* SDR++ bridge.
 
 ### Milestone 12
 
-* Improved logging to files.
+* Best practice diagnoses and recommendations (for broadcasters).
 
 ### Milestone 13
 
