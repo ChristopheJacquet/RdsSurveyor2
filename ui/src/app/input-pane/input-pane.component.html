@@ -75,7 +75,7 @@
 </div>
 
 @if (currentSource) {
-  <div class="source-info">
+  <div class="info">
     <mat-icon>play_circle</mat-icon>
     {{ currentSource?.name }}@if (currentSource?.description) {
       - {{ currentSource?.description }}
@@ -113,7 +113,18 @@
 }
 
 <div class="logging-pane">
-  <button mat-stroked-button (click)="selectLogDir()">Select log directory</button>
+  @if (logDirHandle) {
+    <div class="info">
+      <mat-icon>fiber_manual_record</mat-icon>
+      Recording to: {{ logDirHandle.name }}
+    </div>
+  }
+  <button mat-stroked-button [disabled]="logDirHandle != null" (click)="selectLogDir()">
+    Record groups <mat-icon>fiber_manual_record</mat-icon>
+  </button>
+  <button mat-stroked-button [disabled]="logDirHandle == null" (click)="stopLogging()">
+    Stop recording <mat-icon>stop_circle</mat-icon>
+  </button>
 </div>
 
 <div class="processingChain">

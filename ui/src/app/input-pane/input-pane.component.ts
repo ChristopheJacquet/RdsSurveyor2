@@ -435,9 +435,19 @@ export class InputPaneComponent implements RdsPipeline  {
 
   async selectLogDir() {
     if ('showDirectoryPicker' in self) {
-      this.logDirHandle = await window.showDirectoryPicker();
+      this.logDirHandle = await window.showDirectoryPicker({
+        mode: "readwrite"
+      });
       console.log(this.logDirHandle);
     }
+  }
+
+  async stopLogging() {
+    if (this.logFileStream != null) {
+      await this.logFileStream.close();
+      this.logFileStream = null;
+    }
+    this.logDirHandle = null;
   }
 
   async startNewLogFile(pi: number) {

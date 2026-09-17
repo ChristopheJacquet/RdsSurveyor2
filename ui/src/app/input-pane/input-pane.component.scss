@@ -123,13 +123,13 @@ input {
 
 .radio-connect-pane, .logging-pane {
   text-align: center;
+
+  button {
+    margin: 5px;
+  }
 }
 
-.radio-connect-pane button {
-  margin: 5px;
-}
-
-.source-info {
+.info {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,7 +187,7 @@ app-spectrum-diagram {
   gap: 10px;
 }
 
-.processingChain > div:not(:last-child), .radio-connect-pane, .logging-pane {
+.processingChain > div:not(:last-child), .radio-connect-pane, .tuner-pane, .logging-pane {
   padding-bottom: 20px;
   border-bottom: 1px solid #666;
   margin-bottom: 20px;
