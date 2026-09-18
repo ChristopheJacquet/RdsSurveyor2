@@ -111,7 +111,6 @@ function parseHexBlock(s: string): Block {
   if (m) {
     const value = parseInt(m[1], 16);
     const errorCount = Math.min(parseInt(m[2]), UNCORRECTABLE_ERRORS) as ErrorCount;
-    console.log(`With errors: ${value} / ${errorCount}`);
     return new Block(value, errorCount);
   }
 
