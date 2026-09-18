@@ -60,6 +60,14 @@ export class InputPaneComponent implements RdsPipeline  {
   rdsSync: boolean = false;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
+  // Chains pending log writes so they execute in order, one at a time, off
+  // to the side of the (synchronous) group-processing path. A failed write
+  // is caught so it doesn't break the chain for subsequent writes.
+  private logWriteChain: Promise<void> = Promise.resolve();
+  // Lines waiting to be batched into the next write(), so we don't issue one
+  // costly write() per group.
+  private logBuffer: string[] = [];
+  private static readonly LOG_FLUSH_LINES = 100;
   synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
   demodulator = new Array<Demodulator>(FREQ_STREAMS.length);
   spectrumAnalyzer = new SpectrumAnalyzer();
@@ -153,7 +161,7 @@ export class InputPaneComponent implements RdsPipeline  {
     return this.lastSourceWasFile && !this.sourceActive;
   }
 
-  async emitGroup(stream: number, group: Group, maxErrors: number) {
+  emitGroup(stream: number, group: Group, maxErrors: number) {
     // Apply the error tolerance (narrowing group.blocks[i].ok) before
     // updating the BLER graph, so groups with more than maxErrors are rendered
     // as uncorrectable.
@@ -165,11 +173,11 @@ export class InputPaneComponent implements RdsPipeline  {
           for (let s = 0; s < 4; s++) {
             this.blerGraph.get(s)?.reset();
           }
-          await this.startNewLogFile(event.pi);
+          this.startNewLogFile(event.pi);
           break;
-        
+
         case ReceiverEventKind.GroupEvent:
-          await this.logGroupEvent(event);
+          this.logGroupEvent(event);
           break;
       }
       this.groupReceived.emit(event);
@@ -443,22 +451,31 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async stopLogging() {
+    // Stop accepting new writes, then wait for whatever's already queued
+    // (including a possible file-rotation) to actually land on disk before
+    // closing, so recording stops only once every group up to this point
+    // has really been written out.
+    this.logDirHandle = null;
+    this.flushLogBuffer();
+    await this.logWriteChain;
     if (this.logFileStream != null) {
       await this.logFileStream.close();
       this.logFileStream = null;
     }
-    this.logDirHandle = null;
   }
 
-  async startNewLogFile(pi: number) {
+  // Appends `op` to the log write queue, so pending writes run strictly in
+  // order, one at a time, without blocking group processing on disk I/O.
+  private enqueueLogOp(op: () => Promise<void>) {
+    this.logWriteChain = this.logWriteChain.then(op)
+      .catch(err => console.error('Log write failed', err));
+  }
+
+  startNewLogFile(pi: number) {
     if (this.logDirHandle == null) {
       return;
     }
-
-    if (this.logFileStream != null) {
-      // Write out pending log data to the previous log file.
-      this.logFileStream.close();
-    }
+    const dirHandle = this.logDirHandle;
 
     const date = new Date();
     const fileName = pi.toString(16).toUpperCase().padStart(4, '0')
@@ -469,17 +486,46 @@ export class InputPaneComponent implements RdsPipeline  {
       + '-' + date.getMinutes().toString().padStart(2, '0')
       + '-' + date.getSeconds().toString().padStart(2, '0')
       + '.txt'
-    const logFileHandle = await this.logDirHandle.getFileHandle(fileName, { create: true });
-    this.logFileStream = await logFileHandle.createWritable();
-    await this.logFileStream.write('% Log file\n');
+
+    // Flush what's buffered to the previous file before rotating.
+    this.flushLogBuffer();
+
+    this.enqueueLogOp(async () => {
+      if (this.logFileStream != null) {
+        // Write out pending log data to the previous log file.
+        await this.logFileStream.close();
+      }
+      const logFileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+      this.logFileStream = await logFileHandle.createWritable();
+      await this.logFileStream.write('% Log file\n');
+    });
   }
 
-  async logGroupEvent(evt: GroupEvent) {
-    if (this.logFileStream == null) {
+  logGroupEvent(evt: GroupEvent) {
+    if (this.logDirHandle == null) {
       return;
     }
 
     const logLine = (evt.stream > 0 ? `#S${evt.stream} ` : "") + evt.group;
-    await this.logFileStream.write(logLine + "\n");
+    this.logBuffer.push(logLine + "\n");
+    if (this.logBuffer.length >= InputPaneComponent.LOG_FLUSH_LINES) {
+      this.flushLogBuffer();
+    }
+  }
+
+  // Batches buffered lines into a single write(), instead of issuing one
+  // write() per group; called both periodically (once the buffer fills up)
+  // and whenever the buffer must be fully drained (file rotation, stop).
+  private flushLogBuffer() {
+    if (this.logBuffer.length == 0) {
+      return;
+    }
+    const chunk = this.logBuffer.join('');
+    this.logBuffer = [];
+    this.enqueueLogOp(async () => {
+      if (this.logFileStream != null) {
+        await this.logFileStream.write(chunk);
+      }
+    });
   }
 }
