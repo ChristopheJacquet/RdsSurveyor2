@@ -91,7 +91,7 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   private async handleHttpError(error: HttpErrorResponse) {
-    console.log(error);
+    console.error(error);
     this.snackBar.open(
       `Unable to load RDS sample file from ${error.url}.`
       + 'The URL provided in the play_url parameter may be incorrect.',
@@ -339,7 +339,10 @@ export class InputPaneComponent implements RdsPipeline  {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((track) => track.stop());
     } catch (e) {
-      console.log("audio: could not get input permission.", e);
+      console.error("audio: could not get input permission.", e);
+      this.snackBar.open(
+        "Could not get access to audio devices.",
+        "Dismiss");
     }
     await this.refreshAudioDevices();
   }
@@ -366,7 +369,9 @@ export class InputPaneComponent implements RdsPipeline  {
     }
     const success = await this.selectedSource.start();
     if (!success) {
-      console.log("Cannot start source " + this.selectedSource.name);
+      this.snackBar.open(
+        `Cannot start source ${this.selectedSource.name}.`,
+        "Dismiss");
       return;
     }
     this.setSource(this.selectedSource);
@@ -388,7 +393,7 @@ export class InputPaneComponent implements RdsPipeline  {
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
       if (event.stream == undefined) {
-        console.log(`No stream in ${event}`);
+        console.error(`No stream in ${event}`);
         return;
       }
       this.blerGraph.get(event.stream)?.updateBlerGraph(false, undefined);
@@ -444,16 +449,22 @@ export class InputPaneComponent implements RdsPipeline  {
   setFrequency() {
     const freqStr = window.prompt("New frequency:");
     if (freqStr == null) {
-      console.log("No frequency entered.");
+      this.snackBar.open(
+        "No frequency entered.",
+        "Dismiss");
       return;
     }
     const freq = Number.parseFloat(freqStr) * 1000;
     if (Number.isNaN(freq)) {
-      console.log(`Entered frequency ${freqStr} could not be parsed.`);
+      this.snackBar.open(
+        `Entered frequency "${freqStr}" could not be parsed.`,
+        "Dismiss");
       return;
     }
     if (freq < 87500 || freq >= 108000) {
-      console.log(`Entered frequency ${freq} not in FM radio band.`);
+      this.snackBar.open(
+        `Entered frequency ${freq/1000} MHz not in FM radio band.`,
+        "Dismiss");
       return;
     }
     this.currentSource?.tune(freq);
