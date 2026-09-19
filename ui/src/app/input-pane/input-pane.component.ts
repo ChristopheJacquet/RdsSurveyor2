@@ -187,7 +187,10 @@ export class InputPaneComponent implements RdsPipeline  {
           if (!this.logFileStarted && this.currentPi != null) {
             this.startNewLogFile(this.currentPi);
           }
-          this.logGroupEvent(event);
+          // Drop groups until the new PI is known, to avoid misattributing them.
+          if (this.logFileStarted) {
+            this.logGroupEvent(event);
+          }
           break;
       }
       this.groupReceived.emit(event);
@@ -376,6 +379,7 @@ export class InputPaneComponent implements RdsPipeline  {
     }
     await this.currentSource.stop();
     this.unsetSource();
+    this.stopLoggingCurrentStation();
   }
 
   async processRdsReportEvent(event: RdsReportEvent) {
@@ -400,17 +404,20 @@ export class InputPaneComponent implements RdsPipeline  {
 
   reportSourceEnd(): void {
     this.unsetSource();
+    this.stopLoggingCurrentStation();
   }
 
   seekUp() {
     if (this.currentSource != undefined) {
       this.currentSource.seek(SeekDirection.UP);
+      this.stopLoggingCurrentStation();
     }
   }
-  
+
   seekDown() {
     if (this.currentSource != undefined) {
       this.currentSource.seek(SeekDirection.DOWN);
+      this.stopLoggingCurrentStation();
     }
   }
 
@@ -422,6 +429,7 @@ export class InputPaneComponent implements RdsPipeline  {
       this.currentSource.tune(newFreq);
       this.frequency = newFreq;
       this.prefTunedFrequency.setValue(newFreq);
+      this.stopLoggingCurrentStation();
     }
   }
 
@@ -449,6 +457,7 @@ export class InputPaneComponent implements RdsPipeline  {
       return;
     }
     this.currentSource?.tune(freq);
+    this.stopLoggingCurrentStation();
   }
 
   async selectLogDir() {
@@ -542,5 +551,13 @@ export class InputPaneComponent implements RdsPipeline  {
         await this.logFileStream.write(chunk);
       }
     });
+  }
+
+  // On stop/tune/seek: flush the old file, then stop writing to it until a
+  // new NewStationEvent confirms the next station's PI.
+  private stopLoggingCurrentStation() {
+    this.flushLogBuffer();
+    this.logFileStarted = false;
+    this.currentPi = null;
   }
 }
