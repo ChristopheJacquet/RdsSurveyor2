@@ -116,7 +116,7 @@
   @if (logDirHandle) {
     <div class="info">
       <mat-icon>fiber_manual_record</mat-icon>
-      Recording to: {{ logDirHandle.name }}
+      Recording to: {{ logDirHandle.name || "&lt;no name&gt;" }}
     </div>
   }
   <button mat-stroked-button [disabled]="logDirHandle != null" (click)="selectLogDir()">

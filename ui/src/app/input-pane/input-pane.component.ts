@@ -461,13 +461,30 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   async selectLogDir() {
-    if ('showDirectoryPicker' in self) {
-      this.logDirHandle = await window.showDirectoryPicker({
-        mode: "readwrite"
-      });
-      this.logFileStarted = false;
+    try {
+      if ("showDirectoryPicker" in self) {  // Prefer the File System Access API.
+        this.logDirHandle = await window.showDirectoryPicker({
+          mode: "readwrite"
+        });
+      } else if ("storage" in navigator) {  // Fall back to Origin Private File System (OPFS ).
+        const isPersistent = await navigator.storage.persisted();
+        if (!isPersistent) {
+          // A dialog window may be shown here.
+          await navigator.storage.persist();
+        }
+        this.logDirHandle = await navigator.storage.getDirectory();
+      } else {
+        this.logDirHandle = null;
+      }
       console.log(this.logDirHandle);
+    } catch (error) {
+      this.logDirHandle = null;
+      console.error(error);
+      this.snackBar.open(
+        "Unable to start group recording: cannot get a location for storing files.",
+        "Dismiss");
     }
+    this.logFileStarted = false;
   }
 
   async stopLogging() {
