@@ -468,7 +468,7 @@ export class InputPaneComponent implements RdsPipeline  {
   // order, one at a time, without blocking group processing on disk I/O.
   private enqueueLogOp(op: () => Promise<void>) {
     this.logWriteChain = this.logWriteChain.then(op)
-      .catch(err => console.error('Log write failed', err));
+      .catch(err => console.error('Recording write failed', err));
   }
 
   startNewLogFile(pi: number) {
@@ -485,7 +485,7 @@ export class InputPaneComponent implements RdsPipeline  {
       + ' ' + date.getHours().toString().padStart(2, '0')
       + '-' + date.getMinutes().toString().padStart(2, '0')
       + '-' + date.getSeconds().toString().padStart(2, '0')
-      + '.txt'
+      + '.hexrds'
 
     // Flush what's buffered to the previous file before rotating.
     this.flushLogBuffer();
@@ -497,7 +497,9 @@ export class InputPaneComponent implements RdsPipeline  {
       }
       const logFileHandle = await dirHandle.getFileHandle(fileName, { create: true });
       this.logFileStream = await logFileHandle.createWritable();
-      await this.logFileStream.write('% Log file\n');
+      await this.logFileStream.write(
+        '% RDS recording by RDS Surveyor 2.\n' +
+        '% format=corrected_hex_groups_with_error_count\n');
     });
   }
 
