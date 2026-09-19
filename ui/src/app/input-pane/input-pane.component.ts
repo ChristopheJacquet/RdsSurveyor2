@@ -60,6 +60,10 @@ export class InputPaneComponent implements RdsPipeline  {
   rdsSync: boolean = false;
   logDirHandle: FileSystemDirectoryHandle | null = null;
   logFileStream: FileSystemWritableFileStream | null = null;
+  // PI of the currently tuned station.
+  private currentPi: number | null = null;
+  // Whether a log file has been started for the current logDirHandle.
+  private logFileStarted = false;
   // Chains pending log writes so they execute in order, one at a time, off
   // to the side of the (synchronous) group-processing path. A failed write
   // is caught so it doesn't break the chain for subsequent writes.
@@ -173,10 +177,16 @@ export class InputPaneComponent implements RdsPipeline  {
           for (let s = 0; s < 4; s++) {
             this.blerGraph.get(s)?.reset();
           }
+          this.currentPi = event.pi;
           this.startNewLogFile(event.pi);
           break;
 
         case ReceiverEventKind.GroupEvent:
+          // Covers the case where a log dir is picked after NewStationEvent was
+          // received.
+          if (!this.logFileStarted && this.currentPi != null) {
+            this.startNewLogFile(this.currentPi);
+          }
           this.logGroupEvent(event);
           break;
       }
@@ -446,6 +456,7 @@ export class InputPaneComponent implements RdsPipeline  {
       this.logDirHandle = await window.showDirectoryPicker({
         mode: "readwrite"
       });
+      this.logFileStarted = false;
       console.log(this.logDirHandle);
     }
   }
@@ -456,6 +467,7 @@ export class InputPaneComponent implements RdsPipeline  {
     // closing, so recording stops only once every group up to this point
     // has really been written out.
     this.logDirHandle = null;
+    this.logFileStarted = false;
     this.flushLogBuffer();
     await this.logWriteChain;
     if (this.logFileStream != null) {
@@ -475,6 +487,7 @@ export class InputPaneComponent implements RdsPipeline  {
     if (this.logDirHandle == null) {
       return;
     }
+    this.logFileStarted = true;
     const dirHandle = this.logDirHandle;
 
     const date = new Date();
