@@ -7,6 +7,8 @@
   min-width: 350px;
   width: 25%;
   flex: 0 0 auto;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .playback-control-container {
@@ -171,7 +173,7 @@ input {
 }
 
 .processingChain {
-  padding: 20px 0px;
+  padding: 20px 0px 0px;
   text-align: center;
 }
 

@@ -3,6 +3,13 @@
   font-size: var(--mat-sys-label-large-size);
 }
 
+// Pin app-root to the viewport height so "main"'s height:100% below is
+// relative to a definite size, not content-based auto.
+:host {
+  display: block;
+  height: 100%;
+}
+
 main {
   display: flex;
   background: #666;
