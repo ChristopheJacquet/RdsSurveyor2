@@ -143,6 +143,10 @@ input {
   color: #2e7d32;
   border-radius: 8px;
   font-weight: 500;
+
+  mat-icon {
+    flex-shrink: 0;
+  }
 }
 
 .tuner-pane {
