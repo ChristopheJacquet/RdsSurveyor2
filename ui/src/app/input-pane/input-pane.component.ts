@@ -10,6 +10,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {FormsModule} from '@angular/forms';
 import {MatExpansionModule, MatExpansionPanel} from '@angular/material/expansion';
 import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
 import {MatSelectModule} from '@angular/material/select';
 import {MatRadioModule} from '@angular/material/radio';
 
@@ -19,6 +20,7 @@ import { AudioInput } from "../../../../core/drivers/audio";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
+import { NetworkSource } from "../../../../core/drivers/network";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator, FREQ_STREAMS, SpectrumAnalyzer } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
@@ -30,7 +32,7 @@ import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.c
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -49,7 +51,8 @@ export class InputPaneComponent implements RdsPipeline  {
   currentSource?: RdsSource;
   audioSource = new AudioInput(this);
   fileSource = new FileSource(this);
-  sources = [this.fileSource, new Si470x(this), new RtlSdr(this), this.audioSource];
+  networkSource = new NetworkSource(this);
+  sources = [this.fileSource, new Si470x(this), new RtlSdr(this), this.audioSource, this.networkSource];
   selectedSource: RdsSource = this.sources[0];
   audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;

@@ -63,6 +63,18 @@
             }
           </div>
         }
+        @if (s === networkSource) {
+          <div class="source-settings">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>URL</mat-label>
+              <input matInput type="url" placeholder="http://host:port/path" [(ngModel)]="networkSource.url" [disabled]="sourceActive">
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Sample rate (Hz)</mat-label>
+              <input matInput type="number" [(ngModel)]="networkSource.sampleRate" [disabled]="sourceActive">
+            </mat-form-field>
+          </div>
+        }
       </mat-expansion-panel>
     }
   </mat-accordion>
