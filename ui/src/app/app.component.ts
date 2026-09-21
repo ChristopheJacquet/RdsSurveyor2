@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, HostListener } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
@@ -16,6 +16,37 @@ export class AppComponent {
   title = 'rds-surveyor';
 
   station: StationImpl;
+
+  // Width the user has dragged the input pane to, in pixels; undefined until
+  // the divider is dragged, so the pane keeps its CSS-defined default width.
+  inputPaneWidth?: number;
+
+  private draggingDivider = false;
+  private dragStartX = 0;
+  private dragStartWidth = 0;
+
+  onDividerMouseDown(event: MouseEvent) {
+    event.preventDefault();
+    const inputPane = (event.target as HTMLElement).previousElementSibling as HTMLElement;
+    this.draggingDivider = true;
+    this.dragStartX = event.clientX;
+    this.dragStartWidth = inputPane.getBoundingClientRect().width;
+    // Suppress text selection elsewhere on the page while dragging.
+    document.body.style.userSelect = 'none';
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onDocumentMouseMove(event: MouseEvent) {
+    if (this.draggingDivider) {
+      this.inputPaneWidth = this.dragStartWidth + (event.clientX - this.dragStartX);
+    }
+  }
+
+  @HostListener('document:mouseup')
+  onDocumentMouseUp() {
+    this.draggingDivider = false;
+    document.body.style.userSelect = '';
+  }
 
   receiveGroup(evt: ReceiverEvent) {
     switch (evt.kind) {

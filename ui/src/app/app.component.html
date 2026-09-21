@@ -1,5 +1,6 @@
 <main class="main">
-  <app-input-pane (groupReceived)="receiveGroup($event)" />
+  <app-input-pane (groupReceived)="receiveGroup($event)" [style.width.px]="inputPaneWidth" />
+  <div class="divider" (mousedown)="onDividerMouseDown($event)"></div>
   <app-station-info [station]="station" />
 </main>
 

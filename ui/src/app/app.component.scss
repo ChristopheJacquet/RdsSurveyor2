@@ -17,3 +17,15 @@ main {
   padding: 0;
   margin: 0;
 }
+
+.divider {
+  flex: 0 0 auto;
+  width: 6px;
+  margin: 10px 0;
+  cursor: col-resize;
+  background: transparent;
+
+  &:hover, &:active {
+    background: #888;
+  }
+}
