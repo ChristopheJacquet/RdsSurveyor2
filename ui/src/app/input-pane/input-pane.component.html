@@ -18,10 +18,17 @@
                 <mat-button-toggle value="realtime">Real time</mat-button-toggle>
               </mat-button-toggle-group>
               <div class="playback-speed-expander"></div>
+              <button mat-stroked-button [disabled]="!fileSourceActive" (click)="togglePause()">
+                {{ fileSource.isPaused ? 'Resume' : 'Pause' }}
+                <mat-icon>{{ fileSource.isPaused ? 'play_circle' : 'pause_circle' }}</mat-icon>
+              </button>
               <button mat-stroked-button [disabled]="!canReplay" (click)="replayFile()">
                 Replay <mat-icon>replay</mat-icon>
               </button>
             </div>
+            <mat-checkbox [(ngModel)]="prefAutoPauseOnStationChange.value" (ngModelChange)="prefAutoPauseOnStationChange.setValue($event)">
+              Auto-pause on station change
+            </mat-checkbox>
             <div
               class="dropzone"
               [class.dragging]="isDragging && !sourceActive"

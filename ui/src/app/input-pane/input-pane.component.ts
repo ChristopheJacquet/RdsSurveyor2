@@ -5,6 +5,7 @@ import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, in
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {FormsModule} from '@angular/forms';
@@ -32,7 +33,7 @@ import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.c
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -83,6 +84,7 @@ export class InputPaneComponent implements RdsPipeline  {
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
   prefMaxErrors = new Pref<number>("pref.max_errors", 0);
+  prefAutoPauseOnStationChange = new Pref<boolean>("pref.auto_pause_on_station_change", false);
 
   private snackBar = inject(MatSnackBar);
 
@@ -108,6 +110,8 @@ export class InputPaneComponent implements RdsPipeline  {
     this.prefTunedFrequency.init();
 
     this.prefMaxErrors.init();
+
+    this.prefAutoPauseOnStationChange.init();
 
     // Populate the audio device list if permission was already granted in a
     // previous session; otherwise the settings panel offers a button to ask.
@@ -168,6 +172,18 @@ export class InputPaneComponent implements RdsPipeline  {
     return this.lastSourceWasFile && !this.sourceActive;
   }
 
+  get fileSourceActive(): boolean {
+    return this.currentSource === this.fileSource;
+  }
+
+  togglePause() {
+    if (this.fileSource.isPaused) {
+      this.fileSource.resume();
+    } else {
+      this.fileSource.pause();
+    }
+  }
+
   emitGroup(stream: number, group: Group, maxErrors: number) {
     // Apply the error tolerance (narrowing group.blocks[i].ok) before
     // updating the BLER graph, so groups with more than maxErrors are rendered
@@ -182,6 +198,9 @@ export class InputPaneComponent implements RdsPipeline  {
           }
           this.currentPi = event.pi;
           this.startNewLogFile(event.pi);
+          if (this.prefAutoPauseOnStationChange.value && this.fileSourceActive) {
+            this.fileSource.pause();
+          }
           break;
 
         case ReceiverEventKind.GroupEvent:

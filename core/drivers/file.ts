@@ -11,6 +11,8 @@ export class FileSource implements RdsSource {
   public realtimePlayback: boolean = false;
   private blob?: Blob;
   private stoppingPlayback = true;
+  private paused = false;
+  private resumeWaiters: Array<() => void> = [];
 
   constructor (private pipeline: RdsPipeline) {}
 
@@ -41,6 +43,7 @@ export class FileSource implements RdsSource {
     }
 
     this.stoppingPlayback = false;
+    this.paused = false;
     const header = await this.blob.slice(0, 16).arrayBuffer();
     switch (guessFileType(new Uint8Array(header))) {
       case FileType.HEX_GROUPS: {
@@ -72,10 +75,42 @@ export class FileSource implements RdsSource {
 
   public async stop(): Promise<void> {
     this.stoppingPlayback = true;
+    this.paused = false;
+    this.releaseResumeWaiters();
   }
 
   public setBlob(blob: Blob): void {
     this.blob = blob;
+  }
+
+  public get isPaused(): boolean {
+    return this.paused;
+  }
+
+  public pause(): void {
+    this.paused = true;
+  }
+
+  public resume(): void {
+    this.paused = false;
+    this.releaseResumeWaiters();
+  }
+
+  private releaseResumeWaiters(): void {
+    const waiters = this.resumeWaiters;
+    this.resumeWaiters = [];
+    for (const waiter of waiters) {
+      waiter();
+    }
+  }
+
+  // Returns once either playback is stopped or, if it was paused, resumed.
+  // Callers must check stoppingPlayback again afterwards, since playback may
+  // have been stopped (rather than resumed) while paused.
+  private async waitWhilePaused(): Promise<void> {
+    while (this.paused && !this.stoppingPlayback) {
+      await new Promise<void>(resolve => this.resumeWaiters.push(resolve));
+    }
   }
 
   async processTextualGroups(s: string) {
@@ -86,6 +121,10 @@ export class FileSource implements RdsSource {
         continue;
       }
       this.pipeline.processRdsReportEvent(event);
+      if (this.stoppingPlayback) {
+        return;
+      }
+      await this.waitWhilePaused();
       if (this.stoppingPlayback) {
         return;
       }
@@ -110,6 +149,10 @@ export class FileSource implements RdsSource {
       remainingLength -= 8;
       this.pipeline.processBits(dataSlice);
 
+      if (this.stoppingPlayback) {
+        return;
+      }
+      await this.waitWhilePaused();
       if (this.stoppingPlayback) {
         return;
       }
@@ -166,6 +209,10 @@ export class FileSource implements RdsSource {
       if (this.stoppingPlayback) {
         return;
       }
+      await this.waitWhilePaused();
+      if (this.stoppingPlayback) {
+        return;
+      }
       await timing.enforceInterval(this.realtimePlayback ? delayBetweenBlocks : 0);
     }
   }
@@ -181,6 +228,10 @@ export class FileSource implements RdsSource {
       const sliceQ = samplesQ.slice(i, Math.min(i + blockSize, samplesQ.length));
       demodulator.demodulate(sliceI, sliceQ, out);
       this.pipeline.processMpxSamples(out, sliceI.length);
+      if (this.stoppingPlayback) {
+        return;
+      }
+      await this.waitWhilePaused();
       if (this.stoppingPlayback) {
         return;
       }
