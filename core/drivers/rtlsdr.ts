@@ -1,9 +1,9 @@
-import { ConfigWBFM, DemodWBFMStage1, DemodWBFMStage2, ModeWBFM } from "@jtarrio/webrtlsdr/demod/demod-wbfm";
-import { Demodulator } from "@jtarrio/webrtlsdr/demod/demodulator";
-import { Demod, DemodConstructor, Demodulated, getMode, registerDemod } from "@jtarrio/webrtlsdr/demod/modes";
-import { RealDownsampler } from "@jtarrio/webrtlsdr/dsp/resamplers";
-import { Radio } from "@jtarrio/webrtlsdr/radio";
-import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr";
+import { ConfigWBFM, DemodWBFMStage1, DemodWBFMStage2, ModeWBFM } from "@jtarrio/signals/demod/demod-wbfm.js";
+import { Demodulator } from "@jtarrio/signals/demod/demodulator.js";
+import { Demod, DemodConstructor, Demodulated, getMode, registerDemod } from "@jtarrio/signals/demod/modes.js";
+import { getRealResampler, RealResampler } from "@jtarrio/signals/dsp/resamplers.js";
+import { Radio, RtlProvider } from "@jtarrio/webrtlsdr/radio.js";
+import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr.js";
 
 import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams } from "./input";
 
@@ -41,7 +41,7 @@ export class RtlSdr implements RdsSource {
       throw new Error("rtlsdr: Trying to reference undefined device.")
     }
 
-    this.rtlSdrRadio.setFrequency(frequencyKhz * 1000);
+    await this.rtlSdrRadio.setFrequency(frequencyKhz * 1000);
     this.pipeline.reportReceiverStatus(frequencyKhz, 0, false);
   }
 
@@ -49,12 +49,12 @@ export class RtlSdr implements RdsSource {
     const sampleRate = 1024000;
 
     const demodulator = new Demodulator();
-    this.rtlSdrRadio = new Radio(new RTL2832U_Provider(), demodulator);
-    this.rtlSdrRadio.setGain(10);
+    this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), demodulator);
+    await this.rtlSdrRadio.setGain(10);
     demodulator.setVolume(1);
     demodulator.setMode(getMode("WBFM"));
 
-    this.rtlSdrRadio.start();
+    await this.rtlSdrRadio.start();
 
     return true;
   }
@@ -63,7 +63,7 @@ export class RtlSdr implements RdsSource {
     if (this.rtlSdrRadio == undefined) {
       return;
     }
-    this.rtlSdrRadio.stop();
+    await this.rtlSdrRadio.stop();
   }
 }
 
@@ -72,13 +72,13 @@ function DemodWBFMWithMpxProc(mpxProc: (s: Float32Array) => void): DemodConstruc
     constructor(inRate: number, outRate: number, private mode: ModeWBFM) {
       let interRate = Math.min(inRate, 336000);
       this.stage1 = new DemodWBFMStage1(inRate, interRate, mode);
-      this.mpxSampler = new RealDownsampler(interRate, 250000, 41);
+      this.mpxSampler = getRealResampler(interRate, 250000, { taps: 41 });
       this.mpxProc = mpxProc;
       this.stage2 = new DemodWBFMStage2(interRate, outRate, mode);
     }
 
     private stage1: DemodWBFMStage1;
-    private mpxSampler: RealDownsampler;
+    private mpxSampler: RealResampler;
     private mpxProc: (s: Float32Array) => void;
     private stage2: DemodWBFMStage2;
 
@@ -98,7 +98,7 @@ function DemodWBFMWithMpxProc(mpxProc: (s: Float32Array) => void): DemodConstruc
       freqOffset: number
     ): Demodulated {
       let o1 = this.stage1.demodulate(samplesI, samplesQ, freqOffset);
-      const mpx = this.mpxSampler.downsample(o1.left);
+      const mpx = this.mpxSampler.resample(o1.left);
       this.mpxProc(mpx);
       let o2 = this.stage2.demodulate(o1.left);
 

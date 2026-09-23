@@ -8,7 +8,8 @@
     "typescript": "4.9.5"
   },
   "dependencies": {
-    "@jtarrio/webrtlsdr": "^2.0.1",
+    "@jtarrio/signals": "^0.10.1",
+    "@jtarrio/webrtlsdr": "^3.0.6",
     "@types/jasmine": "~5.1.0",
     "@types/w3c-web-hid": "^1.0.6",
     "typescript": "4.9.5"

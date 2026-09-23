@@ -10,9 +10,12 @@ importers:
 
   core:
     dependencies:
+      '@jtarrio/signals':
+        specifier: ^0.10.1
+        version: 0.10.1
       '@jtarrio/webrtlsdr':
-        specifier: ^2.0.1
-        version: 2.0.6
+        specifier: ^3.0.6
+        version: 3.0.6
       '@types/jasmine':
         specifier: ~5.1.0
         version: 5.1.15
@@ -62,9 +65,12 @@ importers:
       '@angular/router':
         specifier: ^22.1.4
         version: 22.1.4(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@22.1.4(@angular/animations@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)(zone.js@0.15.1)))(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)(zone.js@0.15.1)))(rxjs@7.8.2)
+      '@jtarrio/signals':
+        specifier: ^0.10.1
+        version: 0.10.1
       '@jtarrio/webrtlsdr':
-        specifier: ^2.0.1
-        version: 2.0.6
+        specifier: ^3.0.6
+        version: 3.0.6
       '@types/w3c-web-hid':
         specifier: ^1.0.6
         version: 1.0.7
@@ -1418,8 +1424,11 @@ packages:
     peerDependencies:
       tslib: '2'
 
-  '@jtarrio/webrtlsdr@2.0.6':
-    resolution: {integrity: sha512-pWy974cRDFERSS6RyjuIe96gzslYy8kTAPdFB6i5axgMe8PiUHBI3C9fIMmDuLZ5IXKCQ2ATviTCGlQ3EHLxvA==}
+  '@jtarrio/signals@0.10.1':
+    resolution: {integrity: sha512-X6tJOugEATYH9KJy6j2feEBVCUmRv1U9SSbg9ITQZCx/Qruw2fE2zsS1HKH3yOsxrZBE+eQTGM+d0roX4xuDdw==}
+
+  '@jtarrio/webrtlsdr@3.0.6':
+    resolution: {integrity: sha512-+P8dsbXQ/6Mwru/vV613yHH68nHFyUJ9zPK68hE/Hh2F3jwyirUAjjBtIAfN/MlJbFioMJ3NS6dMGrRj9deFvw==}
 
   '@leichtgewicht/ip-codec@2.0.5':
     resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
@@ -6805,8 +6814,11 @@ snapshots:
       '@jsonjoy.com/codegen': 17.67.0(tslib@2.8.1)
       tslib: 2.8.1
 
-  '@jtarrio/webrtlsdr@2.0.6':
+  '@jtarrio/signals@0.10.1': {}
+
+  '@jtarrio/webrtlsdr@3.0.6':
     dependencies:
+      '@jtarrio/signals': 0.10.1
       '@types/w3c-web-usb': 1.0.14
 
   '@leichtgewicht/ip-codec@2.0.5': {}

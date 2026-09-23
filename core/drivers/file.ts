@@ -1,4 +1,4 @@
-import { FMDemodulator } from "@jtarrio/webrtlsdr/dsp/demodulators";
+import { FMDemodulator } from "@jtarrio/signals/dsp/demodulators.js";
 import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, parseHexGroup } from "./input";
 
 export class FileSource implements RdsSource {
