@@ -10,6 +10,10 @@ import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirect
 export class RtlSdr implements RdsSource {
   rtlSdrRadio?: Radio;
   pipeline: RdsPipeline;
+  // RF gain in dB, or null for automatic gain control.
+  private gain: number | null = null;
+  // Frequency correction, in ppm.
+  private frequencyCorrection = 0;
 
   public name = "RTL-SDR USB dongle";
   public description: string | undefined = undefined;
@@ -45,12 +49,23 @@ export class RtlSdr implements RdsSource {
     this.pipeline.reportReceiverStatus(frequencyKhz, 0, false);
   }
 
+  public async setGain(gain: number | null) {
+    this.gain = gain;
+    await this.rtlSdrRadio?.setGain(gain);
+  }
+
+  public async setFrequencyCorrection(ppm: number) {
+    this.frequencyCorrection = ppm;
+    await this.rtlSdrRadio?.setFrequencyCorrection(ppm);
+  }
+
   public async start(): Promise<boolean> {
     const sampleRate = 1024000;
 
     const demodulator = new Demodulator();
     this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), demodulator);
-    await this.rtlSdrRadio.setGain(10);
+    await this.rtlSdrRadio.setGain(this.gain);
+    await this.rtlSdrRadio.setFrequencyCorrection(this.frequencyCorrection);
     demodulator.setVolume(1);
     demodulator.setMode(getMode("WBFM"));
 

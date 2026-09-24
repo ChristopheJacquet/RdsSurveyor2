@@ -14,6 +14,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatSelectModule} from '@angular/material/select';
 import {MatRadioModule} from '@angular/material/radio';
+import {MatSliderModule} from '@angular/material/slider';
 
 
 import { DecoderLevel, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
@@ -33,7 +34,7 @@ import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.c
 
 @Component({
     selector: 'app-input-pane',
-    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
+    imports: [CommonModule, DecimalPipe, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatIconModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatRadioModule, MatSliderModule, FormsModule, BlerGraphComponent, ConstellationDiagramComponent, SpectrumDiagramComponent],
     templateUrl: './input-pane.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './input-pane.component.scss'
@@ -53,7 +54,8 @@ export class InputPaneComponent implements RdsPipeline  {
   audioSource = new AudioInput(this);
   fileSource = new FileSource(this);
   networkSource = new NetworkSource(this);
-  sources = [this.fileSource, new Si470x(this), new RtlSdr(this), this.audioSource, this.networkSource];
+  rtlSdrSource = new RtlSdr(this);
+  sources = [this.fileSource, new Si470x(this), this.rtlSdrSource, this.audioSource, this.networkSource];
   selectedSource: RdsSource = this.sources[0];
   audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;
@@ -85,6 +87,9 @@ export class InputPaneComponent implements RdsPipeline  {
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
   prefMaxErrors = new Pref<number>("pref.max_errors", 0);
   prefAutoPauseOnStationChange = new Pref<boolean>("pref.auto_pause_on_station_change", false);
+  prefRtlSdrAgc = new Pref<boolean>("pref.rtlsdr_agc", true);
+  prefRtlSdrGain = new Pref<number>("pref.rtlsdr_gain", 10);
+  prefRtlSdrPpm = new Pref<number>("pref.rtlsdr_ppm", 0);
 
   private snackBar = inject(MatSnackBar);
 
@@ -112,6 +117,12 @@ export class InputPaneComponent implements RdsPipeline  {
     this.prefMaxErrors.init();
 
     this.prefAutoPauseOnStationChange.init();
+
+    this.prefRtlSdrAgc.init();
+    this.prefRtlSdrGain.init();
+    this.prefRtlSdrPpm.init();
+    this.applyRtlSdrGain();
+    this.rtlSdrSource.setFrequencyCorrection(this.prefRtlSdrPpm.value);
 
     // Populate the audio device list if permission was already granted in a
     // previous session; otherwise the settings panel offers a button to ask.
@@ -303,6 +314,27 @@ export class InputPaneComponent implements RdsPipeline  {
 
   setMaxErrors(event: any) {
     this.prefMaxErrors.setValue(event.value);
+  }
+
+  private applyRtlSdrGain() {
+    this.rtlSdrSource.setGain(this.prefRtlSdrAgc.value ? null : this.prefRtlSdrGain.value);
+  }
+
+  setRtlSdrAgc(agc: boolean) {
+    this.prefRtlSdrAgc.setValue(agc);
+    this.applyRtlSdrGain();
+  }
+
+  setRtlSdrGain(gain: number) {
+    this.prefRtlSdrGain.setValue(gain);
+    this.applyRtlSdrGain();
+  }
+
+  setRtlSdrPpm(ppm: number | null) {
+    // An empty or invalid field means no correction.
+    const value = Number.isFinite(ppm) ? ppm! : 0;
+    this.prefRtlSdrPpm.setValue(value);
+    this.rtlSdrSource.setFrequencyCorrection(value);
   }
 
   // Exactly one radio source panel must stay expanded at all times, so undo

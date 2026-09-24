@@ -56,7 +56,7 @@
   color: #999;
 }
 
-input {
+input[type="file"] {
   display: none;
 }
 
@@ -122,6 +122,26 @@ input {
 
 .source-settings mat-form-field {
   width: 100%;
+}
+
+.gain-control {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-slider {
+    flex: 1;
+  }
+
+  .gain-value {
+    min-width: 3em;
+    text-align: right;
+  }
+}
+
+.disabled-label {
+  color: #999;
 }
 
 .radio-connect-pane, .logging-pane {

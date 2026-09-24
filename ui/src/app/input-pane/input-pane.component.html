@@ -70,6 +70,22 @@
             }
           </div>
         }
+        @if (s === rtlSdrSource) {
+          <div class="source-settings">
+            <div class="gain-control">
+              <span>Gain</span>
+              <mat-slider min="0" max="50" step="1" discrete>
+                <input matSliderThumb [disabled]="prefRtlSdrAgc.value" [(ngModel)]="prefRtlSdrGain.value" (ngModelChange)="setRtlSdrGain($event)">
+              </mat-slider>
+              <span class="gain-value" [class.disabled-label]="prefRtlSdrAgc.value">{{ prefRtlSdrGain.value | number:'1.0-0':'en-US' }} dB</span>
+              <mat-checkbox [(ngModel)]="prefRtlSdrAgc.value" (ngModelChange)="setRtlSdrAgc($event)">AGC</mat-checkbox>
+            </div>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Frequency correction (ppm)</mat-label>
+              <input matInput type="number" step="1" [(ngModel)]="prefRtlSdrPpm.value" (ngModelChange)="setRtlSdrPpm($event)">
+            </mat-form-field>
+          </div>
+        }
         @if (s === networkSource) {
           <div class="source-settings">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
