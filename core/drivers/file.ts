@@ -245,6 +245,9 @@ async function sleep(duration_msec: number) {
   return new Promise(resolve => setTimeout(resolve, duration_msec));
 }
 
+// How far behind schedule playback can fall before Timing gives up catching up.
+const MAX_TIMING_LAG_MSEC = 1000;
+
 class Timing {
   lastTimestamp = 0;
 
@@ -265,7 +268,13 @@ class Timing {
 
     const sleepDuration = this.lastTimestamp + duration_msec - timestamp;
     await sleep(sleepDuration > 0 ? sleepDuration : 0);
-    this.lastTimestamp = Date.now();
+    // When pacing, advance by exactly duration_msec rather than to the actual wake-up time, so
+    // that timer lateness does not accumulate (which would make playback slower than real time,
+    // and starve the audio player). If far behind (e.g. after a pause), re-anchor instead of
+    // catching up in a burst.
+    this.lastTimestamp = duration_msec > 0 && sleepDuration > -MAX_TIMING_LAG_MSEC
+      ? this.lastTimestamp + duration_msec
+      : Date.now();
   }
 }
 
