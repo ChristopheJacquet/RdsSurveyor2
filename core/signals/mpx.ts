@@ -331,6 +331,12 @@ export class SpectrumAnalyzer {
   }
 }
 
+// Duration, in seconds, of the MPX blocks demodulated and played as audio. Samples are accumulated
+// into fixed-size blocks since sources may deliver them in small chunks of varying size (e.g.
+// network), and AudioPlayer only schedules consecutive buffers correctly if they have the same
+// length (it computes each buffer's start time from its own length, not the previous one's).
+const AUDIO_BLOCK_DURATION = 0.1;
+
 /**
  * Plays an MPX signal as (stereo, de-emphasized) audio.
  */
@@ -343,13 +349,26 @@ export class MpxAudioPlayer {
   private stereoDecoder = new DemodWBFMStage2(
     this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: true });
 
+  private block = new Float32Array(Math.round(this.sampleRate * AUDIO_BLOCK_DURATION));
+  private blockLength = 0;
+
   constructor() {
     this.player.setVolume(1);
   }
 
   play(samples: Float32Array, length: number) {
-    const { left, right } = this.stereoDecoder.demodulate(samples.subarray(0, length));
-    this.player.play(left, right);
+    let offset = 0;
+    while (offset < length) {
+      const n = Math.min(length - offset, this.block.length - this.blockLength);
+      this.block.set(samples.subarray(offset, offset + n), this.blockLength);
+      this.blockLength += n;
+      offset += n;
+      if (this.blockLength == this.block.length) {
+        const { left, right } = this.stereoDecoder.demodulate(this.block);
+        this.player.play(left, right);
+        this.blockLength = 0;
+      }
+    }
   }
 }
 
