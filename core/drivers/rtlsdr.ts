@@ -2,10 +2,16 @@ import { ConfigWBFM, DemodWBFMStage1, DemodWBFMStage2, ModeWBFM } from "@jtarrio
 import { Demodulator } from "@jtarrio/signals/demod/demodulator.js";
 import { Demod, DemodConstructor, Demodulated, getMode, registerDemod } from "@jtarrio/signals/demod/modes.js";
 import { getRealResampler, RealResampler } from "@jtarrio/signals/dsp/resamplers.js";
+import { AudioPlayer } from "@jtarrio/signals/players/audioplayer.js";
 import { Radio, RtlProvider } from "@jtarrio/webrtlsdr/radio.js";
 import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr.js";
 
 import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams } from "./input";
+
+// Sample buffers read from the dongle per second (library default: 20). If the main thread is busy
+// for longer than one bufer, the dongle overflows and samples are lost. Larger buffers give more
+// slack, and trigger fewer UI refreshes.
+const BUFFERS_PER_SECOND = 5;
 
 export class RtlSdr implements RdsSource {
   rtlSdrRadio?: Radio;
@@ -62,8 +68,9 @@ export class RtlSdr implements RdsSource {
   public async start(): Promise<boolean> {
     const sampleRate = 1024000;
 
-    const demodulator = new Demodulator();
-    this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), demodulator);
+    // Schedule audio one buffer ahead, so a late buffer does not cause an audible gap.
+    const demodulator = new Demodulator({ player: new AudioPlayer({ timeBuffer: 1 / BUFFERS_PER_SECOND }) });
+    this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), demodulator, { buffersPerSecond: BUFFERS_PER_SECOND });
     await this.rtlSdrRadio.setGain(this.gain);
     await this.rtlSdrRadio.setFrequencyCorrection(this.frequencyCorrection);
     demodulator.setVolume(1);
