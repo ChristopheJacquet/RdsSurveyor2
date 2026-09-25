@@ -49,8 +49,14 @@ export class Demodulator {
   // Oscillator frequency.
   fsc: number;
 
-  // Subcarrier phase.
+  // Subcarrier phase. Kept within [0, subcarrPhiWrap) so that it does not grow unbounded: large
+  // arguments make Math.cos()/Math.sin() much slower (and less precise), which eventually makes
+  // processing fall behind real time.
   subcarr_phi = 0;
+
+  // Wrapping period of subcarr_phi: a whole number of subcarrier cycles that also corresponds to
+  // exactly one clock cycle, so that wrapping does not disturb the derived clock phase.
+  private subcarrPhiWrap: number;
   
   // Clock phase offset.
   clock_offset = 0;
@@ -69,6 +75,11 @@ export class Demodulator {
   // TODO: Make this a parameter.
   sampleRate = 250000;
   decimate = Math.floor(this.sampleRate / 7125);
+
+  // AGC smoothing coefficients (constant for a given sample rate).
+  private agcAlphaAttack = Math.exp(-1.0 / (this.sampleRate * AGC_ATTACK_TIME));
+  private agcAlphaRelease = Math.exp(-1.0 / (this.sampleRate * AGC_RELEASE_TIME));
+
   private decimPhase = 0;
 
 	// Used by biphase().
@@ -94,6 +105,7 @@ export class Demodulator {
   constructor(subcarrierFreq: number, bitstreamSynchronizer: BitStreamSynchronizer) {
     this.fSub = subcarrierFreq;
     this.subcarrierBitrateRatio = subcarrierFreq / BIT_RATE;
+    this.subcarrPhiWrap = 2 * Math.PI * this.subcarrierBitrateRatio;
     this.fsc = subcarrierFreq;
     this.bitstreamSynchronizer = bitstreamSynchronizer;
   }
@@ -105,13 +117,15 @@ export class Demodulator {
   addSample(sample: number) {
     // Automatic Gain Control (AGC).
     const sampleAbs = Math.abs(sample);
-    const coef = sampleAbs > this.agcEnvelope ? AGC_ATTACK_TIME : AGC_RELEASE_TIME;
-    const alpha = Math.exp(-1.0 / (this.sampleRate * coef));
+    const alpha = sampleAbs > this.agcEnvelope ? this.agcAlphaAttack : this.agcAlphaRelease;
     this.agcEnvelope = (1.0 - alpha) * sampleAbs + alpha * this.agcEnvelope;
     const normSample = sample / (this.agcEnvelope + 1e-6);
 
     // Subcarrier downmix & phase recovery.
     this.subcarr_phi += 2 * Math.PI * this.fsc / this.sampleRate;
+    if (this.subcarr_phi >= this.subcarrPhiWrap) {
+      this.subcarr_phi -= this.subcarrPhiWrap;
+    }
     const subcarr_bb_i = this.lp2400iFilter.step(normSample * Math.cos(this.subcarr_phi));
     const subcarr_bb_q = this.lp2400qFilter.step(normSample * Math.sin(this.subcarr_phi));
 
@@ -129,7 +143,8 @@ export class Demodulator {
       }
 
       // 1187.5 Hz clock.
-      const clock_phi = this.subcarr_phi / this.subcarrierBitrateRatio + this.clock_offset;   // Clock phase.
+      // Clock phase, normalized to [0, 2*pi) (clock_offset may be negative).
+      const clock_phi = positiveMod(this.subcarr_phi / this.subcarrierBitrateRatio + this.clock_offset, 2 * Math.PI);
       const lo_clock  = (clock_phi % (2 * Math.PI)) < Math.PI ? 1 : -1;
 
       // Clock phase recovery.
@@ -462,6 +477,11 @@ export const FREQ_STREAMS = [
 const FC_TOLERANCE = 12.0;
 
 const BIT_RATE = 1187.5;
+
+function positiveMod(a: number, m: number) {
+  const r = a % m;
+  return r < 0 ? r + m : r;
+}
 
 function sign(a: number) {
   return (a >= 0 ? 1 : 0);
