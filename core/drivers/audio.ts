@@ -85,6 +85,7 @@ export class AudioInput implements RdsSource {
       supportsTune: false,
       supportsSeek: false,
       decoderLevel: this.mode === "mpx" ? DecoderLevel.MPX : DecoderLevel.BITSTREAM,
+      realtime: true,
       reportsSync: true,
       reportsLock: this.mode === "mpx",
       supportedStreams: this.mode === "mpx" ? SupportedStreams.ALL_STREAMS : SupportedStreams.STREAM_0,

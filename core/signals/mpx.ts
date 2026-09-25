@@ -1,3 +1,6 @@
+import { DemodWBFMStage2 } from "@jtarrio/signals/demod/demod-wbfm.js";
+import { AudioPlayer } from "@jtarrio/signals/players/audioplayer.js";
+
 import { BitStreamSynchronizer } from "./bitstream";
 
 // This file is mostly a port of the code in RDS Surveyor v1.
@@ -325,6 +328,28 @@ export class SpectrumAnalyzer {
       const magnitude = Math.hypot(re[bin], im[bin]);
       this.spectrum[bin] = 20 * Math.log10(magnitude + 1e-9);
     }
+  }
+}
+
+/**
+ * Plays an MPX signal as (stereo, de-emphasized) audio.
+ */
+export class MpxAudioPlayer {
+  // TODO: Make this a parameter.
+  sampleRate = 250000;
+
+  // Schedule audio a bit ahead, so a late buffer does not cause an audible gap.
+  private player = new AudioPlayer({ timeBuffer: 0.2 });
+  private stereoDecoder = new DemodWBFMStage2(
+    this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: true });
+
+  constructor() {
+    this.player.setVolume(1);
+  }
+
+  play(samples: Float32Array, length: number) {
+    const { left, right } = this.stereoDecoder.demodulate(samples.subarray(0, length));
+    this.player.play(left, right);
   }
 }
 

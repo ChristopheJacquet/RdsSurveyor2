@@ -24,7 +24,7 @@ import { RtlSdr } from "../../../../core/drivers/rtlsdr";
 import { FileSource } from "../../../../core/drivers/file";
 import { NetworkSource } from "../../../../core/drivers/network";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
-import { Demodulator, FREQ_STREAMS, SpectrumAnalyzer } from "../../../../core/signals/mpx";
+import { Demodulator, FREQ_STREAMS, MpxAudioPlayer, SpectrumAnalyzer } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
 import { Pref } from '../prefs';
 import { catchError } from 'rxjs';
@@ -81,6 +81,7 @@ export class InputPaneComponent implements RdsPipeline  {
   synchronizer = new Array<BitStreamSynchronizer>(FREQ_STREAMS.length);
   demodulator = new Array<Demodulator>(FREQ_STREAMS.length);
   spectrumAnalyzer = new SpectrumAnalyzer();
+  mpxAudioPlayer = new MpxAudioPlayer();
   private constellationRedrawScheduled = false;
 
   prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
@@ -242,6 +243,9 @@ export class InputPaneComponent implements RdsPipeline  {
       }
     }
     this.spectrumAnalyzer.addSamples(samples, length);
+    if (this.currentSource?.capabilities.realtime) {
+      this.mpxAudioPlayer.play(samples, length);
+    }
     this.scheduleConstellationRedraw();
   }
 

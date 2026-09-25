@@ -50,6 +50,7 @@ export class NetworkSource implements RdsSource {
     supportsTune: false,
     supportsSeek: false,
     decoderLevel: DecoderLevel.MPX,
+    realtime: true,
     reportsSync: true,
     reportsLock: true,
     supportedStreams: SupportedStreams.ALL_STREAMS,

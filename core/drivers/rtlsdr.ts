@@ -1,9 +1,7 @@
-import { ConfigWBFM, DemodWBFMStage1, DemodWBFMStage2, ModeWBFM } from "@jtarrio/signals/demod/demod-wbfm.js";
-import { Demodulator } from "@jtarrio/signals/demod/demodulator.js";
-import { Demod, DemodConstructor, Demodulated, getMode, registerDemod } from "@jtarrio/signals/demod/modes.js";
+import { DemodWBFMStage1 } from "@jtarrio/signals/demod/demod-wbfm.js";
 import { getRealResampler, RealResampler } from "@jtarrio/signals/dsp/resamplers.js";
-import { AudioPlayer } from "@jtarrio/signals/players/audioplayer.js";
-import { Radio, RtlProvider } from "@jtarrio/webrtlsdr/radio.js";
+import { SampleBlock } from "@jtarrio/signals/radio/sample_block.js";
+import { Radio, RtlProvider, SampleReceiver } from "@jtarrio/webrtlsdr/radio.js";
 import { RTL2832U_Provider } from "@jtarrio/webrtlsdr/rtlsdr.js";
 
 import { DecoderLevel, RdsPipeline, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams } from "./input";
@@ -28,6 +26,7 @@ export class RtlSdr implements RdsSource {
     supportsTune: true,
     supportsSeek: false,
     decoderLevel: DecoderLevel.MPX,
+    realtime: true,
     reportsSync: true,
     reportsLock: true,
     supportedStreams: SupportedStreams.ALL_STREAMS,
@@ -35,7 +34,6 @@ export class RtlSdr implements RdsSource {
 
   public constructor(input: RdsPipeline) {
     this.pipeline = input;
-    registerDemod("WBFM", DemodWBFMWithMpxProc((s) => this.pipeline.processMpxSamples(s)), ConfigWBFM);
   }
 
   public async seek(direction: SeekDirection) {
@@ -66,15 +64,10 @@ export class RtlSdr implements RdsSource {
   }
 
   public async start(): Promise<boolean> {
-    const sampleRate = 1024000;
-
-    // Schedule audio one buffer ahead, so a late buffer does not cause an audible gap.
-    const demodulator = new Demodulator({ player: new AudioPlayer({ timeBuffer: 1 / BUFFERS_PER_SECOND }) });
-    this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), demodulator, { buffersPerSecond: BUFFERS_PER_SECOND });
+    const receiver = new MpxReceiver((s) => this.pipeline.processMpxSamples(s));
+    this.rtlSdrRadio = new Radio(new RtlProvider(new RTL2832U_Provider()), receiver, { buffersPerSecond: BUFFERS_PER_SECOND });
     await this.rtlSdrRadio.setGain(this.gain);
     await this.rtlSdrRadio.setFrequencyCorrection(this.frequencyCorrection);
-    demodulator.setVolume(1);
-    demodulator.setMode(getMode("WBFM"));
 
     await this.rtlSdrRadio.start();
 
@@ -89,43 +82,22 @@ export class RtlSdr implements RdsSource {
   }
 }
 
-function DemodWBFMWithMpxProc(mpxProc: (s: Float32Array) => void): DemodConstructor<ModeWBFM> {
-  return class implements Demod<ModeWBFM> {
-    constructor(inRate: number, outRate: number, private mode: ModeWBFM) {
-      let interRate = Math.min(inRate, 336000);
-      this.stage1 = new DemodWBFMStage1(inRate, interRate, mode);
-      this.mpxSampler = getRealResampler(interRate, 250000, { taps: 41 });
-      this.mpxProc = mpxProc;
-      this.stage2 = new DemodWBFMStage2(interRate, outRate, mode);
-    }
+// FM-demodulates the dongle's I/Q samples into a 250 kHz MPX signal, fed to mpxProc. Audio
+// playback is done downstream, from the MPX signal.
+class MpxReceiver implements SampleReceiver {
+  private stage1?: DemodWBFMStage1;
+  private mpxSampler?: RealResampler;
 
-    private stage1: DemodWBFMStage1;
-    private mpxSampler: RealResampler;
-    private mpxProc: (s: Float32Array) => void;
-    private stage2: DemodWBFMStage2;
+  constructor(private mpxProc: (s: Float32Array) => void) {}
 
-    getMode(): ModeWBFM {
-      return this.mode;
-    }
+  setSampleRate(inRate: number) {
+    const interRate = Math.min(inRate, 336000);
+    this.stage1 = new DemodWBFMStage1(inRate, interRate, { scheme: "WBFM", stereo: true });
+    this.mpxSampler = getRealResampler(interRate, 250000, { taps: 41 });
+  }
 
-    setMode(mode: ModeWBFM) {
-      this.mode = mode;
-      this.stage1.setMode(mode);
-      this.stage2.setMode(mode);
-    }
-
-    demodulate(
-      samplesI: Float32Array,
-      samplesQ: Float32Array,
-      freqOffset: number
-    ): Demodulated {
-      let o1 = this.stage1.demodulate(samplesI, samplesQ, freqOffset);
-      const mpx = this.mpxSampler.resample(o1.left);
-      this.mpxProc(mpx);
-      let o2 = this.stage2.demodulate(o1.left);
-
-      o2.snr = o1.snr;
-      return o2;
-    }
-  };
+  receiveSamples(block: SampleBlock) {
+    const o1 = this.stage1!.demodulate(block.I, block.Q, 0);
+    this.mpxProc(this.mpxSampler!.resample(o1.left));
+  }
 }

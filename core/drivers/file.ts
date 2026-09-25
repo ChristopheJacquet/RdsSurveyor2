@@ -22,6 +22,7 @@ export class FileSource implements RdsSource {
       supportsTune: false,
       supportsSeek: false,
       decoderLevel: this.detectedLevel,
+      realtime: this.realtimePlayback,
       reportsSync: false,
       reportsLock: false,
       supportedStreams: SupportedStreams.ALL_STREAMS,

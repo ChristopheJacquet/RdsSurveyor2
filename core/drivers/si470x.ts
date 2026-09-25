@@ -211,6 +211,7 @@ export class Si470x implements RdsSource {
     supportsSeek: true,
     // The chip decodes RDS onboard and hands us already-assembled groups.
     decoderLevel: DecoderLevel.GROUPSTREAM,
+    realtime: true,
     // Reported from the RDSS (RDS Synchronized) status bit.
     reportsSync: true,
     reportsLock: false,

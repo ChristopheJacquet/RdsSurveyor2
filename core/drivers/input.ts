@@ -80,6 +80,9 @@ export interface RdsSourceCapabilities {
   // Whether the receiver can automatically seek stations.
   supportsSeek: boolean;
   decoderLevel: DecoderLevel;
+  // Whether data is delivered in real time (as opposed to as fast as possible).
+  // This enables audio output from MPX streams.
+  realtime: boolean;
   // Whether reportReceiverStatus() reports the RDS decoder sync status.
   reportsSync: boolean;
   // Whether the source can report the RDS decoder carrier lock status.
