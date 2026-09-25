@@ -124,7 +124,7 @@ input[type="file"] {
   width: 100%;
 }
 
-.gain-control {
+.gain-control, .volume-control {
   align-self: stretch;
   display: flex;
   align-items: center;
@@ -134,7 +134,7 @@ input[type="file"] {
     flex: 1;
   }
 
-  .gain-value {
+  .gain-value, .volume-value {
     min-width: 3em;
     text-align: right;
   }

@@ -91,6 +91,7 @@ export class InputPaneComponent implements RdsPipeline  {
   prefRtlSdrAgc = new Pref<boolean>("pref.rtlsdr_agc", true);
   prefRtlSdrGain = new Pref<number>("pref.rtlsdr_gain", 10);
   prefRtlSdrPpm = new Pref<number>("pref.rtlsdr_ppm", 0);
+  prefVolume = new Pref<number>("pref.volume", 100);
 
   private snackBar = inject(MatSnackBar);
 
@@ -124,6 +125,9 @@ export class InputPaneComponent implements RdsPipeline  {
     this.prefRtlSdrPpm.init();
     this.applyRtlSdrGain();
     this.rtlSdrSource.setFrequencyCorrection(this.prefRtlSdrPpm.value);
+
+    this.prefVolume.init();
+    this.mpxAudioPlayer.setVolume(this.prefVolume.value / 100);
 
     // Populate the audio device list if permission was already granted in a
     // previous session; otherwise the settings panel offers a button to ask.
@@ -332,6 +336,11 @@ export class InputPaneComponent implements RdsPipeline  {
   setRtlSdrGain(gain: number) {
     this.prefRtlSdrGain.setValue(gain);
     this.applyRtlSdrGain();
+  }
+
+  setVolume(volume: number) {
+    this.prefVolume.setValue(volume);
+    this.mpxAudioPlayer.setVolume(volume / 100);
   }
 
   setRtlSdrPpm(ppm: number | null) {

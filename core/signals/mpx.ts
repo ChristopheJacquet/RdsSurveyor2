@@ -356,6 +356,11 @@ export class MpxAudioPlayer {
     this.player.setVolume(1);
   }
 
+  // Sets the playback volume, between 0 and 1.
+  setVolume(volume: number) {
+    this.player.setVolume(volume);
+  }
+
   play(samples: Float32Array, length: number) {
     let offset = 0;
     while (offset < length) {
