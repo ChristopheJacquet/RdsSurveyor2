@@ -140,6 +140,10 @@ input[type="file"] {
   }
 }
 
+.volume-control {
+  margin-bottom: 10px;
+}
+
 .disabled-label {
   color: #999;
 }
@@ -198,7 +202,6 @@ input[type="file"] {
 }
 
 .processingChain {
-  padding: 20px 0px 0px;
   text-align: center;
 }
 

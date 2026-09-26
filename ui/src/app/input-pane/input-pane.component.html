@@ -170,6 +170,11 @@
         <input matSliderThumb [(ngModel)]="prefVolume.value" (ngModelChange)="setVolume($event)">
       </mat-slider>
       <span class="volume-value">{{ prefVolume.value | number:'1.0-0':'en-US' }} %</span>
+      <mat-button-toggle-group name="preemphasis" [value]="prefPreemphasis.value"
+        (change)="setPreemphasis($event)">
+        <mat-button-toggle [value]="50">50 μs</mat-button-toggle>
+        <mat-button-toggle [value]="75">75 μs</mat-button-toggle>
+      </mat-button-toggle-group>
     </div>
     <div>MPX spectrum</div>
     <app-spectrum-diagram #spectrumDiagram></app-spectrum-diagram>

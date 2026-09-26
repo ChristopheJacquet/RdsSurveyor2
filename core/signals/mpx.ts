@@ -346,8 +346,7 @@ export class MpxAudioPlayer {
 
   // Schedule audio a bit ahead, so a late buffer does not cause an audible gap.
   private player = new AudioPlayer({ timeBuffer: 0.2 });
-  private stereoDecoder = new DemodWBFMStage2(
-    this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: true });
+  private stereoDecoder = this.createStereoDecoder(50);
 
   private block = new Float32Array(Math.round(this.sampleRate * AUDIO_BLOCK_DURATION));
   private blockLength = 0;
@@ -359,6 +358,18 @@ export class MpxAudioPlayer {
   // Sets the playback volume, between 0 and 1.
   setVolume(volume: number) {
     this.player.setVolume(volume);
+  }
+
+  // Sets the de-emphasis time constant, in microseconds (50 in most of the world, 75 in the
+  // Americas and South Korea). DemodWBFMStage2 has no setter for it, so the decoder is recreated.
+  setDeemphasis(timeConstant: number) {
+    this.stereoDecoder = this.createStereoDecoder(timeConstant);
+  }
+
+  private createStereoDecoder(timeConstant: number) {
+    return new DemodWBFMStage2(
+      this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: true },
+      { deemphasizerTc: timeConstant });
   }
 
   play(samples: Float32Array, length: number) {
