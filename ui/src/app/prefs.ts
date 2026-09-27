@@ -1,4 +1,5 @@
 import { signal, WritableSignal } from '@angular/core';
+import { Band } from '../../../core/drivers/input';
 
 export type PrefControl<T> =
   | { kind: 'choice', choices: { value: T, label: string }[] }
@@ -36,6 +37,8 @@ const choices = <T>(...c: [T, string][]) =>
 
 // All user-facing preferences, in the order shown in the preferences dialog.
 export const prefs = {
+  band: new Pref('pref.band', Band.BAND_87_108, 'FM band',
+    choices([Band.BAND_87_108, '87.5-108 MHz'], [Band.BAND_76_90, '76-90 MHz'], [Band.BAND_76_108, '76-108 MHz'])),
   rdsVariant: new Pref('pref.rds_variant', 'rds', 'Standard',
     choices(['rds', 'RDS'], ['rbds', 'RBDS'])),
   statsUi: new Pref('pref.stats_ui', 'used_groups_channels', 'Group statistics',

@@ -17,7 +17,7 @@ import {MatRadioModule} from '@angular/material/radio';
 import {MatSliderModule} from '@angular/material/slider';
 
 
-import { DecoderLevel, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
+import { BAND_LIMITS_KHZ, DecoderLevel, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, SeekDirection } from "../../../../core/drivers/input";
 import { AudioInput } from "../../../../core/drivers/audio";
 import { Si470x } from "../../../../core/drivers/si470x";
 import { RtlSdr } from "../../../../core/drivers/rtlsdr";
@@ -55,7 +55,7 @@ export class InputPaneComponent implements RdsPipeline  {
   fileSource = new FileSource(this);
   networkSource = new NetworkSource(this);
   rtlSdrSource = new RtlSdr(this);
-  sources = [this.fileSource, new Si470x(this), this.rtlSdrSource, this.audioSource, this.networkSource];
+  sources: RdsSource[] = [this.fileSource, new Si470x(this), this.rtlSdrSource, this.audioSource, this.networkSource];
   selectedSource: RdsSource = this.sources[0];
   audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;
@@ -104,6 +104,13 @@ export class InputPaneComponent implements RdsPipeline  {
     effect(() => this.rtlSdrSource.setFrequencyCorrection(prefs.rtlSdrPpm.value || 0));
     effect(() => this.mpxAudioPlayer.setVolume(prefs.volume.value / 100));
     effect(() => this.mpxAudioPlayer.setDeemphasis(prefs.preemphasis.value));
+    effect(async () => {
+      const band = prefs.band.value;
+      await Promise.all(this.sources.map(s => s.setBand?.(band)));
+      if (this.currentSource?.capabilities.supportsTune && this.frequency > 0) {
+        this.tuneTo(this.clampToBand(this.frequency));
+      }
+    });
   }
 
   private async handleHttpError(error: HttpErrorResponse) {
@@ -393,7 +400,7 @@ export class InputPaneComponent implements RdsPipeline  {
       return;
     }
     this.setSource(this.selectedSource);
-    await this.selectedSource.tune(this.prefTunedFrequency.value);
+    await this.selectedSource.tune(this.clampToBand(this.prefTunedFrequency.value));
   }
 
   async stopSource() {
@@ -444,16 +451,27 @@ export class InputPaneComponent implements RdsPipeline  {
     }
   }
 
-  tuneBy(frequencyDiff: number) {
+  private clampToBand(frequencyKhz: number) {
+    const { min, max } = BAND_LIMITS_KHZ[prefs.band.value];
+    return Math.min(Math.max(frequencyKhz, min), max);
+  }
+
+  private tuneTo(frequencyKhz: number) {
     if (this.currentSource != undefined) {
-      let newFreq = this.frequency + frequencyDiff;
-      if(newFreq > 108000) newFreq = 87500;
-      if(newFreq < 87500) newFreq = 108000;
-      this.currentSource.tune(newFreq);
-      this.frequency = newFreq;
-      this.prefTunedFrequency.value = newFreq;
+      this.currentSource.tune(frequencyKhz);
+      this.frequency = frequencyKhz;
+      this.prefTunedFrequency.value = frequencyKhz;
       this.stopLoggingCurrentStation();
     }
+  }
+
+  tuneBy(frequencyDiff: number) {
+    // Wrap around at band edges.
+    const { min, max } = BAND_LIMITS_KHZ[prefs.band.value];
+    let newFreq = this.frequency + frequencyDiff;
+    if (newFreq > max) newFreq = min;
+    if (newFreq < min) newFreq = max;
+    this.tuneTo(newFreq);
   }
 
   tuneUp() {
@@ -479,14 +497,13 @@ export class InputPaneComponent implements RdsPipeline  {
         "Dismiss");
       return;
     }
-    if (freq < 87500 || freq >= 108000) {
+    if (freq != this.clampToBand(freq)) {
       this.snackBar.open(
-        `Entered frequency ${freq/1000} MHz not in FM radio band.`,
+        `Entered frequency ${freq/1000} MHz not in selected FM band.`,
         "Dismiss");
       return;
     }
-    this.currentSource?.tune(freq);
-    this.stopLoggingCurrentStation();
+    this.tuneTo(freq);
   }
 
   async selectLogDir() {

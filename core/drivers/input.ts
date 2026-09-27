@@ -53,6 +53,18 @@ export interface RdsPipeline {
   reportSourceEnd(): void;
 }
 
+export enum Band {
+  BAND_87_108 = "87.5-108",
+  BAND_76_108 = "76-108",
+  BAND_76_90 = "76-90",
+}
+
+export const BAND_LIMITS_KHZ: Record<Band, { min: number, max: number }> = {
+  [Band.BAND_87_108]: { min: 87500, max: 108000 },
+  [Band.BAND_76_108]: { min: 76000, max: 108000 },
+  [Band.BAND_76_90]: { min: 76000, max: 90000 },
+};
+
 export enum SeekDirection {
   UP,
   DOWN
@@ -99,6 +111,8 @@ export interface RdsSource {
   readonly capabilities: RdsSourceCapabilities;
   seek(direction: SeekDirection): Promise<void>;
   tune(frequencyKhz: number): Promise<void>;
+  // Only for tuners that need to know the band (e.g. for seeking).
+  setBand?(band: Band): Promise<void>;
   start(): Promise<boolean>;
   stop(): Promise<void>;
 }

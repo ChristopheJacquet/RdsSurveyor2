@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Block, DecoderLevel, ErrorCount, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, UNCORRECTABLE_ERRORS } from "./input";
+import { Band, BAND_LIMITS_KHZ, Block, DecoderLevel, ErrorCount, Group, RdsPipeline, RdsReportEvent, RdsReportEventType, RdsSource, RdsSourceCapabilities, SeekDirection, SupportedStreams, UNCORRECTABLE_ERRORS } from "./input";
 
 /**************************************************************************
  * Register Definitions
@@ -67,6 +67,11 @@ const SYSCONFIG1_GPIO1 = 0x0003;	/* bits 01..00: General Purpose I/O 1 */
 const SYSCONFIG2 = 5;	/* System Configuration 2 */
 const SYSCONFIG2_SEEKTH = 0xff00;	/* bits 15..08: RSSI Seek Threshold */
 const SYSCONFIG2_BAND = 0x00C0;	/* bits 07..06: Band Select */
+const SYSCONFIG2_BAND_VALUES: Record<Band, number> = {
+  [Band.BAND_87_108]: 0,
+  [Band.BAND_76_108]: 1,
+  [Band.BAND_76_90]: 2,
+};
 const SYSCONFIG2_SPACE = 0x0030;	/* bits 05..04: Channel Spacing */
 const SYSCONFIG2_VOLUME = 0x000f;	/* bits 03..00: Volume */
 
@@ -132,16 +137,6 @@ export enum ChannelSpacing {
   CHANNEL_SPACING_50_KHZ = 2,
 }
 
-/* Bottom of Band (MHz) */
-/* 0: 87.5 - 108 MHz (USA, Europe)*/
-/* 1: 76   - 108 MHz (Japan wide band) */
-/* 2: 76   -  90 MHz (Japan) */
-export enum Band {
-  BAND_87_108 = 0,
-  BAND_76_108 = 1,
-  BAND_76_90 = 2,
-}
-
 /**************************************************************************
  * USB HID Reports
  **************************************************************************/
@@ -189,7 +184,6 @@ export class Si470x implements RdsSource {
   private band: Band = Band.BAND_87_108;
   private channelSpacing: ChannelSpacing = ChannelSpacing.CHANNEL_SPACING_50_KHZ;
   channelSpacingKhz: number;
-  bandBottom: number;
   chip: string = "";
   chipRev: string = "";
   firmware: number = 0;
@@ -221,23 +215,16 @@ export class Si470x implements RdsSource {
   constructor(rdsEventListener: RdsPipeline) {
     this.rdsEventListener = rdsEventListener;
 
-    switch (this.band) {
-      case Band.BAND_76_90:
-      case Band.BAND_76_108:
-        this.bandBottom = 76000;
-        break;
-  
-      default:
-      case Band.BAND_87_108:
-        this.bandBottom = 87500;
-    }
-
     switch (this.channelSpacing) {
       case ChannelSpacing.CHANNEL_SPACING_50_KHZ: this.channelSpacingKhz = 50; break;
       case ChannelSpacing.CHANNEL_SPACING_200_KHZ: this.channelSpacingKhz = 200; break;
       default:
       case ChannelSpacing.CHANNEL_SPACING_100_KHZ: this.channelSpacingKhz = 100; break;
     }
+  }
+
+  private get bandBottom() {
+    return BAND_LIMITS_KHZ[this.band].min;
   }
 
   private channelToFrequency(channel: number) {
@@ -275,7 +262,7 @@ export class Si470x implements RdsSource {
     await this.setRegister(SYSCONFIG1, SYSCONFIG1_RDS);
     await this.setRegister(SYSCONFIG2, 
       (16  << 8) |                                        // SEEKTH
-      ((this.band  << 6) & SYSCONFIG2_BAND)  |            // BAND
+      ((SYSCONFIG2_BAND_VALUES[this.band] << 6) & SYSCONFIG2_BAND)  |            // BAND
       ((this.channelSpacing << 4) & SYSCONFIG2_SPACE) |   // SPACE
       15);                                                // VOLUME (max)
     await this.setRegister(SYSCONFIG3,
@@ -355,6 +342,15 @@ export class Si470x implements RdsSource {
     // This starts tuning, the main event loop will ack the tune complete event.
     const chan = this.frequencyToChannel(frequencyKhz);
     await this.setRegister(CHANNEL, CHANNEL_TUNE | (CHANNEL_CHAN & chan));
+  }
+
+  public async setBand(band: Band) {
+    this.band = band;
+    if (this.device?.opened) {
+      const sysConfig2 = await this.getRegister(SYSCONFIG2);
+      await this.setRegister(SYSCONFIG2,
+        (sysConfig2 & ~SYSCONFIG2_BAND) | ((SYSCONFIG2_BAND_VALUES[band] << 6) & SYSCONFIG2_BAND));
+    }
   }
 
   public async seek(direction: SeekDirection) {
