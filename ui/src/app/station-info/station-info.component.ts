@@ -12,9 +12,10 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
-import { Pref } from '../prefs';
+import { prefs } from '../prefs';
 import { LogMessage, StationImpl } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
+import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
 
 @Component({
@@ -30,10 +31,8 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
   all_group_types = Array(32).fill(0).map((x,i)=>i);
   all_channels = Array(64).fill(0).map((x,i)=>i);
   all_streams = Array(4).fill(0).map((x,i)=>i);
-	rdsVariant: RdsVariant = RdsVariant.RDS;
-	prefRdsVariant = new Pref<string>("pref.rds_variant", "rds");
-	prefStatsUi = new Pref<string>("pref.stats_ui", "used_groups_channels");
-	readonly aboutDialog = inject(MatDialog);
+	readonly prefs = prefs;
+	readonly dialog = inject(MatDialog);
 
 	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
 	stickToBottom = true;
@@ -42,12 +41,6 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	// Group log filters. Empty string means "no filter".
 	logGroupChannelFilter = '';
 	logStreamFilter = '';
-
-	ngOnInit() {
-		this.prefRdsVariant.init();
-		this.rdsVariant = this.prefRdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
-		this.prefStatsUi.init();
-	}
 
 	ngAfterViewInit() {
 		const el = this.groupLogEl?.nativeElement;
@@ -69,13 +62,8 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		this.groupLogObserver?.disconnect();
 	}
 
-	setRdsVariant(event: any) {
-    this.rdsVariant = event.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
-		this.prefRdsVariant.setValue(event.value);
-	}
-
-	setStatsUi(event: any) {
-		this.prefStatsUi.setValue(event.value);
+	get rdsVariant() {
+		return prefs.rdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
 	}
 
 	rdsPtyLabels = new Array<string>(
@@ -231,7 +219,12 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	}
 
 	showAbout() {
-		const dialog = this.aboutDialog.open(AboutComponent);
+		this.dialog.open(AboutComponent);
+		return false;
+	}
+
+	showPrefs() {
+		this.dialog.open(PrefsDialogComponent);
 		return false;
 	}
 

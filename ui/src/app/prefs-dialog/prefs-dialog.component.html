@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>Preferences</h2>
+
+<mat-dialog-content class="prefs">
+  @for (p of prefs; track p.key) {
+    <label>{{ p.title }}</label>
+    <div>
+      @switch (p.control?.kind) {
+        @case ('choice') {
+          <mat-button-toggle-group [(ngModel)]="p.value" [hideSingleSelectionIndicator]="true">
+            @for (c of p.control!.choices; track c.value) {
+              <mat-button-toggle [value]="c.value">{{ c.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        }
+        @case ('boolean') {
+          <mat-checkbox [(ngModel)]="p.value"></mat-checkbox>
+        }
+        @case ('slider') {
+          <mat-slider [min]="p.control!.min" [max]="p.control!.max" step="1" discrete>
+            <input matSliderThumb [(ngModel)]="p.value">
+          </mat-slider>
+          {{ p.value | number:'1.0-0':'en-US' }} {{ p.control!.unit }}
+        }
+        @case ('number') {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <input matInput type="number" [(ngModel)]="p.value">
+          </mat-form-field>
+        }
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

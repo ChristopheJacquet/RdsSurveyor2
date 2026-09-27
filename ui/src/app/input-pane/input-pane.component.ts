@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, EventEmitter, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, EventEmitter, effect, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -26,7 +26,7 @@ import { NetworkSource } from "../../../../core/drivers/network";
 import { BitStreamSynchronizer } from "../../../../core/signals/bitstream";
 import { Demodulator, FREQ_STREAMS, MpxAudioPlayer, SpectrumAnalyzer } from "../../../../core/signals/mpx";
 import { GroupEvent, ReceiverEvent, ReceiverEventKind, StationChangeDetector } from "../../../../core/protocol/station_change";
-import { Pref } from '../prefs';
+import { Pref, prefs } from '../prefs';
 import { catchError } from 'rxjs';
 import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
 import { ConstellationDiagramComponent } from "../constellation-diagram/constellation-diagram.component";
@@ -84,15 +84,8 @@ export class InputPaneComponent implements RdsPipeline  {
   mpxAudioPlayer = new MpxAudioPlayer();
   private constellationRedrawScheduled = false;
 
-  prefPlaybackSpeed = new Pref<string>("pref.playback_speed", "fast");
+  readonly prefs = prefs;
   prefTunedFrequency = new Pref<number>("pref.tuned_frequency", 100000);
-  prefMaxErrors = new Pref<number>("pref.max_errors", 0);
-  prefAutoPauseOnStationChange = new Pref<boolean>("pref.auto_pause_on_station_change", false);
-  prefRtlSdrAgc = new Pref<boolean>("pref.rtlsdr_agc", true);
-  prefRtlSdrGain = new Pref<number>("pref.rtlsdr_gain", 10);
-  prefRtlSdrPpm = new Pref<number>("pref.rtlsdr_ppm", 0);
-  prefVolume = new Pref<number>("pref.volume", 100);
-  prefPreemphasis = new Pref<number>("pref.preemphasis", 50);
 
   private snackBar = inject(MatSnackBar);
 
@@ -103,6 +96,14 @@ export class InputPaneComponent implements RdsPipeline  {
       this.demodulator[i] = new Demodulator(
         FREQ_STREAMS[i], this.synchronizer[i], /* requireBiphaseForSync= */ i > 0);
     }
+
+    // Apply preferences now and whenever they change.
+    effect(() => this.fileSource.realtimePlayback = prefs.playbackSpeed.value == "realtime");
+    effect(() => this.rtlSdrSource.setGain(prefs.rtlSdrAgc.value ? null : prefs.rtlSdrGain.value));
+    // An empty or invalid field means no correction.
+    effect(() => this.rtlSdrSource.setFrequencyCorrection(prefs.rtlSdrPpm.value || 0));
+    effect(() => this.mpxAudioPlayer.setVolume(prefs.volume.value / 100));
+    effect(() => this.mpxAudioPlayer.setDeemphasis(prefs.preemphasis.value));
   }
 
   private async handleHttpError(error: HttpErrorResponse) {
@@ -114,27 +115,6 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   public ngOnInit() {
-    this.prefPlaybackSpeed.init();
-    this.fileSource.realtimePlayback = this.prefPlaybackSpeed.value == "realtime";
-
-    this.prefTunedFrequency.init();
-
-    this.prefMaxErrors.init();
-
-    this.prefAutoPauseOnStationChange.init();
-
-    this.prefRtlSdrAgc.init();
-    this.prefRtlSdrGain.init();
-    this.prefRtlSdrPpm.init();
-    this.applyRtlSdrGain();
-    this.rtlSdrSource.setFrequencyCorrection(this.prefRtlSdrPpm.value);
-
-    this.prefVolume.init();
-    this.mpxAudioPlayer.setVolume(this.prefVolume.value / 100);
-
-    this.prefPreemphasis.init();
-    this.mpxAudioPlayer.setDeemphasis(this.prefPreemphasis.value);
-
     // Populate the audio device list if permission was already granted in a
     // previous session; otherwise the settings panel offers a button to ask.
     this.refreshAudioDevices();
@@ -220,7 +200,7 @@ export class InputPaneComponent implements RdsPipeline  {
           }
           this.currentPi = event.pi;
           this.startNewLogFile(event.pi);
-          if (this.prefAutoPauseOnStationChange.value && this.fileSourceActive) {
+          if (prefs.autoPauseOnStationChange.value && this.fileSourceActive) {
             this.fileSource.pause();
           }
           break;
@@ -319,46 +299,6 @@ export class InputPaneComponent implements RdsPipeline  {
     }
     this.setSource(this.fileSource);
     this.fileSource.start();
-  }
-
-  setPlaybackSpeed(event: any) {
-    this.fileSource.realtimePlayback = event.value == "realtime";
-    this.prefPlaybackSpeed.setValue(event.value);
-  }
-
-  setMaxErrors(event: any) {
-    this.prefMaxErrors.setValue(event.value);
-  }
-
-  private applyRtlSdrGain() {
-    this.rtlSdrSource.setGain(this.prefRtlSdrAgc.value ? null : this.prefRtlSdrGain.value);
-  }
-
-  setRtlSdrAgc(agc: boolean) {
-    this.prefRtlSdrAgc.setValue(agc);
-    this.applyRtlSdrGain();
-  }
-
-  setRtlSdrGain(gain: number) {
-    this.prefRtlSdrGain.setValue(gain);
-    this.applyRtlSdrGain();
-  }
-
-  setVolume(volume: number) {
-    this.prefVolume.setValue(volume);
-    this.mpxAudioPlayer.setVolume(volume / 100);
-  }
-
-  setPreemphasis(event: any) {
-    this.prefPreemphasis.setValue(event.value);
-    this.mpxAudioPlayer.setDeemphasis(event.value);
-  }
-
-  setRtlSdrPpm(ppm: number | null) {
-    // An empty or invalid field means no correction.
-    const value = Number.isFinite(ppm) ? ppm! : 0;
-    this.prefRtlSdrPpm.setValue(value);
-    this.rtlSdrSource.setFrequencyCorrection(value);
   }
 
   // Exactly one radio source panel must stay expanded at all times, so undo
@@ -467,7 +407,7 @@ export class InputPaneComponent implements RdsPipeline  {
 
   async processRdsReportEvent(event: RdsReportEvent) {
     if (event.type == RdsReportEventType.GROUP && event.group != undefined) {
-      this.emitGroup(event.stream || 0, event.group, this.prefMaxErrors.value);
+      this.emitGroup(event.stream || 0, event.group, prefs.maxErrors.value);
     }
     if (event.type == RdsReportEventType.UNSYNCED_GROUP_DURATION) {
       if (event.stream == undefined) {
@@ -479,7 +419,7 @@ export class InputPaneComponent implements RdsPipeline  {
   }
 
   reportReceiverStatus(frequencyKhz: number, signalStrength: number, rdsSync: boolean) {
-    this.prefTunedFrequency.setValue(frequencyKhz);
+    this.prefTunedFrequency.value = frequencyKhz;
     this.frequency = frequencyKhz;
     this.signalStrength = Math.min(Math.max(signalStrength * 100, 0), 100);
     this.rdsSync = rdsSync;
@@ -511,7 +451,7 @@ export class InputPaneComponent implements RdsPipeline  {
       if(newFreq < 87500) newFreq = 108000;
       this.currentSource.tune(newFreq);
       this.frequency = newFreq;
-      this.prefTunedFrequency.setValue(newFreq);
+      this.prefTunedFrequency.value = newFreq;
       this.stopLoggingCurrentStation();
     }
   }

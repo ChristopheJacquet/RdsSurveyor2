@@ -12,8 +12,7 @@
         @if (s === fileSource) {
           <div class="source-settings">
             <div class="playback-control-container">
-              <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [value]="prefPlaybackSpeed.value"
-                (change)="setPlaybackSpeed($event)">
+              <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [(ngModel)]="prefs.playbackSpeed.value">
                 <mat-button-toggle value="fast">Fast</mat-button-toggle>
                 <mat-button-toggle value="realtime">Real time</mat-button-toggle>
               </mat-button-toggle-group>
@@ -26,7 +25,7 @@
                 Replay <mat-icon>replay</mat-icon>
               </button>
             </div>
-            <mat-checkbox [(ngModel)]="prefAutoPauseOnStationChange.value" (ngModelChange)="prefAutoPauseOnStationChange.setValue($event)">
+            <mat-checkbox [(ngModel)]="prefs.autoPauseOnStationChange.value">
               Auto-pause on station change
             </mat-checkbox>
             <div
@@ -75,14 +74,14 @@
             <div class="gain-control">
               <span>Gain</span>
               <mat-slider min="0" max="50" step="1" discrete>
-                <input matSliderThumb [disabled]="prefRtlSdrAgc.value" [(ngModel)]="prefRtlSdrGain.value" (ngModelChange)="setRtlSdrGain($event)">
+                <input matSliderThumb [disabled]="prefs.rtlSdrAgc.value" [(ngModel)]="prefs.rtlSdrGain.value">
               </mat-slider>
-              <span class="gain-value" [class.disabled-label]="prefRtlSdrAgc.value">{{ prefRtlSdrGain.value | number:'1.0-0':'en-US' }} dB</span>
-              <mat-checkbox [(ngModel)]="prefRtlSdrAgc.value" (ngModelChange)="setRtlSdrAgc($event)">AGC</mat-checkbox>
+              <span class="gain-value" [class.disabled-label]="prefs.rtlSdrAgc.value">{{ prefs.rtlSdrGain.value | number:'1.0-0':'en-US' }} dB</span>
+              <mat-checkbox [(ngModel)]="prefs.rtlSdrAgc.value">AGC</mat-checkbox>
             </div>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Frequency correction (ppm)</mat-label>
-              <input matInput type="number" step="1" [(ngModel)]="prefRtlSdrPpm.value" (ngModelChange)="setRtlSdrPpm($event)">
+              <input matInput type="number" step="1" [(ngModel)]="prefs.rtlSdrPpm.value">
             </mat-form-field>
           </div>
         }
@@ -167,11 +166,10 @@
     <div class="volume-control">
       <span>Volume</span>
       <mat-slider min="0" max="100" step="1" discrete>
-        <input matSliderThumb [(ngModel)]="prefVolume.value" (ngModelChange)="setVolume($event)">
+        <input matSliderThumb [(ngModel)]="prefs.volume.value">
       </mat-slider>
-      <span class="volume-value">{{ prefVolume.value | number:'1.0-0':'en-US' }} %</span>
-      <mat-button-toggle-group name="preemphasis" [value]="prefPreemphasis.value"
-        (change)="setPreemphasis($event)">
+      <span class="volume-value">{{ prefs.volume.value | number:'1.0-0':'en-US' }} %</span>
+      <mat-button-toggle-group name="preemphasis" [(ngModel)]="prefs.preemphasis.value">
         <mat-button-toggle [value]="50">50 μs</mat-button-toggle>
         <mat-button-toggle [value]="75">75 μs</mat-button-toggle>
       </mat-button-toggle-group>
@@ -183,8 +181,7 @@
   </div>
   <div class="max-errors-container">
     <span>Max corrected bit<br> errors per block:</span>
-    <mat-button-toggle-group #maxErrors name="maxErrors" [value]="prefMaxErrors.value"
-      (change)="setMaxErrors($event)">
+    <mat-button-toggle-group #maxErrors name="maxErrors" [(ngModel)]="prefs.maxErrors.value">
       <mat-button-toggle [value]="0">0</mat-button-toggle>
       <mat-button-toggle [value]="1">1</mat-button-toggle>
       <mat-button-toggle [value]="2">2</mat-button-toggle>
