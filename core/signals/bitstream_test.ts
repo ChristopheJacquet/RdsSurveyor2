@@ -102,3 +102,25 @@ describe('Bit stream with injected errors', () => {
     }
   });
 });
+
+describe('Bit stream with synchronization not allowed', () => {
+  const data = new Uint8Array(
+    [0xf9, 0x03, 0x6b, 0xe0, 0x80, 0x61, 0x1f, 0x2d, 
+     0xa3, 0x60, 0x40, 0x40, 0x6e, 0x79]);
+
+  it('should not sync', () => {
+    const listener = new RdsListener();
+    const bss = new BitStreamSynchronizer(0, listener);
+    bss.syncAllowed = false;
+    const spy = spyOn(listener, 'processRdsReportEvent');
+    bss.addBits(data);
+    expect(bss.synced).toBe(false);
+    expect(spy).toHaveBeenCalledWith({
+      stream: 0,
+      type: RdsReportEventType.UNSYNCED_GROUP_DURATION,
+      sourceInfo: "BitStreamSynchronizer",
+    });
+    expect(spy).not.toHaveBeenCalledWith(
+      jasmine.objectContaining({type: RdsReportEventType.GROUP}));
+  });
+});

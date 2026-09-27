@@ -105,6 +105,9 @@ export class BitStreamSynchronizer {
     new Block(0, UNCORRECTABLE_ERRORS),
   ];   // group
 	public synced = false;
+  // When false, synchronization is not acquired (e.g. because no RDS signal is detected, to avoid
+  // spurious synchronization on noise). Already acquired synchronization is kept until lost.
+  public syncAllowed = true;
 	private nbOk = 0;
 	private nbUnsync = 0;
 	private groupCount = 0;
@@ -142,7 +145,7 @@ export class BitStreamSynchronizer {
     this.bitTime++;
     
     try_sync:
-    if (!this.synced) {
+    if (!this.synced && this.syncAllowed) {
       const synd = calcSyndrome(this.block, INITIAL_MULTIPLIER);
 
       const blockIndex = SYNDROMES.get(synd);

@@ -99,7 +99,9 @@ export class InputPaneComponent implements RdsPipeline  {
   constructor(private httpClient: HttpClient, private route: ActivatedRoute) {
     for (let i=0; i<FREQ_STREAMS.length; i++) {
       this.synchronizer[i] = new BitStreamSynchronizer(i, this);
-      this.demodulator[i] = new Demodulator(FREQ_STREAMS[i], this.synchronizer[i]);
+      // Streams >= 1 are often absent: only let them synchronize when a signal is detected.
+      this.demodulator[i] = new Demodulator(
+        FREQ_STREAMS[i], this.synchronizer[i], /* requireBiphaseForSync= */ i > 0);
     }
   }
 

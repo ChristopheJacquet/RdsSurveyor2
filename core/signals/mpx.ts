@@ -25,6 +25,14 @@ const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
 
 const PLL_BETA = 5;    // Reduced 50 -> 5 to make the PLL more stable.
 
+// Number of biphase symbols (half-bits) over which the biphase reading frame is chosen, and
+// over which the presence of a biphase-coded signal is assessed.
+const BIPHASE_WINDOW = 800;
+
+// Minimum biphase score (see Demodulator.biphaseScore) for a biphase-coded signal to be considered
+// present. The score is ~0.5 for a clean RDS signal, and ~0 (standard deviation ~0.035) for noise.
+const BIPHASE_DETECTION_THRESHOLD = 0.2;
+
 // Number of out symbols kept (for drawing the constellation diagram).
 const SYNC_OUT_LENGTH = 100;
 
@@ -91,6 +99,20 @@ export class Demodulator {
 	private reading_frame = 0;
 	private tot_errs = [0, 0];
 
+  // Measures how much the received symbols look like a biphase-coded signal, over the last
+  // BIPHASE_WINDOW symbols. With a biphase signal, the two halves of a bit always have opposite
+  // signs, whereas consecutive halves of different bits have opposite signs half of the time, so
+  // the sign changes counted in the two reading frames differ markedly. With noise, both reading
+  // frames see sign changes half of the time.
+  biphaseScore = 0;
+
+  // Whether a biphase-coded signal was detected over the last BIPHASE_WINDOW symbols.
+  biphaseDetected = false;
+
+  // If true, the synchronizer may only acquire synchronization while a biphase-coded signal is
+  // detected. This avoids spurious synchronizations on noise when the stream is absent.
+  private requireBiphaseForSync: boolean;
+
   lp2400iFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
   lp2400qFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
   lpPllFilter = new IirFilter(LP_PLL_COEFFS_A, LP_PLL_COEFFS_B);
@@ -105,16 +127,29 @@ export class Demodulator {
 
   bitstreamSynchronizer: BitStreamSynchronizer;
 
-  constructor(subcarrierFreq: number, bitstreamSynchronizer: BitStreamSynchronizer) {
+  constructor(
+      subcarrierFreq: number, bitstreamSynchronizer: BitStreamSynchronizer,
+      requireBiphaseForSync = false) {
     this.fSub = subcarrierFreq;
     this.subcarrierBitrateRatio = subcarrierFreq / BIT_RATE;
     this.subcarrPhiWrap = 2 * Math.PI * this.subcarrierBitrateRatio;
     this.fsc = subcarrierFreq;
     this.bitstreamSynchronizer = bitstreamSynchronizer;
+    this.requireBiphaseForSync = requireBiphaseForSync;
+    this.updateSyncAllowed();
   }
 
   reset() {
     this.locked = false;
+    this.biphaseScore = 0;
+    this.biphaseDetected = false;
+    this.updateSyncAllowed();
+  }
+
+  private updateSyncAllowed() {
+    if (this.requireBiphaseForSync) {
+      this.bitstreamSynchronizer.syncAllowed = this.biphaseDetected;
+    }
   }
 
   addSample(sample: number) {
@@ -210,6 +245,10 @@ export class Demodulator {
 			this.differentialDecodeAndReportBit(sign(acc + this.prev_acc));
 		}
 		if (this.counter == 0) {
+			this.biphaseScore =
+				Math.abs(this.tot_errs[0] - this.tot_errs[1]) / (BIPHASE_WINDOW / 2);
+			this.biphaseDetected = this.biphaseScore >= BIPHASE_DETECTION_THRESHOLD;
+			this.updateSyncAllowed();
 			if (this.tot_errs[1 - this.reading_frame] < this.tot_errs[this.reading_frame]) {
 				this.reading_frame = 1 - this.reading_frame;
 			}
@@ -218,7 +257,7 @@ export class Demodulator {
 		}
 
 		this.prev_acc = acc;
-		this.counter = (this.counter + 1) % 800;
+		this.counter = (this.counter + 1) % BIPHASE_WINDOW;
 	}
 }
 
