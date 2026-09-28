@@ -83,25 +83,26 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 * New convenience buttons: station reset, input file replay.
 * Unified input source selector, for both file playback and "live" sources.
 
+### Milestone 10 (Reached on 28 Sep 2026)
+
+* Improved group recording (log files): improved UI, bugfixes.
+* General UI improvements: better error messages, better handling of small screens, non-modal frequency input, preferences dialog.
+* Better file playback: option to pause playback, auto-pause on station change.
+* RTL-SDR: adjustable gain (and AGC), frequency correction - should allow picking up weaker stations.
+* Audio output for all MPX-level sources.
+* Performance improvements.
+
 ## Rough future plans
-
-### Milestone 10
-
-* Improved logging to files.
 
 ### Milestone 11
 
-* SDR++ bridge.
+* Best practice diagnoses and recommendations (for broadcasters).
 
 ### Milestone 12
 
-* Best practice diagnoses and recommendations (for broadcasters).
-
-### Milestone 13
-
 * Performance improvements
 
-### Milestone 14
+### Milestone 13
 
 * TMC support.
 
