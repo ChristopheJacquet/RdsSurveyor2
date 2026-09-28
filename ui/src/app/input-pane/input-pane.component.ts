@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, EventEmitter, effect, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, effect, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -31,6 +31,7 @@ import { catchError } from 'rxjs';
 import { BlerGraphComponent } from "../bler-graph/bler-graph.component";
 import { ConstellationDiagramComponent } from "../constellation-diagram/constellation-diagram.component";
 import { SpectrumDiagramComponent } from "../spectrum-diagram/spectrum-diagram.component";
+import { formatMhz, parseFrequencyKhz } from "./frequency";
 
 @Component({
     selector: 'app-input-pane',
@@ -43,6 +44,7 @@ export class InputPaneComponent implements RdsPipeline  {
   @ViewChildren('blerGraph') public blerGraph!: QueryList<BlerGraphComponent>;
   @ViewChild('constellationDiagram') public constellationDiagram!: ConstellationDiagramComponent;
   @ViewChild('spectrumDiagram') public spectrumDiagram!: SpectrumDiagramComponent;
+  @ViewChild('frequencyInput') private frequencyInput?: ElementRef<HTMLInputElement>;
   @Output() groupReceived = new EventEmitter<ReceiverEvent>();
   isDragging = false;
 
@@ -60,6 +62,8 @@ export class InputPaneComponent implements RdsPipeline  {
   audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;
   frequency: number = -1;
+  // Text being typed in the tuner display, or null when not editing.
+  frequencyDraft: string | null = null;
   signalStrength: number = 0;
   // For tuners directly providing RDS data, this indicator (for Stream 0)
   // replaces the demodulator's locked and the synchronizer's synced indicators.
@@ -465,13 +469,14 @@ export class InputPaneComponent implements RdsPipeline  {
     }
   }
 
-  tuneBy(frequencyDiff: number) {
-    // Wrap around at band edges.
+  // Wraps around at band edges.
+  private wrapToBand(frequencyKhz: number) {
     const { min, max } = BAND_LIMITS_KHZ[prefs.band.value];
-    let newFreq = this.frequency + frequencyDiff;
-    if (newFreq > max) newFreq = min;
-    if (newFreq < min) newFreq = max;
-    this.tuneTo(newFreq);
+    return frequencyKhz > max ? min : frequencyKhz < min ? max : frequencyKhz;
+  }
+
+  tuneBy(frequencyDiff: number) {
+    this.tuneTo(this.wrapToBand(this.frequency + frequencyDiff));
   }
 
   tuneUp() {
@@ -482,28 +487,83 @@ export class InputPaneComponent implements RdsPipeline  {
     this.tuneBy(-50);
   }
 
-  setFrequency() {
-    const freqStr = window.prompt("New frequency:");
-    if (freqStr == null) {
-      this.snackBar.open(
-        "No frequency entered.",
-        "Dismiss");
+  get frequencyLabel() {
+    return this.frequency > 0 ? formatMhz(this.frequency) : "";
+  }
+
+  get bandHint() {
+    const { min, max } = BAND_LIMITS_KHZ[prefs.band.value];
+    return `Type a frequency, e.g. 94.8 (${min / 1000}–${max / 1000} MHz)`;
+  }
+
+  // The frequency being typed, or null if it isn't valid and in band.
+  get draftFrequencyKhz() {
+    const khz = parseFrequencyKhz(this.frequencyDraft ?? "");
+    return khz != null && khz == this.clampToBand(khz) ? khz : null;
+  }
+
+  onFrequencyMousedown(event: MouseEvent, input: HTMLInputElement) {
+    // Focus manually, so that the caret doesn't undo the select-all.
+    if (document.activeElement != input) {
+      event.preventDefault();
+      input.focus();
+    }
+  }
+
+  startFrequencyEntry(input: HTMLInputElement) {
+    this.frequencyDraft = this.frequencyLabel;
+    input.select();
+  }
+
+  onFrequencyKeydown(event: KeyboardEvent, input: HTMLInputElement) {
+    switch (event.key) {
+      case "Enter": {
+        const khz = this.draftFrequencyKhz;
+        if (khz != null) {
+          this.tuneTo(khz);
+          input.blur();
+        }
+        break;
+      }
+      case "Escape": input.blur(); break;
+      default:
+        // Let through editing keys, shortcuts and frequency characters.
+        if (event.key.length > 1 || event.ctrlKey || event.metaKey
+            || /[\d.,]/.test(event.key)) {
+          return;
+        }
+    }
+    event.preventDefault();
+  }
+
+  // Typing a digit anywhere starts entering a frequency, like on a radio,
+  // and the up and down arrows tune anywhere.
+  @HostListener("document:keydown", ["$event"])
+  onDocumentKeydown(event: KeyboardEvent) {
+    const input = this.frequencyInput?.nativeElement;
+    const target = event.target as HTMLElement;
+    if (!input || event.ctrlKey || event.metaKey || event.altKey
+        || (target != input && (target.isContentEditable
+          || target.closest("input, textarea, select, [role=combobox], "
+            + "[role=tab], [role=radiogroup], .cdk-overlay-container")))) {
       return;
     }
-    const freq = Number.parseFloat(freqStr) * 1000;
-    if (Number.isNaN(freq)) {
-      this.snackBar.open(
-        `Entered frequency "${freqStr}" could not be parsed.`,
-        "Dismiss");
-      return;
+    if (event.key == "ArrowUp" || event.key == "ArrowDown") {
+      // Without a tunable source, leave the arrows to scroll the page.
+      if (this.currentSource?.capabilities.supportsTune) {
+        input.blur();  // Abandons any frequency being typed.
+        if (event.key == "ArrowUp") {
+          this.tuneUp();
+        } else {
+          this.tuneDown();
+        }
+        event.preventDefault();
+      }
+    } else if (target != input && /^\d$/.test(event.key)) {
+      // Focusing during keydown makes the key land in the input, replacing
+      // the selected text.
+      input.focus();
     }
-    if (freq != this.clampToBand(freq)) {
-      this.snackBar.open(
-        `Entered frequency ${freq/1000} MHz not in selected FM band.`,
-        "Dismiss");
-      return;
-    }
-    this.tuneTo(freq);
   }
 
   async selectLogDir() {

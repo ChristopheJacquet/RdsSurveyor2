@@ -130,7 +130,16 @@
       </button>
     }
     <span class="tunerDisplay">
-      <div class="frequency" (click)="setFrequency()">{{ frequency > 0 ? (frequency / 1000 | number:'1.2-2':'en-US') : "" }}</div>
+      <input #frequencyInput class="frequency" inputmode="decimal"
+        autocomplete="off" spellcheck="false" [title]="bandHint"
+        [value]="frequencyDraft ?? frequencyLabel"
+        [class.invalid]="frequencyDraft && draftFrequencyKhz == null"
+        (mousedown)="onFrequencyMousedown($event, frequencyInput)"
+        (focus)="startFrequencyEntry(frequencyInput)"
+        (input)="frequencyDraft = frequencyInput.value"
+        (keydown)="onFrequencyKeydown($event, frequencyInput)"
+        (blur)="frequencyDraft = null">
+        <span class="unit">MHz</span>
       <div class="signalStrength" [style.width.%]="signalStrength"></div>
     </span>
     @if (currentSource?.capabilities.supportsTune) {

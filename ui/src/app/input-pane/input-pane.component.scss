@@ -186,13 +186,43 @@ input[type="file"] {
   display: inline-block;
   vertical-align: top;
   width: 9em;
-  cursor: pointer;
+  position: relative;
 }
 
+// An input styled as a plain display until focused.
 .frequency {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: 110%;
+  text-align: center;
   margin-bottom: 2px;
   min-height: 1lh;
+  cursor: pointer;
+
+  &:focus {
+    background-color: #336;
+    cursor: text;
+  }
+
+  &.invalid {
+    color: #F88;
+  }
+}
+
+.unit {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 80%;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .signalStrength {
