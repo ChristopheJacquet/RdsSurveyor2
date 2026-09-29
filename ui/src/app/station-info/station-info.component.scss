@@ -76,13 +76,16 @@
   font-family: inherit;  // Override monospace font.
 }
 
+.infogrid-chips span, .stat-item {
+  background: #e8ecf9;
+  border: 1px solid #b4c3f3;
+  border-radius: 14px;
+}
+
 .infogrid-chips span {
   padding: 2px 9px;
   margin: 3px 4px;
-  background-color: #e8ecf9;
-  border: 1px solid #b4c3f3;
-  border-radius: 4px;
-  font-size: 80%;
+  font-size: 71.43%;  /* 1 / 140% */
 }
 
 .group-stats {
@@ -99,7 +102,7 @@
   border: 1px solid #444;
   border-radius: 5px;
   margin: 3px 2px;
-  background: #AAA;
+  background: #CCC;
   padding: 2px;
 }
 
@@ -128,9 +131,6 @@
   align-items: center;
   gap: 6px;
   padding: 2px 4px 2px 10px;
-  background: #e8ecf9;
-  border: 1px solid #b4c3f3;
-  border-radius: 14px;
   white-space: nowrap;
 }
 
