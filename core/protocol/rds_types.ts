@@ -1,7 +1,7 @@
 import { AFList, parseAfCode, formatAf } from './af';
 import { parse_group_ab, parse_group_c, Station } from "./base";
 import { DabCrossRefAppImpl } from "./dab_cross_ref";
-import { Diagnostics } from "./diagnostics";
+import { Diagnostics, Finding, FindingType, performAllDiagnostics } from "./diagnostics";
 import { ERtAppImpl } from "./enhanced_radio_text";
 import { InternetConnectionAppImpl } from './internet_connection';
 import { RtPlusAppImpl } from "./radio_text_plus";
@@ -191,6 +191,10 @@ export class StationImpl implements Station {
     return res;
   }
 
+  usesDynamicPS(): boolean {
+    return this.ps.getPastMessages(true).length > 1;
+  }
+
   getLPS(): string {
     return this.lps.toString();
   }
@@ -208,6 +212,8 @@ export class StationImpl implements Station {
     if (this.currentLogMessage) {
       this.currentLogMessage.groupType = type;
     }
+
+    performAllDiagnostics(this);
   }
 
   addToChannelStats(channel: number): void {
@@ -303,8 +309,12 @@ export class StationImpl implements Station {
     const b = parseAfCode(codeB);
     // If two filler codes, we cannot do anything.
     if (a.kind == "AfFiller" && b.kind == "AfFiller") {
-      this.diagnostics.addFinding(
-        "Waste of capacity by transmitting groups with two AF fillers.", GROUP_0A);
+      this.diagnostics.addFinding(new Finding(
+        "Waste of capacity by transmitting groups with two AF fillers.",
+        GROUP_0A,
+        "Transmit a shorter AF list, or transmit 0B groups in the absence " +
+        "of AFs, using the corresponding capacity for PI instead.",
+        FindingType.ADVICE));
       return;
     }
 		if (a.kind == "AfListLength") {
@@ -335,7 +345,11 @@ export class StationImpl implements Station {
 			}
 		}
     // If we reach this point, then the pair could not be processed.
-    this.diagnostics.addFinding(`Invalid AF pair: ${formatAf(codeA)}, ${formatAf(codeB)}`, GROUP_0A);
+    this.diagnostics.addFinding(new Finding(
+      `Invalid AF pair: ${formatAf(codeA)}, ${formatAf(codeB)}`,
+      GROUP_0A,
+      "The given AF pair is invalid.",
+      FindingType.ERROR));
 	}
 
   /**
@@ -796,38 +810,38 @@ export class LogMessage {
 const MAX_LOG_SIZE = 1000;
 
 // Group type constants.
-const GROUP_0A = 0b00000;
-const GROUP_0B = 0b00001;
-const GROUP_1A = 0b00010;
-const GROUP_1B = 0b00011;
-const GROUP_2A = 0b00100;
-const GROUP_2B = 0b00101;
-const GROUP_3A = 0b00110;
-const GROUP_3B = 0b00111;
-const GROUP_4A = 0b01000;
-const GROUP_4B = 0b01001;
-const GROUP_5A = 0b01010;
-const GROUP_5B = 0b01011;
-const GROUP_6A = 0b01100;
-const GROUP_6B = 0b01101;
-const GROUP_7A = 0b01110;
-const GROUP_7B = 0b01111;
-const GROUP_8A = 0b10000;
-const GROUP_8B = 0b10001;
-const GROUP_9A = 0b10010;
-const GROUP_9B = 0b10011;
-const GROUP_10A = 0b10100;
-const GROUP_10B = 0b10101;
-const GROUP_11A = 0b10110;
-const GROUP_11B = 0b10111;
-const GROUP_12A = 0b11000;
-const GROUP_12B = 0b11001;
-const GROUP_13A = 0b11010;
-const GROUP_13B = 0b11011;
-const GROUP_14A = 0b11100;
-const GROUP_14B = 0b11101;
-const GROUP_15A = 0b11110;
-const GROUP_15B = 0b11111;
+export const GROUP_0A = 0b00000;
+export const GROUP_0B = 0b00001;
+export const GROUP_1A = 0b00010;
+export const GROUP_1B = 0b00011;
+export const GROUP_2A = 0b00100;
+export const GROUP_2B = 0b00101;
+export const GROUP_3A = 0b00110;
+export const GROUP_3B = 0b00111;
+export const GROUP_4A = 0b01000;
+export const GROUP_4B = 0b01001;
+export const GROUP_5A = 0b01010;
+export const GROUP_5B = 0b01011;
+export const GROUP_6A = 0b01100;
+export const GROUP_6B = 0b01101;
+export const GROUP_7A = 0b01110;
+export const GROUP_7B = 0b01111;
+export const GROUP_8A = 0b10000;
+export const GROUP_8B = 0b10001;
+export const GROUP_9A = 0b10010;
+export const GROUP_9B = 0b10011;
+export const GROUP_10A = 0b10100;
+export const GROUP_10B = 0b10101;
+export const GROUP_11A = 0b10110;
+export const GROUP_11B = 0b10111;
+export const GROUP_12A = 0b11000;
+export const GROUP_12B = 0b11001;
+export const GROUP_13A = 0b11010;
+export const GROUP_13B = 0b11011;
+export const GROUP_14A = 0b11100;
+export const GROUP_14B = 0b11101;
+export const GROUP_15A = 0b11110;
+export const GROUP_15B = 0b11111;
 
 const STATION_LOGO_AID = 0xFF7F;
 
