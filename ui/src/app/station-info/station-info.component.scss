@@ -257,19 +257,34 @@
   }
 }
 
-.dynamic-ps-title {
-  text-align: right;
-}
-
 .dynamic-ps-parent {
   // The element needs to be positioned so that its child .dynamic-ps can be
   // absolutely positioned.
   position: relative;
+  overflow: hidden;
+
+  // Narrow fade at the left edge, hinting that older text scrolls out of view.
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
+    background: linear-gradient(to right, #FFF, transparent);
+  }
 }
 
 .dynamic-ps {
+  // Anchored to the right, so that when the text overflows, the most recent
+  // part stays visible. When the text is short, min-width makes it fill the
+  // parent so that it is left-aligned like other fields.
   position: absolute;
   right: 0;
+  min-width: 100%;
+  padding: 0 3px;
+  box-sizing: border-box;
 }
 
 .event-list {
