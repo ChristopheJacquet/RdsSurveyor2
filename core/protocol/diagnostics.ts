@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, StationImpl } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_2A, GROUP_2B, StationImpl } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -41,6 +41,14 @@ export class Finding {
   }
 }
 
+function multigroup(...groups: number[]): number {
+  let result = 0;
+  for (let g of groups) {
+    result = (result<<5) | g;
+  }
+  return result;
+}
+
 export function performAllDiagnostics(station: StationImpl) {
   for (let diagnostic of diagnostics) {
     const finding = diagnostic(station);
@@ -50,7 +58,10 @@ export function performAllDiagnostics(station: StationImpl) {
   }
 }
 
-const diagnostics = [usesDynamicPS];
+const diagnostics = [
+  usesDynamicPS,
+  mixes2Aand2Bgroups,
+];
 
 function usesDynamicPS(station: StationImpl): Finding | null {
   if (station.usesDynamicPS()) {
@@ -64,7 +75,23 @@ function usesDynamicPS(station: StationImpl): Finding | null {
       "Dynamic PS is non-standard and should not be used. It may distract " +
       "drivers and corrupt the display of some receivers. Use Radiotext (RT) " +
       "instead to convey dynamic messages such as song titles and program " +
-      "names.");
+      "names.",
+      FindingType.ERROR);
+  }
+  return null;
+}
+
+function mixes2Aand2Bgroups(station: StationImpl): Finding | null {
+  if (station.group_stats[GROUP_2A] > 5 && station.group_stats[GROUP_2B] > 5) {
+    return new Finding(
+      "Mixing 2A and 2B groups",
+      multigroup(GROUP_2A, GROUP_2B),
+      "While mixing 2A and 2B groups for different Radiotext (RT) messages " +
+      "not prohibited by the standard, it might confuse some receivers " +
+      "without having any concrete benefits. Unless you have a strong " +
+      "reason to increase the repetition rate of PI, you should probably " +
+      "just use 2A groups.",
+      FindingType.ADVICE);
   }
   return null;
 }
