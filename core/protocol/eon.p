@@ -16,8 +16,13 @@ bitstruct group_14A(station: Station) {
     log "ON.PI={pi_on:04x}"
     log "ON.TP={tp_on:bool}"
 
-    station.other_networks[pi_on].tp = tp_on
-    station.other_networks[pi_on].pi = pi_on
+    switch variant {
+        case 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14 {
+            station.other_networks[pi_on].tp = tp_on
+            station.other_networks[pi_on].pi = pi_on
+        }
+        # TODO: Handle variant 12 (can reference the Tuned Network).
+    }
 
     switch variant {
         case 0, 1, 2, 3 {

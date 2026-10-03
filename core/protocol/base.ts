@@ -1391,27 +1391,46 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 	if ((tp_on != null)) {
 		log.add(`ON.TP=${tp_on ? '1': '0'}`);
 	}
-	let elt0: StationImpl | undefined;
-	if ((pi_on != null)) {
-		elt0 = station.other_networks.get(pi_on);
-		if (elt0 == undefined) {
-			elt0 = new StationImpl(pi_on);
-			station.other_networks.set(pi_on, elt0);
+	if ((variant != null)) {
+		switch (variant) {
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+			case 8:
+			case 9:
+			case 10:
+			case 13:
+			case 14:
+				let elt0: StationImpl | undefined;
+				if ((pi_on != null)) {
+					elt0 = station.other_networks.get(pi_on);
+					if (elt0 == undefined) {
+						elt0 = new StationImpl(pi_on);
+						station.other_networks.set(pi_on, elt0);
+					}
+				}
+				if ((elt0 != undefined) && (tp_on != null)) {
+					elt0.tp = tp_on;
+				}
+				let elt1: StationImpl | undefined;
+				if ((pi_on != null)) {
+					elt1 = station.other_networks.get(pi_on);
+					if (elt1 == undefined) {
+						elt1 = new StationImpl(pi_on);
+						station.other_networks.set(pi_on, elt1);
+					}
+				}
+				if ((elt1 != undefined) && (pi_on != null)) {
+					elt1.pi = pi_on;
+				}
+				break;
+
 		}
-	}
-	if ((elt0 != undefined) && (tp_on != null)) {
-		elt0.tp = tp_on;
-	}
-	let elt1: StationImpl | undefined;
-	if ((pi_on != null)) {
-		elt1 = station.other_networks.get(pi_on);
-		if (elt1 == undefined) {
-			elt1 = new StationImpl(pi_on);
-			station.other_networks.set(pi_on, elt1);
-		}
-	}
-	if ((elt1 != undefined) && (pi_on != null)) {
-		elt1.pi = pi_on;
 	}
 	if ((variant != null)) {
 		switch (variant) {
