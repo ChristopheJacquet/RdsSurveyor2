@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_14A, GROUP_2A, GROUP_2B, StationImpl } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, StationImpl } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -62,6 +62,7 @@ const diagnostics = [
   usesDynamicPS,
   mixes2Aand2Bgroups,
   eonReferencesTunedStation,
+  ptynIsStationName,
 ];
 
 function usesDynamicPS(station: StationImpl): Finding | null {
@@ -110,6 +111,28 @@ function eonReferencesTunedStation(station: StationImpl): Finding | null {
       "with the only exception of Linkage Information. This wastes " +
       "capacity and might confuse receivers.",
       FindingType.ERROR);
+  }
+  return null;
+}
+
+function ptynIsStationName(station: StationImpl): Finding | null {
+  const ptyn = station.ptyn.getMostFrequentText();
+  const stationName = station.ps.getMostFrequentText();
+
+  if (ptyn.length < 8 || stationName.length < 8) {
+    return null;
+  }
+  
+  if (ptyn.trim() == stationName.trim()) {
+    return new Finding(
+      `PTYN is the station name ("${ptyn}")`,
+      GROUP_10A,
+      "Program Type Name (PTYN) is meant to refine the Program Type (PTY), " +
+      "for example \"Football\" for PTY \"Sport\". It should not be used " +
+      "to transmit the station's name, which is already conveyed by PS. " +
+      "Receivers may display PTYN alongside or in place of the PTY label, " +
+      "so a station name there is misleading.",
+      FindingType.WARNING);
   }
   return null;
 }
