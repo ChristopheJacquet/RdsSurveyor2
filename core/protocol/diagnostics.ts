@@ -65,7 +65,24 @@ const diagnostics = [
   ptynIsStationName,
   ptynIsEmpty,
   rtHasTrailingSpaces,
+  rtIsEmpty,
 ];
+
+// Returns past RTs, plus the current one only if fully received (up to 0x0D,
+// if any, otherwise up to the max number of segments).
+// TODO: make RDSString.isComplete() work for both RT lengths, and take 0x0Ds
+// into account. Then this can be simplified.
+function completeRtHistory(station: StationImpl): RdsStringHistoryEntry[] {
+  const entries = [...station.rt.history];
+  const maxLength = station.rt.groupType == GROUP_2B ? 32 : 64;
+  const current = station.rt.currentText.subarray(0, maxLength);
+  const end = current.indexOf(0x0D);
+  if (!station.rt.empty &&
+      !current.subarray(0, end >= 0 ? end : maxLength).includes(0)) {
+    entries.push(station.rt.getPastMessages(true)[0]);
+  }
+  return entries;
+}
 
 function usesDynamicPS(station: StationImpl): Finding | null {
   if (station.usesDynamicPS()) {
@@ -158,11 +175,8 @@ function ptynIsEmpty(station: StationImpl): Finding | null {
 
 function rtHasTrailingSpaces(station: StationImpl): Finding | null {
   const isPadded = (entry: RdsStringHistoryEntry) => {
-    if (entry.groupType != GROUP_2A && entry.groupType != GROUP_2B) {
-      return false;
-    }
     // 16 segments of 4 (2A) or 2 (2B) characters.
-    const isVersionA = entry.groupType == GROUP_2A;
+    const isVersionA = entry.groupType != GROUP_2B;
     const maxLength = isVersionA ? 64 : 32;
     const charsPerSegment = isVersionA ? 4 : 2;
     const segmentsNeeded = (len: number) =>
@@ -174,20 +188,7 @@ function rtHasTrailingSpaces(station: StationImpl): Finding | null {
       segmentsNeeded(rt.trimEnd().length) < segmentsNeeded(rt.length);
   };
 
-  // Include the current text only if fully received (up to 0x0D, if any,
-  // otherwise up to the max number of segments).
-  // TODO: make RDSString.isComplete() work for both RT lengths, and take
-  // 0x0Ds into account. Then we can essentially remove the following code.
-  const entries = [...station.rt.history];
-  const maxLength = station.rt.groupType == GROUP_2B ? 32 : 64;
-  const current = station.rt.currentText.subarray(0, maxLength);
-  const end = current.indexOf(0x0D);
-  if (!station.rt.empty &&
-      !current.subarray(0, end >= 0 ? end : maxLength).includes(0)) {
-    entries.push(station.rt.getPastMessages(true)[0]);
-  }
-
-  const padded = entries.find(isPadded);
+  const padded = completeRtHistory(station).find(isPadded);
   if (padded) {
     const isVersionA = padded.groupType == GROUP_2A;
     return new Finding(
@@ -199,6 +200,23 @@ function rtHasTrailingSpaces(station: StationImpl): Finding | null {
       `(${isVersionA ? 64 : 32} characters) ` +
       "should be terminated by a carriage return (code 0x0D), and the " +
       "remaining segments need not be transmitted.",
+      FindingType.ADVICE);
+  }
+  return null;
+}
+
+function rtIsEmpty(station: StationImpl): Finding | null {
+  const empty = completeRtHistory(station).find(entry =>
+    // Slicing drops the unused half of the buffer in 2B.
+    entry.message.slice(0, entry.groupType == GROUP_2B ? 32 : 64)
+      .trim().length == 0);
+  if (empty) {
+    return new Finding(
+      "Radiotext is empty",
+      empty.groupType == GROUP_2B ? GROUP_2B : GROUP_2A,
+      "Some Radiotext (RT) message is empty or only contains spaces. " +
+      "This is a waste of transmission capacity. Either transmit a " +
+      "meaningful RT, or stop transmitting 2A/2B groups.",
       FindingType.ADVICE);
   }
   return null;
