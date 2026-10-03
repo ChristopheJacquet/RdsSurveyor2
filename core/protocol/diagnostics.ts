@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, StationImpl } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, StationImpl } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -64,6 +64,7 @@ const diagnostics = [
   eonReferencesTunedStation,
   ptynIsStationName,
   ptynIsEmpty,
+  rtHasTrailingSpaces,
 ];
 
 function usesDynamicPS(station: StationImpl): Finding | null {
@@ -151,6 +152,54 @@ function ptynIsEmpty(station: StationImpl): Finding | null {
       "a meaningful PTYN that refines the Program Type (PTY), for example " +
       "\"Football\" for PTY \"Sport\", or stop transmitting 10A groups.",
       FindingType.WARNING);
+  }
+  return null;
+}
+
+function rtHasTrailingSpaces(station: StationImpl): Finding | null {
+  const isPadded = (entry: RdsStringHistoryEntry) => {
+    if (entry.groupType != GROUP_2A && entry.groupType != GROUP_2B) {
+      return false;
+    }
+    // 16 segments of 4 (2A) or 2 (2B) characters.
+    const isVersionA = entry.groupType == GROUP_2A;
+    const maxLength = isVersionA ? 64 : 32;
+    const charsPerSegment = isVersionA ? 4 : 2;
+    const segmentsNeeded = (len: number) =>
+      len >= maxLength ? 16 : Math.ceil((len + 1) / charsPerSegment);
+
+    // Already cut at 0x0D. Slicing drops the unused half of the buffer in 2B.
+    const rt = entry.message.slice(0, maxLength);
+    return rt.length > 0 &&
+      segmentsNeeded(rt.trimEnd().length) < segmentsNeeded(rt.length);
+  };
+
+  // Include the current text only if fully received (up to 0x0D, if any,
+  // otherwise up to the max number of segments).
+  // TODO: make RDSString.isComplete() work for both RT lengths, and take
+  // 0x0Ds into account. Then we can essentially remove the following code.
+  const entries = [...station.rt.history];
+  const maxLength = station.rt.groupType == GROUP_2B ? 32 : 64;
+  const current = station.rt.currentText.subarray(0, maxLength);
+  const end = current.indexOf(0x0D);
+  if (!station.rt.empty &&
+      !current.subarray(0, end >= 0 ? end : maxLength).includes(0)) {
+    entries.push(station.rt.getPastMessages(true)[0]);
+  }
+
+  const padded = entries.find(isPadded);
+  if (padded) {
+    const isVersionA = padded.groupType == GROUP_2A;
+    return new Finding(
+      "Radiotext padded with spaces",
+      isVersionA ? GROUP_2A : GROUP_2B,
+      "Radiotext (RT) is padded with trailing spaces, which needlessly " +
+      "occupy RT segments. This is a waste of transmission capacity. " +
+      "Messages shorter than the maximum length " +
+      `(${isVersionA ? 64 : 32} characters) ` +
+      "should be terminated by a carriage return (code 0x0D), and the " +
+      "remaining segments need not be transmitted.",
+      FindingType.ADVICE);
   }
   return null;
 }
