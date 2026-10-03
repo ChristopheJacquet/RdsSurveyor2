@@ -355,6 +355,9 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((addr != null) && (rt_seg != null)) {
 		log.add(`RT seg @${addr} "${formatRdsText(rt_seg)}"`);
 	}
+	if ((flag != null)) {
+		station.rt_flag = flag;
+	}
 	if ((station != null)) {
 		if ((addr != null) && (rt_seg__0 != null)) {
 			station.rt.setByte(addr*4 + 0, rt_seg__0);
@@ -368,9 +371,6 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], log: LogMessag
 		if ((addr != null) && (rt_seg__3 != null)) {
 			station.rt.setByte(addr*4 + 3, rt_seg__3);
 		}
-	}
-	if ((flag != null)) {
-		station.rt_flag = flag;
 	}
 }
 
@@ -404,6 +404,9 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((addr != null) && (rt_seg != null)) {
 		log.add(`RT seg @${addr} "${formatRdsText(rt_seg)}"`);
 	}
+	if ((flag != null)) {
+		station.rt_flag = flag;
+	}
 	if ((station != null)) {
 		if ((addr != null) && (rt_seg__0 != null)) {
 			station.rt.setByte(addr*2 + 0, rt_seg__0);
@@ -411,9 +414,6 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], log: LogMessag
 		if ((addr != null) && (rt_seg__1 != null)) {
 			station.rt.setByte(addr*2 + 1, rt_seg__1);
 		}
-	}
-	if ((flag != null)) {
-		station.rt_flag = flag;
 	}
 }
 

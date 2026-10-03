@@ -232,8 +232,8 @@ bitstruct group_2A(station: Station) {
     log "RT flag={flag:letter}"
     log "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 
-    copy station.rt, addr, 4, rt_seg
     station.rt_flag = flag
+    copy station.rt, addr, 4, rt_seg
 }
 
 bitstruct group_2B(station: Station) {
@@ -252,8 +252,8 @@ bitstruct group_2B(station: Station) {
     log "RT flag={flag:letter}"
     log "RT seg @{addr:u} \"{rt_seg:rdstext}\""
 
-    copy station.rt, addr, 2, rt_seg
     station.rt_flag = flag
+    copy station.rt, addr, 2, rt_seg
 }
 
 bitstruct group_3A(station: Station) {

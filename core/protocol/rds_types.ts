@@ -31,7 +31,8 @@ export class StationImpl implements Station {
   tp?: boolean;
   ps: RdsString = new RdsStringInRdsEncoding(8);
   lps: RdsString = new RdsStringInUnicode(32);
-  rt: RdsString = new RdsStringInRdsEncoding(64);
+  rt: RdsString = new RdsStringInRdsEncoding(
+    64, () => ({groupType: this.lastGroupType, abFlag: this.rt_flag}));
   rt_flag?: number;
 	music?: boolean;
 	di_dynamic_pty?: boolean;
@@ -81,6 +82,7 @@ export class StationImpl implements Station {
   internet_connection_app: InternetConnectionAppImpl = new InternetConnectionAppImpl(this);
 
   private ta_?: boolean;
+  private lastGroupType?: number;
   public trafficEvents = new Array<TrafficEvent>();
 
   private date: Date | null = null;
@@ -209,6 +211,7 @@ export class StationImpl implements Station {
 
   addToGroupStats(type: number): void {
     this.group_stats[type]++;
+    this.lastGroupType = type;
     if (this.currentLogMessage) {
       this.currentLogMessage.groupType = type;
     }
@@ -249,6 +252,8 @@ export class StationImpl implements Station {
     this .ps.reset();
     this.lps.reset();
     this.rt.reset();
+    this.rt_flag = undefined;
+    this.lastGroupType = undefined;
     this.music = undefined;
     this.di_dynamic_pty = undefined;
     this.di_compressed = undefined;
@@ -539,7 +544,11 @@ function padNumber(num: number, width: number) {
 }
 
 export class RdsStringHistoryEntry {
-  public constructor(public message: string, public id: number) {}
+  public constructor(
+    public message: string,
+    public id: number,
+    public groupType?: number,
+    public abFlag?: number) {}
 }
 
 export abstract class RdsString {
@@ -551,8 +560,13 @@ export abstract class RdsString {
   currentTicks: number = 0;
   tickHistory = new Map<string, number>();
   currentId = 42;  // Start at arbitrary value. Could be 0.
+  groupType?: number;  // Group type the text was sent with (RT only).
+  abFlag?: number;  // A/B flag the text was sent with (RT only).
 
-  constructor(size: number) {
+  // getTags, if provided, gives the group type and A/B flag of each byte set.
+  constructor(
+      size: number,
+      private getTags?: () => {groupType?: number, abFlag?: number}) {
     this.currentText = new Uint8Array(size);
     this.reset();
   }
@@ -563,7 +577,8 @@ export abstract class RdsString {
       if (!this.empty) {
         const message = this.toString();
         // Add newest message on top.
-        this.history.unshift(new RdsStringHistoryEntry(message, this.currentId));
+        this.history.unshift(new RdsStringHistoryEntry(
+          message, this.currentId, this.groupType, this.abFlag));
         this.currentId++;
                   
         const prev = this.tickHistory.get(message);
@@ -578,6 +593,9 @@ export abstract class RdsString {
     }
     
     this.setByteInArray(this.currentText, position, c);
+    const tags = this.getTags?.();
+    this.groupType = tags?.groupType;
+    this.abFlag = tags?.abFlag;
   }
   
   public setFlag(abFlag: number): void {
@@ -593,6 +611,8 @@ export abstract class RdsString {
     this.empty = true;
     this.currentTicks = 0;
     this.tickHistory.clear();
+    this.groupType = undefined;
+    this.abFlag = undefined;
   }
   
   public abstract toString(): string;
@@ -606,7 +626,11 @@ export abstract class RdsString {
       return this.history;
     }
 
-    const l = [new RdsStringHistoryEntry(this.toString(), this.currentId), ...this.history];
+    const l = [
+      new RdsStringHistoryEntry(
+        this.toString(), this.currentId, this.groupType,
+        this.abFlag),
+      ...this.history];
     return l;
   }
 

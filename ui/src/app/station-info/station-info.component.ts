@@ -13,7 +13,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { prefs } from '../prefs';
-import { LogMessage, StationImpl } from '../../../../core/protocol/rds_types';
+import { LogMessage, RdsStringHistoryEntry, StationImpl } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
@@ -168,11 +168,23 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 				new RtEntry(
 					m.id,
 					m.message,
+					this.formatRtTransmission(m),
 					this.station.rt_plus_app.enabled ?
 						this.station.rt_plus_app.getHistoryEntry(m) :
 						null));
 		}
 		return res;
+	}
+
+	private formatRtTransmission(m: RdsStringHistoryEntry): string {
+		const parts = [];
+		if (m.groupType != undefined) {
+			parts.push(this.formatGroupType(m.groupType));
+		}
+		if (m.abFlag != undefined) {
+			parts.push(`flag ${m.abFlag ? 'A' : 'B'}`);
+		}
+		return parts.join(', ');
 	}
 
 	public formatGroupType(group_type: number) {
@@ -242,6 +254,7 @@ class RtEntry {
 	constructor(
 		public id: number,
 		public rt: string,
+		public transmission: string,
 		public rtPlus: Array<string> | null) {};
 }
 

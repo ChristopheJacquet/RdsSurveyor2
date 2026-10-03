@@ -237,7 +237,12 @@
     <mat-list role="list">
       @for (msg of getRThistory(); track msg.id) {
         <mat-list-item role="listitem" class="rt-item">
-          <div>{{ msg.rt }}</div>
+          <div>
+            {{ msg.rt }}
+            @if (msg.transmission) {
+              <span class="rt-transmission">[{{ msg.transmission }}]</span>
+            }
+          </div>
           @if (msg.rtPlus != null) {
             <div class="rtplus-tags">
               @for (tag of msg.rtPlus; track $index) {
