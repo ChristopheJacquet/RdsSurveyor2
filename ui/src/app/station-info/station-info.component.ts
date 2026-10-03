@@ -17,6 +17,7 @@ import { LogMessage, RdsStringHistoryEntry, StationImpl } from '../../../../core
 import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
+import { FindingType } from '../../../../core/protocol/diagnostics';
 
 @Component({
     selector: 'app-station-info',
@@ -191,6 +192,17 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		return `${group_type >> 1}${(group_type & 1) == 0 ? 'A' : 'B'}`;
 	}
 	
+	public formatGroups(groups: number[]) {
+		return groups.map(g => this.formatGroupType(g)).join(', ');
+	}
+
+	// Material icon name (also used as CSS class) and label per finding type.
+	readonly findingTypes = {
+		[FindingType.ERROR]: { icon: 'error', label: 'Error' },
+		[FindingType.WARNING]: { icon: 'warning', label: 'Warning' },
+		[FindingType.ADVICE]: { icon: 'lightbulb', label: 'Advice' },
+	};
+
 	public getOdaName(aid: number) {
 		return WELL_KNOWN_ODAS.get(aid) || 'Unknown';
 	}

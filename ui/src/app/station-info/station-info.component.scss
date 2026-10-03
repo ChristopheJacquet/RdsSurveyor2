@@ -298,3 +298,46 @@
   color: gray;
   font-size: smaller;
 }
+
+.findings {
+  .finding-row {
+    display: grid;
+    grid-template-columns: 24px 70px 1fr;
+    column-gap: 12px;
+    align-items: center;
+    padding: 6px 4px;
+  }
+
+  .finding-header {
+    color: gray;
+    font-size: smaller;
+  }
+
+  summary {
+    cursor: pointer;
+    list-style: none;  // Hide the disclosure triangle.
+    border-top: 1px solid #EEE;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &:hover {
+      background: #F5F5F5;
+    }
+  }
+
+  details[open] summary span:last-child {
+    font-weight: 500;
+  }
+
+  // Aligned with the "Finding" column.
+  .finding-details {
+    margin: 0 0 8px calc(24px + 70px + 2 * 12px + 4px);
+    color: #444;
+  }
+
+  .error { color: #D32F2F; }
+  .warning { color: #ED6C02; }
+  .lightbulb { color: #005CBB; }
+}

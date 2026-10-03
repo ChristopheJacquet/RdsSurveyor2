@@ -26,27 +26,24 @@ export enum FindingType {
 }
 
 export class Finding {
+  public readonly groups: number[];
+
   public constructor(
     public message: string,
-    public group: number,
+    groups: number | number[],
     public details: string="",
-    public findingType: FindingType = FindingType.WARNING) {}
+    public findingType: FindingType = FindingType.WARNING) {
+    this.groups = ([] as number[]).concat(groups);
+  }
 
   public toString() {
     return this.message;
   }
 
   public sameAs(f: Finding): boolean {
-    return this.group == f.group && this.message == f.message;
+    return this.message == f.message &&
+      this.groups.join() == f.groups.join();
   }
-}
-
-function multigroup(...groups: number[]): number {
-  let result = 0;
-  for (let g of groups) {
-    result = (result<<5) | g;
-  }
-  return result;
 }
 
 export function performAllDiagnostics(station: StationImpl) {
@@ -106,7 +103,7 @@ function mixes2Aand2Bgroups(station: StationImpl): Finding | null {
   if (station.group_stats[GROUP_2A] > 5 && station.group_stats[GROUP_2B] > 5) {
     return new Finding(
       "Mixing 2A and 2B groups",
-      multigroup(GROUP_2A, GROUP_2B),
+      [GROUP_2A, GROUP_2B],
       "While mixing 2A and 2B groups for different Radiotext (RT) messages " +
       "not prohibited by the standard, it might confuse some receivers " +
       "without having any concrete benefits. Unless you have a strong " +

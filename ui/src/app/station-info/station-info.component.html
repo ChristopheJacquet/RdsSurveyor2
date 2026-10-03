@@ -468,12 +468,21 @@
   </div>
 </mat-tab>
 <mat-tab label="Diagnostics">
-  <mat-list role="list">
+  <div class="findings">
+    <div class="finding-row finding-header">
+      <span></span><span>Group(s)</span><span>Finding and Recommendation</span>
+    </div>
     @for (f of station.diagnostics.findings | keyvalue; track f.key) {
-      <mat-list-item role="listitem">
-        <div>{{ f.key }}</div>
-      </mat-list-item>
+      <details open>
+        <summary class="finding-row">
+          @let type = findingTypes[f.key.findingType];
+          <mat-icon [class]="type.icon" [matTooltip]="type.label">{{ type.icon }}</mat-icon>
+          <span>{{ formatGroups(f.key.groups) }}</span>
+          <span>{{ f.key.message }}</span>
+        </summary>
+        <div class="finding-details">{{ f.key.details }}</div>
+      </details>
     }
-  </mat-list>
+  </div>
 </mat-tab>
 </mat-tab-group>
