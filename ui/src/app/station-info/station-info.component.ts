@@ -275,6 +275,7 @@ const WELL_KNOWN_ODAS = new Map<number, string>([
 	[0x0D45, "TMC/Alert-C testing"],
 	[0x4400, "RDS Light"],
 	[0x4AA1, "RASANT"],
+	[0x4B02, "TMC/Alert-C with Alert-Plus"],  // Obsolete, reserved.
 	[0x4BD7, "RadioText Plus (RT+)"],
 	[0x4BD8, "RadioText Plus (RT+) for eRT"],
 	[0x6552, "Enhanced RadioText (eRT)"],
