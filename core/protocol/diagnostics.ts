@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, StationImpl, showInvisibleChars } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, RdsVariant, StationImpl, showInvisibleChars } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -56,6 +56,7 @@ export function performAllDiagnostics(station: StationImpl) {
 }
 
 const diagnostics = [
+  badPiCode,
   usesDynamicPS,
   mixes2Aand2Bgroups,
   rtUses2BWith0A,
@@ -80,6 +81,60 @@ function completeRtHistory(station: StationImpl): RdsStringHistoryEntry[] {
     entries.push(station.rt.getPastMessages(true)[0]);
   }
   return entries;
+}
+
+function badPiCode(station: StationImpl): Finding | null {
+  if (station.pi == undefined || station.pi < 0) {
+    return null;
+  }
+
+  const pi = station.pi;
+  const piStr = pi.toString(16).toUpperCase().padStart(4, '0');
+  const countryCode = pi >> 12;
+  const areaCoverage = (pi >> 8) & 0xF;
+  const refNumber = pi & 0xFF;
+
+  if (countryCode == 0) {
+    // PI is carried by all groups, so no specific group is reported.
+    return new Finding(
+      `Invalid PI code ${piStr} (country code 0)`,
+      [],
+      "The first nibble of the Programme Identification (PI) code is the " +
+      "country code, which must be between 1 and F. Country code 0 is " +
+      "not valid, neither for broadcast transmitters nor for low-power " +
+      "short-range transmitting devices.",
+      FindingType.ERROR);
+  }
+
+  // In RBDS, PI codes may be derived from call letters, so reference
+  // number 00 is legitimate there.
+  if (refNumber == 0 && station.variant == RdsVariant.RDS) {
+    if (areaCoverage > 1) {
+      return new Finding(
+        `Invalid PI code ${piStr} (reference number 00)`,
+        [],
+        "The last two nibbles of the Programme Identification (PI) code " +
+        "are the programme reference number. Value 00 is reserved for " +
+        "low-power short-range transmitting devices, which in turn must " +
+        "use 0 (no AF list) or 1 (AF list used) as the second nibble " +
+        `(area coverage), not ${areaCoverage.toString(16).toUpperCase()}. ` +
+        "Broadcast transmitters must use a reference number between 01 " +
+        "and FF.",
+        FindingType.ERROR);
+    }
+    return new Finding(
+      `PI code ${piStr} is reserved for short-range devices`,
+      [],
+      "The Programme Identification (PI) code has a programme reference " +
+      "number (last two nibbles) of 00. This value is reserved for " +
+      "low-power short-range transmitting devices (e.g. in-car FM " +
+      "transmitters), and is not to be used by fixed location " +
+      "transmitters. Broadcast transmitters must use a reference number " +
+      "between 01 and FF, assigned to identify the programme.",
+      FindingType.ADVICE);
+  }
+
+  return null;
 }
 
 function usesDynamicPS(station: StationImpl): Finding | null {

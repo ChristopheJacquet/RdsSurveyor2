@@ -24,6 +24,11 @@ export function parse_group(stream: number, group: Group, log: LogMessage, stati
   }
 }
 
+export enum RdsVariant {
+  RDS,
+  RBDS
+}
+
 export class StationImpl implements Station {
   pi?: number;
   pty?: number;
@@ -88,6 +93,9 @@ export class StationImpl implements Station {
   private date: Date | null = null;
 
   readonly diagnostics = new Diagnostics();
+
+  // Not reset when tuning a different station: this is a user setting.
+  variant = RdsVariant.RDS;
 
   setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number) {
     if(mjd >= 15079) {

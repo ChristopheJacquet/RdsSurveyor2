@@ -13,7 +13,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { prefs } from '../prefs';
-import { LogMessage, RdsStringHistoryEntry, StationImpl, showInvisibleChars } from '../../../../core/protocol/rds_types';
+import { LogMessage, RdsStringHistoryEntry, RdsVariant, StationImpl, showInvisibleChars } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
@@ -260,11 +260,6 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	humanReadableUrl(url: string) {
 		return humanReadableUrl(url);
 	}
-}
-
-export enum RdsVariant {
-	RDS,
-	RBDS
 }
 
 class RtEntry {

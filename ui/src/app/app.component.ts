@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, HostListener } from '@angular/core';
+import { Component, ChangeDetectionStrategy, HostListener, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
-import { LogMessage, parse_group, StationImpl } from '../../../core/protocol/rds_types';
+import { LogMessage, parse_group, RdsVariant, StationImpl } from '../../../core/protocol/rds_types';
 import { ReceiverEvent, ReceiverEventKind } from "../../../core/protocol/station_change";
+import { prefs } from './prefs';
 
 @Component({
     selector: 'app-root',
@@ -78,5 +79,15 @@ export class AppComponent {
 
   constructor() {
     this.station = new StationImpl();
+
+    effect(() => {
+      const variant = prefs.rdsVariant.value == "rds" ? RdsVariant.RDS : RdsVariant.RBDS;
+      if (variant != this.station.variant) {
+        this.station.variant = variant;
+        // Findings persist until reset, and some depend on the variant.
+        // The others are re-detected within a few groups.
+        this.station.diagnostics.reset();
+      }
+    });
   }
 }
