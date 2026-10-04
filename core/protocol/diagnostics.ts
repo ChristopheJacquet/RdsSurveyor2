@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, StationImpl } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, StationImpl, showInvisibleChars } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -196,7 +196,8 @@ function rtHasTrailingSpaces(station: StationImpl): Finding | null {
       "Messages shorter than the maximum length " +
       `(${isVersionA ? 64 : 32} characters) ` +
       "should be terminated by a carriage return (code 0x0D), and the " +
-      "remaining segments need not be transmitted.",
+      "remaining segments need not be transmitted. " +
+      `Example: "${showInvisibleChars(padded)}".`,
       FindingType.ADVICE);
   }
   return null;

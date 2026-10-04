@@ -13,7 +13,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import { HexPipe } from '../hex.pipe';
 import { prefs } from '../prefs';
-import { LogMessage, RdsStringHistoryEntry, StationImpl } from '../../../../core/protocol/rds_types';
+import { LogMessage, RdsStringHistoryEntry, StationImpl, showInvisibleChars } from '../../../../core/protocol/rds_types';
 import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
@@ -37,6 +37,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 
 	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
 	stickToBottom = true;
+	showRtInvisibleChars = false;
 	private groupLogObserver?: MutationObserver;
 
 	// Group log filters. Empty string means "no filter".
@@ -168,13 +169,17 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 			res.push(
 				new RtEntry(
 					m.id,
-					m.message,
+					this.formatRtMessage(m),
 					this.formatRtTransmission(m),
 					this.station.rt_plus_app.enabled ?
 						this.station.rt_plus_app.getHistoryEntry(m) :
 						null));
 		}
 		return res;
+	}
+
+	private formatRtMessage(m: RdsStringHistoryEntry): string {
+		return this.showRtInvisibleChars ? showInvisibleChars(m) : m.message;
 	}
 
 	private formatRtTransmission(m: RdsStringHistoryEntry): string {

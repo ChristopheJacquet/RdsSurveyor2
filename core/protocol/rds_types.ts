@@ -548,7 +548,8 @@ export class RdsStringHistoryEntry {
     public message: string,
     public id: number,
     public groupType?: number,
-    public abFlag?: number) {}
+    public abFlag?: number,
+    public terminated = false) {}  // Ended by a carriage return (0x0D).
 }
 
 export abstract class RdsString {
@@ -578,7 +579,8 @@ export abstract class RdsString {
         const message = this.toString();
         // Add newest message on top.
         this.history.unshift(new RdsStringHistoryEntry(
-          message, this.currentId, this.groupType, this.abFlag));
+          message, this.currentId, this.groupType, this.abFlag,
+          this.isTerminated()));
         this.currentId++;
                   
         const prev = this.tickHistory.get(message);
@@ -629,7 +631,7 @@ export abstract class RdsString {
     const l = [
       new RdsStringHistoryEntry(
         this.toString(), this.currentId, this.groupType,
-        this.abFlag),
+        this.abFlag, this.isTerminated()),
       ...this.history];
     return l;
   }
@@ -649,6 +651,10 @@ export abstract class RdsString {
     return true;
   }
   
+  public isTerminated(): boolean {
+    return this.currentText.includes(0x0D);
+  }
+
   public getMostFrequentText(): string {
     let mft = this.isComplete() ? this.toString() : "";
     let mftOcc = 0;
@@ -870,6 +876,13 @@ export const GROUP_15B = 0b11111;
 const STATION_LOGO_AID = 0xFF7F;
 
 const CTRLCHAR = '\u2423';
+
+// Makes spaces (U+2423) and the final carriage return (U+21B5) of an RT visible.
+export function showInvisibleChars(entry: RdsStringHistoryEntry): string {
+  // Slicing drops the unused half of the buffer in 2B.
+  return entry.message.slice(0, entry.groupType == GROUP_2B ? 32 : 64)
+    .replace(/ /g, '\u2423') + (entry.terminated ? '\u21B5' : '');
+}
   
 export const RDS_CHARMAP = new Array<string>(
   CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR, CTRLCHAR,

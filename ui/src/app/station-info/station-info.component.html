@@ -234,6 +234,7 @@
     </div>
   </mat-tab>
   <mat-tab label="RT">
+    <mat-checkbox [(ngModel)]="showRtInvisibleChars">Show invisible characters</mat-checkbox>
     <mat-list role="list">
       @for (msg of getRThistory(); track msg.id) {
         <mat-list-item role="listitem" class="rt-item">
