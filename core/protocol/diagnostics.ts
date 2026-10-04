@@ -60,6 +60,7 @@ const diagnostics = [
   usesDynamicPS,
   mixes2Aand2Bgroups,
   rtUses2BWith0A,
+  rtFlagNotToggled,
   eonReferencesTunedStation,
   ptynIsStationName,
   ptynIsEmpty,
@@ -187,6 +188,49 @@ function rtUses2BWith0A(station: StationImpl): Finding | null {
       FindingType.ADVICE);
   }
   return null;
+}
+
+function rtFlagNotToggled(station: StationImpl): Finding | null {
+  // Look at each change of message, and check whether the A/B flag was
+  // toggled.
+  const history = completeRtHistory(station).reverse();
+  let changes = 0;
+  let missedToggles = 0;
+  let example: [RdsStringHistoryEntry, RdsStringHistoryEntry] | undefined;
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i-1];
+    const cur = history[i];
+    if (prev.abFlag == undefined || cur.abFlag == undefined) {
+      continue;
+    }
+    changes++;
+    if (prev.abFlag == cur.abFlag) {
+      missedToggles++;
+      example = [prev, cur];
+    }
+  }
+
+  // Only report a sustained problem, because a single missed toggle may come
+  // from a reception error.
+  if (changes < 4 || missedToggles < 0.75 * changes || example == undefined) {
+    return null;
+  }
+
+  const [prev, cur] = example;
+  return new Finding(
+    "Radiotext A/B flag not toggled on message changes",
+    cur.groupType == GROUP_2B ? GROUP_2B : GROUP_2A,
+    `In ${missedToggles} out of ${changes} Radiotext (RT) message ` +
+    "changes, the A/B flag was not toggled. " +
+    "The text A/B flag must be toggled whenever a new message is " +
+    "transmitted, and must remain unchanged while the same message is " +
+    "repeated. Receivers rely on it to clear their display and buffer " +
+    "before receiving a new message. Otherwise, they may show a mix of " +
+    "the old and new messages, in particular when the new message is " +
+    "shorter than the old one. " +
+    `Example: "${showInvisibleChars(prev)}" followed by ` +
+    `"${showInvisibleChars(cur)}", both with flag ${cur.abFlag ? 'A' : 'B'}.`,
+    FindingType.WARNING);
 }
 
 function eonReferencesTunedStation(station: StationImpl): Finding | null {
