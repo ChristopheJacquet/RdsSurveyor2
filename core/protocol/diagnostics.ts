@@ -58,6 +58,7 @@ export function performAllDiagnostics(station: StationImpl) {
 const diagnostics = [
   usesDynamicPS,
   mixes2Aand2Bgroups,
+  rtUses2BWith0A,
   eonReferencesTunedStation,
   ptynIsStationName,
   ptynIsEmpty,
@@ -109,6 +110,25 @@ function mixes2Aand2Bgroups(station: StationImpl): Finding | null {
       "without having any concrete benefits. Unless you have a strong " +
       "reason to increase the repetition rate of PI, you should probably " +
       "just use 2A groups.",
+      FindingType.ADVICE);
+  }
+  return null;
+}
+
+function rtUses2BWith0A(station: StationImpl): Finding | null {
+  // Version B groups carry PI twice, for receivers that need a high PI
+  // repetition rate. Transmitting PS in 0A shows this is not needed here.
+  if (station.group_stats[GROUP_2B] > 5 && station.group_stats[GROUP_0A] >= 5) {
+    return new Finding(
+      "Radiotext in 2B groups while PS is in 0A groups",
+      [GROUP_2B, GROUP_0A],
+      "Radiotext (RT) is transmitted in 2B groups, which carry only 2 " +
+      "characters each, because the third block repeats PI. Version B " +
+      "groups are only useful when a high PI repetition rate is needed, " +
+      "but PS is transmitted in 0A groups, which suggests it is not. " +
+      "Using 2A groups instead would carry 4 characters per group, " +
+      "transmitting RT twice as fast (or doubling its repetition rate) " +
+      "for the same capacity, and allow messages up to 64 characters.",
       FindingType.ADVICE);
   }
   return null;
