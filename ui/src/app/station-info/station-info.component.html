@@ -400,8 +400,56 @@
         </div>
       </div>
     </div>
+    @if (station.stationLogoPipe.png; as png) {
+      @let status = getPngStatus(png);
+      <div class="infogrid">
+        <div class="infogrid-row">
+          <div class="infogrid-cell">
+            <div class="infogrid-title">Format</div>
+            <div class="infogrid-value">PNG</div>
+          </div>
+          <div class="infogrid-cell">
+            <div class="infogrid-title">Image size</div>
+            <div class="infogrid-value">{{ png.header ? png.header.width + ' × ' + png.header.height : '' }} </div>
+          </div>
+          <div class="infogrid-cell">
+            <div class="infogrid-title">Color type</div>
+            <div class="infogrid-value">{{ png.header ? getPngColorType(png.header.colorType) + ', ' + png.header.bitDepth + ' bit' : '' }} </div>
+          </div>
+          <div class="infogrid-cell">
+            <div class="infogrid-title">Status</div>
+            <div class="infogrid-value" [class]="status.cls">{{ status.label }}</div>
+          </div>
+        </div>
+      </div>
+      @if (png.errors.length > 0) {
+        <ul class="png-errors">
+          @for (e of png.errors; track $index) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+      }
+      <table class="data-table png-chunks">
+        <tr><th>Chunk</th><th>Offset</th><th>Data length</th><th>Received</th><th>Status</th></tr>
+        @for (c of png.chunks; track c.offset) {
+          @let cs = pngChunkStatuses[c.status];
+          <tr>
+            <td class="png-chunk-type">{{ c.type }}</td>
+            <td>{{ c.offset }}</td>
+            <td>{{ c.length }}</td>
+            <td>{{ c.bytesPresent }} / {{ c.length + 12 }}</td>
+            <td [class]="cs.cls">{{ cs.label }}</td>
+          </tr>
+        }
+        @if (!png.endReached) {
+          <tr class="png-chunk-incomplete"><td colspan="5">…</td></tr>
+        }
+      </table>
+    }
     @if (station.stationLogoUrl != null) {
-      <img [src]="station.stationLogoUrl">
+      <div class="station-logo-image">
+        <img [src]="station.stationLogoUrl">
+      </div>
     }
   </mat-tab>
 }

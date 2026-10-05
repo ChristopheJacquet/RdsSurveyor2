@@ -18,6 +18,7 @@ import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
 import { FindingType } from '../../../../core/protocol/diagnostics';
+import { PngAnalysis, PngChunkStatus } from '../../../../core/protocol/rft';
 
 @Component({
     selector: 'app-station-info',
@@ -207,6 +208,34 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		[FindingType.WARNING]: { icon: 'warning', label: 'Warning' },
 		[FindingType.ADVICE]: { icon: 'lightbulb', label: 'Advice' },
 	};
+
+	// CSS class and label per PNG chunk status.
+	readonly pngChunkStatuses = {
+		[PngChunkStatus.INCOMPLETE]: { cls: 'png-chunk-incomplete', label: 'Incomplete' },
+		[PngChunkStatus.CRC_OK]: { cls: 'png-chunk-ok', label: 'CRC OK' },
+		[PngChunkStatus.CRC_ERROR]: { cls: 'png-chunk-error', label: 'CRC error' },
+	};
+
+	public getPngColorType(colorType: number): string {
+		switch (colorType) {
+			case 0: return 'Grayscale';
+			case 2: return 'Truecolor';
+			case 3: return 'Indexed (palette)';
+			case 4: return 'Grayscale + alpha';
+			case 6: return 'Truecolor + alpha';
+			default: return `Invalid (${colorType})`;
+		}
+	}
+
+	public getPngStatus(png: PngAnalysis): { cls: string, label: string } {
+		if (png.errors.length > 0) {
+			return { cls: 'png-status-error', label: 'Errors found' };
+		} else if (png.ok) {
+			return { cls: 'png-status-ok', label: 'Good' };
+		} else {
+			return { cls: 'png-status-incomplete', label: 'Incomplete' };
+		}
+	}
 
 	public getOdaName(aid: number) {
 		return WELL_KNOWN_ODAS.get(aid) || 'Unknown';

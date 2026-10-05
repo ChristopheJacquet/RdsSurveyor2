@@ -341,3 +341,28 @@
   .warning { color: #ED6C02; }
   .lightbulb { color: #005CBB; }
 }
+
+.station-logo-image {
+  margin: 30px 0;
+  text-align: center;
+}
+
+.png-status-ok { background: #8F8; }
+.png-status-error { background: #F88; }
+.png-status-incomplete { background: #CCC; }
+
+.png-errors {
+  color: #F88;
+}
+
+.png-chunks {
+  margin-top: 30px;
+
+  td.png-chunk-ok { background: #8F8; }
+  td.png-chunk-error { background: #F88; }
+  td.png-chunk-incomplete { background: #FDB }
+
+  .png-chunk-type {
+    font-family: "Roboto Mono", monospace;
+  }
+}
