@@ -905,7 +905,7 @@ export const GROUP_14B = 0b11101;
 export const GROUP_15A = 0b11110;
 export const GROUP_15B = 0b11111;
 
-const STATION_LOGO_AID = 0xFF7F;
+export const STATION_LOGO_AID = 0xFF7F;
 
 const CTRLCHAR = '\u2423';
 

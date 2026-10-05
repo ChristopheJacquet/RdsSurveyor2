@@ -542,14 +542,14 @@
 <mat-tab label="Diagnostics">
   <div class="findings">
     <div class="finding-row finding-header">
-      <span></span><span>Group(s)</span><span>Finding and Recommendation</span>
+      <span></span><span>Group / ODA</span><span>Finding and Recommendation</span>
     </div>
     @for (f of station.diagnostics.findings | keyvalue; track f.key) {
       <details open>
         <summary class="finding-row">
           @let type = findingTypes[f.key.findingType];
           <mat-icon [class]="type.icon" [matTooltip]="type.label">{{ type.icon }}</mat-icon>
-          <span>{{ formatGroups(f.key.groups) }}</span>
+          <span>{{ formatFindingSources(f.key.sources) }}</span>
           <span>{{ f.key.message }}</span>
         </summary>
         <div class="finding-details">{{ f.key.details }}</div>

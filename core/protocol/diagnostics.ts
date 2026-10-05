@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, RdsVariant, StationImpl, showInvisibleChars } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, RdsVariant, STATION_LOGO_AID, StationImpl, showInvisibleChars } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -25,15 +25,22 @@ export enum FindingType {
   ADVICE,
 }
 
+// What a finding is about: a group type, or an ODA given by its AID.
+export type FindingSource = number | { aid: number };
+
+function sourceKey(s: FindingSource): string {
+  return typeof s == 'number' ? `${s}` : `aid:${s.aid}`;
+}
+
 export class Finding {
-  public readonly groups: number[];
+  public readonly sources: FindingSource[];
 
   public constructor(
     public message: string,
-    groups: number | number[],
+    sources: FindingSource | FindingSource[],
     public details: string="",
     public findingType: FindingType = FindingType.WARNING) {
-    this.groups = ([] as number[]).concat(groups);
+    this.sources = ([] as FindingSource[]).concat(sources);
   }
 
   public toString() {
@@ -42,7 +49,7 @@ export class Finding {
 
   public sameAs(f: Finding): boolean {
     return this.message == f.message &&
-      this.groups.join() == f.groups.join();
+      this.sources.map(sourceKey).join() == f.sources.map(sourceKey).join();
   }
 }
 
@@ -360,10 +367,9 @@ function stationLogoHasExtraPngChunks(station: StationImpl): Finding | null {
   // Each chunk has 12 bytes of overhead (length, type and CRC).
   const wasted = extra.reduce((sum, c) => sum + c.length + 12, 0);
   const total = png.chunks[png.chunks.length - 1].offset + 12;
-  // RFT data is not carried by legacy group types.
   return new Finding(
     `Station logo contains unnecessary PNG chunks (${types.join(', ')})`,
-    [],
+    { aid: STATION_LOGO_AID },
     "The station logo PNG file contains chunks other than IHDR, PLTE, " +
     "IDAT and IEND. These chunks carry non-necessary data. This is a " +
     `waste of transmission capacity: ${wasted} out of ${total} bytes ` +

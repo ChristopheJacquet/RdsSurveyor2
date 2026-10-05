@@ -17,7 +17,7 @@ import { LogMessage, RdsStringHistoryEntry, RdsVariant, StationImpl, showInvisib
 import { AboutComponent } from '../about/about.component';
 import { PrefsDialogComponent } from '../prefs-dialog/prefs-dialog.component';
 import { humanReadableUrl } from '../../../../core/protocol/internet_connection';
-import { FindingType } from '../../../../core/protocol/diagnostics';
+import { FindingSource, FindingType } from '../../../../core/protocol/diagnostics';
 import { PngAnalysis, PngChunkStatus } from '../../../../core/protocol/rft';
 
 @Component({
@@ -199,8 +199,9 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 		return `${group_type >> 1}${(group_type & 1) == 0 ? 'A' : 'B'}`;
 	}
 	
-	public formatGroups(groups: number[]) {
-		return groups.map(g => this.formatGroupType(g)).join(', ');
+	public formatFindingSources(sources: FindingSource[]) {
+		return sources.map(s =>
+			typeof s == 'number' ? this.formatGroupType(s) : this.getOdaName(s.aid)).join(', ');
 	}
 
 	// Material icon name (also used as CSS class) and label per finding type.
