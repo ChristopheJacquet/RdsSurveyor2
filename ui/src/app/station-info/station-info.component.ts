@@ -32,6 +32,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
   group_ids = Array(16).fill(0).map((x,i)=>i);
   all_group_types = Array(32).fill(0).map((x,i)=>i);
   all_channels = Array(64).fill(0).map((x,i)=>i);
+  all_pipes = Array(16).fill(0).map((x,i)=>i);
   all_streams = Array(4).fill(0).map((x,i)=>i);
 	readonly prefs = prefs;
 	readonly dialog = inject(MatDialog);
@@ -265,6 +266,9 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 					return false;
 				}
 				if (kind === 'channel' && String(m.channel) !== value) {
+					return false;
+				}
+				if (kind === 'pipe' && String(m.pipe) !== value) {
 					return false;
 				}
 			}

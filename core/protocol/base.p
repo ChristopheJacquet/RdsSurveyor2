@@ -46,6 +46,7 @@ struct Station {
 
     addToGroupStats(type: uint<5>)
     addToChannelStats(channel: uint<6>)
+    addToPipeStats(pipe: uint<4>)
     setClockTime(mjd: uint<17>, hour: uint<5>, minute: uint<6>, tz_sign: bool, tz_offset: uint<5>)
     addAfPair(af1: uint<8>, af2: uint<8>)
     addMappedAF(channel: uint<8>, mapped_channel: uint<8>)

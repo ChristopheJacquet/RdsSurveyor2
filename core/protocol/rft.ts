@@ -27,6 +27,9 @@ export class RftPipe {
   // Result of the PNG analysis, or null if the file is not (yet) identified
   // as a PNG file.
   png: PngAnalysis | null = null;
+  // True once the complete file has been handed over to the ODA that the
+  // pipe belongs to.
+  delivered: boolean = false;
 
   reset() {
     this.dataState.fill(ByteState.ABSENT);
@@ -36,6 +39,7 @@ export class RftPipe {
     this.fileVersion = 0;
     this.crcPresent = false;
     this.png = null;
+    this.delivered = false;
   }
 
   constructor() {

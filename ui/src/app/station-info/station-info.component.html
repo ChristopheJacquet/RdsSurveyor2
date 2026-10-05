@@ -91,12 +91,12 @@
   <div class="infogrid-row">
     <div class="infogrid-cell">
       <div class="infogrid-title stats-title-row">
-        <span>Group and Channel statistics</span>
+        <span>Group, Channel and Pipe statistics</span>
         <mat-button-toggle-group name="statsUi" [(ngModel)]="prefs.statsUi.value">
           <mat-button-toggle value="all_groups" matTooltip="All groups" aria-label="All groups">
             <mat-icon>grid_on</mat-icon>
           </mat-button-toggle>
-          <mat-button-toggle value="used_groups_channels" matTooltip="Groups and channels actually received" aria-label="Groups and channels actually received">
+          <mat-button-toggle value="used_groups_channels" matTooltip="Groups, channels and pipes actually received" aria-label="Groups, channels and pipes actually received">
             <mat-icon>view_list</mat-icon>
           </mat-button-toggle>
         </mat-button-toggle-group>
@@ -160,6 +160,20 @@
                   }
                 </span>
                 <span class="stat-chip">{{ station.channel_stats[channel] }}</span>
+              </div>
+            }
+          }
+          @for (pipe of all_pipes; track pipe) {
+            @if (station.pipe_stats[pipe] > 0) {
+              @let oda = getChannelOdaName(pipe);
+              <div class="stat-item">
+                <span class="stat-label">
+                  Pipe {{ pipe }}
+                  @if (oda) {
+                    <span class="stat-oda">· {{ oda }}</span>
+                  }
+                </span>
+                <span class="stat-chip">{{ station.pipe_stats[pipe] }}</span>
               </div>
             }
           }
@@ -469,7 +483,7 @@
     <mat-checkbox [(ngModel)]="stickToBottom">Auto-scroll to bottom</mat-checkbox>
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="group-log-filter">
-      <mat-label>Group or channel</mat-label>
+      <mat-label>Group, channel or pipe</mat-label>
       <mat-select [(ngModel)]="logGroupChannelFilter" panelClass="group-log-select-panel">
         <mat-option value="">All</mat-option>
         <mat-optgroup label="Groups">
@@ -486,6 +500,15 @@
             @if (station.channel_stats[channel] > 0) {
               <mat-option [value]="'channel-' + channel">
                 Ch {{ channel }}
+              </mat-option>
+            }
+          }
+        </mat-optgroup>
+        <mat-optgroup label="RFT pipes">
+          @for (pipe of all_pipes; track pipe) {
+            @if (station.pipe_stats[pipe] > 0) {
+              <mat-option [value]="'pipe-' + pipe">
+                RFT pipe {{ pipe }}
               </mat-option>
             }
           }

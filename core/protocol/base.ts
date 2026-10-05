@@ -38,6 +38,7 @@ export interface Station {
 	other_networks: Map<number, StationImpl>;
 	addToGroupStats(type: number): void;
 	addToChannelStats(channel: number): void;
+	addToPipeStats(pipe: number): void;
 	setClockTime(mjd: number, hour: number, minute: number, tz_sign: boolean, tz_offset: number): void;
 	addAfPair(af1: number, af2: number): void;
 	addMappedAF(channel: number, mapped_channel: number): void;
@@ -784,7 +785,7 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 		log.add(`addr ${addr}`);
 	}
 	if ((pipe != null) && (station != null)) {
-		station.addToChannelStats(pipe);
+		station.addToPipeStats(pipe);
 	}
 	if ((addr != null) && (byte1 != null) && (byte2 != null) && (byte3 != null) && (byte4 != null) && (byte5 != null) && (pipe != null) && (station != null)) {
 		station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5);

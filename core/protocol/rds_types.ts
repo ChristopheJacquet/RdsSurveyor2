@@ -63,6 +63,7 @@ export class StationImpl implements Station {
   datetime: string = "";
   group_stats: number[] = new Array<number>(32);
   channel_stats: number[] = new Array<number>(64);
+  pipe_stats: number[] = new Array<number>(16);
 	linkage_actuator?: boolean;
 	pin_day?: number;
 	pin_hour?: number;
@@ -74,11 +75,17 @@ export class StationImpl implements Station {
   stationLogoPipe: RftPipe | null = null;
   stationLogoUrl: string | null = null;
   log = new Array<LogMessage>();
-  // Set by the caller before parsing a group, so that addToGroupStats() and
-  // addToChannelStats() can tag the group/channel they pertain to onto the
+  // Set by the caller before parsing a group, so that addToGroupStats(),
+  // addToChannelStats() and addToPipeStats() can tag the group/channel/pipe
+  // they pertain to onto the
   // log message currently being built (used for filtering the group log).
   currentLogMessage: LogMessage | null = null;
   rp_app = new RpAppImpl(this);
+  // Handlers for files received through RFT, by AID of the ODA that the
+  // RFT pipe belongs to.
+  private readonly rftFileHandlers = new Map<number, (pipe: RftPipe) => void>([
+    [STATION_LOGO_AID, (p) => this.receiveStationLogo(p)],
+  ]);
 
   // ODAs.
   rt_plus_app: RtPlusAppImpl = new RtPlusAppImpl(this);
@@ -234,6 +241,13 @@ export class StationImpl implements Station {
     }
   }
 
+  addToPipeStats(pipe: number): void {
+    this.pipe_stats[pipe]++;
+    if (this.currentLogMessage) {
+      this.currentLogMessage.pipe = pipe;
+    }
+  }
+
   tickGroupDuration() {
     if (this.date != null) {
       this.date.setTime(this.date.getTime() + 1000/(1187.5/104));
@@ -305,6 +319,7 @@ export class StationImpl implements Station {
     this.date = null;
     this.group_stats.fill(0);
     this.channel_stats.fill(0);
+    this.pipe_stats.fill(0);
 
     // Reset ODAs and apps.
     this.rt_plus_app.reset();
@@ -504,23 +519,31 @@ export class StationImpl implements Station {
   }
 
   reportRftData(pipe: number, addr: number, byte1: number, byte2: number, byte3: number, byte4: number, byte5: number) {
-    if (this.stationLogoUrl != null) {
-      // TODO: Handle changing station logos.
-      return;
-    }
-
-    // Is this pipe associated with the station logo ODA?
-    if (this.transmitted_channel_odas.get(0) != STATION_LOGO_AID) {
-      return;
-    }
-
     const p = this.getRftPipe(pipe);
-    this.stationLogoPipe = p;
-    const complete = p.addGroup(addr, new Uint8Array([byte1, byte2, byte3, byte4, byte5]));
-    if (!complete) {
+    if (p.delivered) {
+      // TODO: Handle file changes (e.g. changing station logos).
       return;
     }
 
+    const complete = p.addGroup(addr, new Uint8Array([byte1, byte2, byte3, byte4, byte5]));
+
+    // An RFT pipe belongs to the ODA assigned to the channel with the same
+    // number. If that ODA is not known yet, keep accumulating data until the
+    // ODA assignment is received.
+    const aid = this.transmitted_channel_odas.get(pipe);
+    if (aid == undefined) {
+      return;
+    }
+    if (aid == STATION_LOGO_AID) {
+      this.stationLogoPipe = p;
+    }
+    if (complete) {
+      p.delivered = true;
+      this.rftFileHandlers.get(aid)?.(p);
+    }
+  }
+
+  private receiveStationLogo(p: RftPipe) {
     const blob = p.getData();
     if (blob != null) {
       this.stationLogoUrl = URL.createObjectURL(blob);
@@ -823,11 +846,12 @@ export class LogMessage {
   addSeparator = false;
   // The stream the group was received on, and the group type / ODA channel
   // it reported (if any). Populated by the caller and by
-  // StationImpl.addToGroupStats()/addToChannelStats(); used to filter the
-  // group log in the UI.
+  // StationImpl.addToGroupStats()/addToChannelStats()/addToPipeStats(); used
+  // to filter the group log in the UI.
   stream?: number;
   groupType?: number;
   channel?: number;
+  pipe?: number;
 
   add(message: string, addSeparator=true, tag?: string, details?: string) {
     if (this.addSeparator) {
