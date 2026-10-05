@@ -66,6 +66,7 @@ const diagnostics = [
   ptynIsEmpty,
   rtHasTrailingSpaces,
   rtIsEmpty,
+  stationLogoHasExtraPngChunks,
 ];
 
 // Returns past RTs, plus the current one only if fully received (up to 0x0D,
@@ -337,4 +338,38 @@ function rtIsEmpty(station: StationImpl): Finding | null {
       FindingType.ADVICE);
   }
   return null;
+}
+
+// PNG chunks needed to render a station logo. All others waste transmission capacity.
+const ESSENTIAL_PNG_CHUNKS = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
+
+function stationLogoHasExtraPngChunks(station: StationImpl): Finding | null {
+  const png = station.stationLogoPipe?.png;
+  // Wait until all chunk headers are known, so that the finding is reported
+  // once, with the full list of chunks.
+  if (png == null || !png.endReached) {
+    return null;
+  }
+
+  const extra = png.chunks.filter(c => !ESSENTIAL_PNG_CHUNKS.has(c.type));
+  if (extra.length == 0) {
+    return null;
+  }
+
+  const types = [...new Set(extra.map(c => c.type))];
+  // Each chunk has 12 bytes of overhead (length, type and CRC).
+  const wasted = extra.reduce((sum, c) => sum + c.length + 12, 0);
+  const total = png.chunks[png.chunks.length - 1].offset + 12;
+  // RFT data is not carried by legacy group types.
+  return new Finding(
+    `Station logo contains unnecessary PNG chunks (${types.join(', ')})`,
+    [],
+    "The station logo PNG file contains chunks other than IHDR, PLTE, " +
+    "IDAT and IEND. These chunks carry non-necessary data. This is a " +
+    `waste of transmission capacity: ${wasted} out of ${total} bytes ` +
+    `(${Math.round(100 * wasted / total)}%) are spent on these chunks. ` +
+    "Strip them from the file, for example using an image optimizer. " +
+    "Extra chunks: " +
+    extra.map(c => `${c.type} (${c.length + 12} bytes)`).join(', ') + ".",
+    FindingType.ADVICE);
 }
