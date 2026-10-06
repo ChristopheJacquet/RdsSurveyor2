@@ -23,14 +23,25 @@ const LP_2400_COEFFS_B = [
 const LP_PLL_COEFFS_A = [1.0, -0.9461821078275034];
 const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
 
-const PLL_BETA = 5;    // Reduced 50 -> 5 to make the PLL more stable.
+// Costas loop gains, applied to the phase error normalized by the subcarrier power, so that the
+// loop bandwidth does not depend on the subcarrier injection level nor on the AGC.
+const PLL_KP = 1e-3;   // Proportional gain (rad per sample per unit error), ~40 Hz bandwidth.
+const PLL_KI = 0.01;   // Integral gain (Hz per sample per unit error), well-damped loop.
 
 // Number of biphase symbols (half-bits) over which the biphase reading frame is chosen, and
 // over which the presence of a biphase-coded signal is assessed.
+// The window slides: the score is updated at every symbol.
 const BIPHASE_WINDOW = 800;
 
+// Minimum number of biphase symbols over which the biphase score is assessed (when fewer than
+// BIPHASE_WINDOW symbols have been received since start), and interval, in symbols, at which the
+// biphase reading frame is reconsidered. Kept short so that a stream is detected quickly after
+// start, which matters for short recordings.
+const BIPHASE_MIN_SYMBOLS = 200;
+
 // Minimum biphase score (see Demodulator.biphaseScore) for a biphase-coded signal to be considered
-// present. The score is ~0.5 for a clean RDS signal, and ~0 (standard deviation ~0.035) for noise.
+// present. The score is ~0.5 for a clean RDS signal, and ~0 for noise (standard deviation ~0.035
+// over BIPHASE_WINDOW symbols, ~0.07 over BIPHASE_MIN_SYMBOLS symbols).
 const BIPHASE_DETECTION_THRESHOLD = 0.2;
 
 // Number of out symbols kept (for drawing the constellation diagram).
@@ -98,6 +109,9 @@ export class Demodulator {
 	private counter = 0;
 	private reading_frame = 0;
 	private tot_errs = [0, 0];
+	// Sign changes of the last BIPHASE_WINDOW symbols (indexed by counter), and how many are valid.
+	private signChanges = new Uint8Array(BIPHASE_WINDOW);
+	private signChangesCount = 0;
 
   // Measures how much the received symbols look like a biphase-coded signal, over the last
   // BIPHASE_WINDOW symbols. With a biphase signal, the two halves of a bit always have opposite
@@ -116,6 +130,7 @@ export class Demodulator {
   lp2400iFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
   lp2400qFilter = new IirFilter(LP_2400_COEFFS_A, LP_2400_COEFFS_B);
   lpPllFilter = new IirFilter(LP_PLL_COEFFS_A, LP_PLL_COEFFS_B);
+  lpPllPowFilter = new IirFilter(LP_PLL_COEFFS_A, LP_PLL_COEFFS_B);
 
   syncOutI: number[] = [];
   syncOutQ: number[] = [];
@@ -141,6 +156,9 @@ export class Demodulator {
 
   reset() {
     this.locked = false;
+    this.tot_errs = [0, 0];
+    this.signChanges.fill(0);
+    this.signChangesCount = 0;
     this.biphaseScore = 0;
     this.biphaseDetected = false;
     this.updateSyncAllowed();
@@ -167,10 +185,15 @@ export class Demodulator {
     const subcarr_bb_i = this.lp2400iFilter.step(normSample * Math.cos(this.subcarr_phi));
     const subcarr_bb_q = this.lp2400qFilter.step(normSample * Math.sin(this.subcarr_phi));
 
-    const d_phi_sc = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);   // Subcarrier phase error.
+    // Subcarrier phase error, ~sin(2*theta)/2, normalized by the subcarrier power so that it does
+    // not depend on the subcarrier amplitude.
+    const pll_iq = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);
+    const pll_pow = this.lpPllPowFilter.step(
+      subcarr_bb_i * subcarr_bb_i + subcarr_bb_q * subcarr_bb_q);
+    const d_phi_sc = pll_iq / (pll_pow + 1e-12);
     const err = Math.max(-0.05, Math.min(0.05, d_phi_sc));   // Clamp error to prevent jumps.
-    this.subcarr_phi -= PLL_BETA * err;
-    this.fsc -= 0.1 * PLL_BETA * err;    // Reduced 0.5 -> 0.1.
+    this.subcarr_phi -= PLL_KP * err;
+    this.fsc -= PLL_KI * err;
 
     // Decimate band-limited signal.
     if (this.decimPhase >= this.decimate) {
@@ -192,12 +215,10 @@ export class Demodulator {
         this.clock_offset -= 0.005 * d_cphi;
       }
 
-      // Correct I value: phase aligned projection instead of using subcarr_bb_i directly.
-      const phase_err = Math.atan2(subcarr_bb_q, subcarr_bb_i);
-      const i_corr = Math.cos(phase_err);
-
-      // Biphase symbol integrate & dump.
-      this.acc += i_corr * lo_clock;
+      // Biphase symbol integrate & dump. Uses the I value directly (soft decision): normalizing it
+      // by the magnitude would give full weight to samples near zero crossings, which are mostly
+      // noise.
+      this.acc += subcarr_bb_i * lo_clock;
 
       if (sign(lo_clock) != sign(this.prevclock)) {
         this.biphase(this.acc);
@@ -237,23 +258,29 @@ export class Demodulator {
 	}
 
 	private biphase(acc: number) {
-		if (sign(acc) != sign(this.prev_acc)) {
-			this.tot_errs[this.counter % 2] ++;
-		}
+		// Sliding window: replace the sign change of the symbol that leaves the window. BIPHASE_WINDOW
+		// is even, so the leaving symbol has the same reading frame parity as the new one.
+		const signChange = sign(acc) != sign(this.prev_acc) ? 1 : 0;
+		this.tot_errs[this.counter % 2] += signChange - this.signChanges[this.counter];
+		this.signChanges[this.counter] = signChange;
+		this.signChangesCount = Math.min(this.signChangesCount + 1, BIPHASE_WINDOW);
 
 		if (this.counter % 2 == this.reading_frame) {
 			this.differentialDecodeAndReportBit(sign(acc + this.prev_acc));
 		}
-		if (this.counter == 0) {
+
+		if (this.signChangesCount >= BIPHASE_MIN_SYMBOLS) {
 			this.biphaseScore =
-				Math.abs(this.tot_errs[0] - this.tot_errs[1]) / (BIPHASE_WINDOW / 2);
-			this.biphaseDetected = this.biphaseScore >= BIPHASE_DETECTION_THRESHOLD;
-			this.updateSyncAllowed();
-			if (this.tot_errs[1 - this.reading_frame] < this.tot_errs[this.reading_frame]) {
+				Math.abs(this.tot_errs[0] - this.tot_errs[1]) / (this.signChangesCount / 2);
+			const detected = this.biphaseScore >= BIPHASE_DETECTION_THRESHOLD;
+			if (detected != this.biphaseDetected) {
+				this.biphaseDetected = detected;
+				this.updateSyncAllowed();
+			}
+			if (this.counter % BIPHASE_MIN_SYMBOLS == 0 &&
+					this.tot_errs[1 - this.reading_frame] < this.tot_errs[this.reading_frame]) {
 				this.reading_frame = 1 - this.reading_frame;
 			}
-			this.tot_errs[0] = 0;
-			this.tot_errs[1] = 0;
 		}
 
 		this.prev_acc = acc;
