@@ -43,7 +43,8 @@ export interface Station {
 	addAfPair(af1: number, af2: number): void;
 	addMappedAF(channel: number, mapped_channel: number): void;
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
-	reportRftData(pipe: number, addr: number, byte1: number, byte2: number, byte3: number, byte4: number, byte5: number): void;
+	reportRftByte(pipe: number, offset: number, value: number): void;
+	updateRftPipe(pipe: number): void;
 	reportRftCrc(pipe: number, mode: number, chunkAddr: number, crc: number): void;
 	reportRftMetadata(pipe: number, fileSize: number, file_id: number, file_version: number, crc_present: boolean): void;
 }
@@ -787,8 +788,23 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 	if ((pipe != null) && (station != null)) {
 		station.addToPipeStats(pipe);
 	}
-	if ((addr != null) && (byte1 != null) && (byte2 != null) && (byte3 != null) && (byte4 != null) && (byte5 != null) && (pipe != null) && (station != null)) {
-		station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5);
+	if ((addr != null) && (byte1 != null) && (pipe != null) && (station != null)) {
+		station.reportRftByte(pipe, 5 * addr, byte1);
+	}
+	if ((addr != null) && (byte2 != null) && (pipe != null) && (station != null)) {
+		station.reportRftByte(pipe, 5 * addr + 1, byte2);
+	}
+	if ((addr != null) && (byte3 != null) && (pipe != null) && (station != null)) {
+		station.reportRftByte(pipe, 5 * addr + 2, byte3);
+	}
+	if ((addr != null) && (byte4 != null) && (pipe != null) && (station != null)) {
+		station.reportRftByte(pipe, 5 * addr + 3, byte4);
+	}
+	if ((addr != null) && (byte5 != null) && (pipe != null) && (station != null)) {
+		station.reportRftByte(pipe, 5 * addr + 4, byte5);
+	}
+	if ((pipe != null) && (station != null)) {
+		station.updateRftPipe(pipe);
 	}
 }
 

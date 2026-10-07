@@ -44,20 +44,26 @@ action:
     | switch
     | log_element
 
-expr: lvalue
+// Arithmetic operators are left-associative, and "*" binds tighter than "+".
+// Operands are inlined: an `expr` node has a single child, which is an
+// lvalue, function_call, INT, ESCAPED_STRING, add, mul or paren node.
+expr: sum
+
+?sum: product
+    | sum "+" product -> add
+
+?product: atom
+    | product "*" atom -> mul
+
+?atom: lvalue
     | function_call
-    | mul
-    | add
     | INT
     | ESCAPED_STRING
+    | "(" sum ")" -> paren
 
 function_call: ID "(" expr ("," expr)* ")"
 
 invocation: lvalue "." ID "(" expr ("," expr)* ")"
-
-mul: expr "*" expr
-
-add: expr "+" expr
 
 lvalue: ID
     | array_access
@@ -348,22 +354,34 @@ def compile_lvalue(st):
 def compile_expr(st):
     """Compiles the `expr` subtree and returns a TypeScript expression and a set of variables."""
     match st:
-        case lark.Tree(data='expr', children=[lark.Tree(data='lvalue') as lvalue]):
-            return compile_lvalue(lvalue)
-        case lark.Tree(data='expr', children=[lark.Token(type='INT', value=v)]):
+        case lark.Tree(data='expr', children=[operand]):
+            return compile_expr(operand)
+        case lark.Tree(data='lvalue'):
+            return compile_lvalue(st)
+        case lark.Token(type='INT', value=v):
             return (str(v), set())
-        case lark.Tree(data='expr', children=[lark.Token(type='ESCAPED_STRING', value=v)]):
+        case lark.Token(type='ESCAPED_STRING', value=v):
             return (v, set())
-        case lark.Tree(data='expr', children=[lark.Tree(data='function_call', children=[
+        case lark.Tree(data='function_call', children=[
             lark.Token(type='ID', value='lookup'),
             lark.Tree(data='expr') as mapping,
             lark.Tree(data='expr') as key,
-            lark.Tree(data='expr') as default])]):
-                
+            lark.Tree(data='expr') as default]):
+
             (c_mapping, _) = compile_expr(mapping)
             (c_key, v_key) = compile_expr(key)
             (c_default, v_default) = compile_expr(default)
             return (f'{c_mapping}.get({c_key}) ?? {c_default}', v_key | v_default)
+        case lark.Tree(data='add' | 'mul' as op, children=[left, right]):
+            (c_left, v_left) = compile_expr(left)
+            (c_right, v_right) = compile_expr(right)
+            # The grammar encodes precedence, so the only parentheses needed
+            # are those written explicitly (see `paren` below).
+            symbol = '+' if op == 'add' else '*'
+            return (f'{c_left} {symbol} {c_right}', v_left | v_right)
+        case lark.Tree(data='paren', children=[inner]):
+            (c_inner, v_inner) = compile_expr(inner)
+            return (f'({c_inner})', v_inner)
         case _:
             return (f'<<< Unhandled expr: {st} >>>', set())
 

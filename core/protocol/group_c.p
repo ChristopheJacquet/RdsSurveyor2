@@ -70,7 +70,12 @@ bitstruct group_c_rft(station: Station) {
   # An RFT pipe carries files for the ODA assigned to the channel with the
   # same number (see group_c_oda_rft_assignment).
   station.addToPipeStats(pipe)
-  station.reportRftData(pipe, addr, byte1, byte2, byte3, byte4, byte5)
+  station.reportRftByte(pipe, 5*addr, byte1)
+  station.reportRftByte(pipe, 5*addr + 1, byte2)
+  station.reportRftByte(pipe, 5*addr + 2, byte3)
+  station.reportRftByte(pipe, 5*addr + 3, byte4)
+  station.reportRftByte(pipe, 5*addr + 4, byte5)
+  station.updateRftPipe(pipe)
 }
 
 bitstruct group_c_oda(station: Station) {

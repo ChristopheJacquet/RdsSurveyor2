@@ -518,14 +518,22 @@ export class StationImpl implements Station {
     }
   }
 
-  reportRftData(pipe: number, addr: number, byte1: number, byte2: number, byte3: number, byte4: number, byte5: number) {
+  reportRftByte(pipe: number, offset: number, value: number) {
+    const p = this.getRftPipe(pipe);
+    // TODO: Handle file changes (e.g. changing station logos).
+    if (!p.delivered) {
+      p.addByte(offset, value);
+    }
+  }
+
+  // Called after the bytes of an RFT group have been reported.
+  updateRftPipe(pipe: number) {
     const p = this.getRftPipe(pipe);
     if (p.delivered) {
-      // TODO: Handle file changes (e.g. changing station logos).
       return;
     }
 
-    const complete = p.addGroup(addr, new Uint8Array([byte1, byte2, byte3, byte4, byte5]));
+    const complete = p.update();
 
     // An RFT pipe belongs to the ODA assigned to the channel with the same
     // number. If that ODA is not known yet, keep accumulating data until the

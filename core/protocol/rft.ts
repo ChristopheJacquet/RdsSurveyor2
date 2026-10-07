@@ -1,6 +1,5 @@
 const MAX_SIZE = 163_840;
 const MAX_CHUNKS = 512;
-const GROUP_SIZE = 5;    // 5 bytes per group.
 
 enum ByteState {
   ABSENT,
@@ -46,18 +45,19 @@ export class RftPipe {
     this.reset();
   }
 
-  addGroup(addr: number, groupData: Uint8Array): boolean {
-    if (groupData.length != GROUP_SIZE) {
-      // TODO: Handle data with missing bytes.
-      throw new Error(`RFT: Invalid group size (${groupData.length}`);
-    }
-    for (let i=0; i<GROUP_SIZE; i++) {
-      this.data[GROUP_SIZE * addr + i] = groupData[i];
-      this.dataState[GROUP_SIZE * addr + i] = ByteState.PRESENT;
-    }
+  addByte(offset: number, value: number) {
+    this.data[offset] = value;
+    this.dataState[offset] = ByteState.PRESENT;
+  }
 
+  /**
+   * Updates the analysis of the data received so far. Meant to be called
+   * once after a batch of addByte() calls, as it scans the whole file.
+   *
+   * @returns true if the file is complete.
+   */
+  update(): boolean {
     this.png = analyzePng(this.data, (i) => this.dataState[i] != ByteState.ABSENT, this.size);
-
     return this.isComplete();
   }
 
