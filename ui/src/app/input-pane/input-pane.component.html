@@ -13,16 +13,24 @@
           <div class="source-settings">
             <div class="playback-control-container">
               <mat-button-toggle-group #playbackSpeed name="playbackSpeed" [(ngModel)]="prefs.playbackSpeed.value">
-                <mat-button-toggle value="fast">Fast</mat-button-toggle>
-                <mat-button-toggle value="realtime">Real time</mat-button-toggle>
+                <mat-button-toggle value="fast" aria-label="Fast" title="Fast">
+                  <span class="toggle-text">Fast</span>
+                  <mat-icon class="toggle-icon">fast_forward</mat-icon>
+                </mat-button-toggle>
+                <mat-button-toggle value="realtime" aria-label="Real time" title="Real time">
+                  <span class="toggle-text">Real time</span>
+                  <mat-icon class="toggle-icon">play_arrow</mat-icon>
+                </mat-button-toggle>
               </mat-button-toggle-group>
               <div class="playback-speed-expander"></div>
-              <button mat-stroked-button [disabled]="!fileSourceActive" (click)="togglePause()">
-                {{ fileSource.isPaused ? 'Resume' : 'Pause' }}
+              <button mat-stroked-button [disabled]="!fileSourceActive" (click)="togglePause()"
+                [attr.aria-label]="fileSource.isPaused ? 'Resume' : 'Pause'"
+                [title]="fileSource.isPaused ? 'Resume' : 'Pause'">
+                <span class="button-label">{{ fileSource.isPaused ? 'Resume' : 'Pause' }}</span>
                 <mat-icon>{{ fileSource.isPaused ? 'play_circle' : 'pause_circle' }}</mat-icon>
               </button>
-              <button mat-stroked-button [disabled]="!canReplay" (click)="replayFile()">
-                Replay <mat-icon>replay</mat-icon>
+              <button mat-stroked-button [disabled]="!canReplay" (click)="replayFile()" aria-label="Replay" title="Replay">
+                <span class="button-label">Replay</span> <mat-icon>replay</mat-icon>
               </button>
             </div>
             <mat-checkbox [(ngModel)]="prefs.autoPauseOnStationChange.value">

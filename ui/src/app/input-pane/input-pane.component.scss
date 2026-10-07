@@ -21,10 +21,57 @@
   align-items: center;
   gap: 8px;
   overflow: hidden;
+  // Lets the playback speed toggles adapt to the width actually available
+  // (narrow screens, but also a narrow pane on desktop).
+  container-type: inline-size;
 }
 
 .playback-speed-expander {
   flex: 1;
+}
+
+// When the row is too narrow, playback controls progressively switch to icons:
+// first the Pause/Resume and Replay buttons drop their labels, then, if that
+// is still not enough, the speed toggles show icons instead of text. The
+// thresholds are the measured widths of the row in each configuration (with
+// the longer "Resume" label).
+.playback-control-container .toggle-icon {
+  display: none;
+  vertical-align: middle;
+  // Same size as Material's icons in the neighboring buttons.
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+@container (width < 441px) {
+  .playback-control-container {
+    .button-label {
+      display: none;
+    }
+
+    // Icon-only buttons: drop the spacing meant to separate icon and text.
+    button {
+      min-width: 0;
+      padding: 0 12px;
+
+      mat-icon {
+        margin: 0;
+      }
+    }
+  }
+}
+
+@container (width < 298px) {
+  .playback-control-container {
+    .toggle-text {
+      display: none;
+    }
+
+    .toggle-icon {
+      display: inline-block;
+    }
+  }
 }
 
 .dropzone {
