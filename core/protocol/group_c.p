@@ -58,11 +58,15 @@ bitstruct group_c_rft(station: Station) {
   toggle: uint<1>
   addr: uint<15>
 
-  byte1: uint<8>
-  byte2: uint<8>
-  byte3: uint<8>
-  byte4: uint<8>
-  byte5: uint<8>
+  # Data bytes accept any correctable block: RftPipe keeps the least
+  # corrected copy of each byte, and files are checked by CRCs. Addresses
+  # (and byte1, which shares block B with addr) remain strict, as a wrong
+  # address would corrupt other bytes.
+  byte1: uint<8> tolerate 5
+  byte2: uint<8> tolerate 5
+  byte3: uint<8> tolerate 5
+  byte4: uint<8> tolerate 5
+  byte5: uint<8> tolerate 5
 } action {
   log "RFT pipe {pipe:u}"
   log "toggle {toggle:u}"
@@ -70,11 +74,11 @@ bitstruct group_c_rft(station: Station) {
   # An RFT pipe carries files for the ODA assigned to the channel with the
   # same number (see group_c_oda_rft_assignment).
   station.addToPipeStats(pipe)
-  station.reportRftByte(pipe, 5*addr, byte1)
-  station.reportRftByte(pipe, 5*addr + 1, byte2)
-  station.reportRftByte(pipe, 5*addr + 2, byte3)
-  station.reportRftByte(pipe, 5*addr + 3, byte4)
-  station.reportRftByte(pipe, 5*addr + 4, byte5)
+  station.reportRftByte(pipe, 5*addr, byte1, errors(byte1))
+  station.reportRftByte(pipe, 5*addr + 1, byte2, errors(byte2))
+  station.reportRftByte(pipe, 5*addr + 2, byte3, errors(byte3))
+  station.reportRftByte(pipe, 5*addr + 3, byte4, errors(byte4))
+  station.reportRftByte(pipe, 5*addr + 4, byte5, errors(byte5))
   station.updateRftPipe(pipe)
 }
 

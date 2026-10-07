@@ -16,6 +16,8 @@ enum CrcState {
 export class RftPipe {
   data = new Uint8Array(MAX_SIZE);
   dataState = new Array<ByteState>(MAX_SIZE);
+  // Number of bits corrected in the block each byte was received in.
+  dataErrors = new Uint8Array(MAX_SIZE);
   crc = new Uint16Array(MAX_CHUNKS);
   crcState = new Array<CrcState>(MAX_CHUNKS);
   size: number = 0;
@@ -26,9 +28,9 @@ export class RftPipe {
   // Result of the PNG analysis, or null if the file is not (yet) identified
   // as a PNG file.
   png: PngAnalysis | null = null;
-  // True once the complete file has been handed over to the ODA that the
-  // pipe belongs to.
-  delivered: boolean = false;
+  // True if the data has changed since the file was last handed over to the
+  // ODA that the pipe belongs to.
+  modified: boolean = false;
 
   reset() {
     this.dataState.fill(ByteState.ABSENT);
@@ -38,15 +40,25 @@ export class RftPipe {
     this.fileVersion = 0;
     this.crcPresent = false;
     this.png = null;
-    this.delivered = false;
+    this.modified = false;
   }
 
   constructor() {
     this.reset();
   }
 
-  addByte(offset: number, value: number) {
+  // Keeps the copy with the fewest corrected bits (the first one on ties).
+  addByte(offset: number, value: number, errors: number) {
+    const absent = this.dataState[offset] == ByteState.ABSENT;
+    if (!absent && errors >= this.dataErrors[offset]) {
+      return;
+    }
+    // A less corrected copy of the same value does not change the file.
+    if (absent || value != this.data[offset]) {
+      this.modified = true;
+    }
     this.data[offset] = value;
+    this.dataErrors[offset] = errors;
     this.dataState[offset] = ByteState.PRESENT;
   }
 

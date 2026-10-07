@@ -51,7 +51,7 @@ struct Station {
     addAfPair(af1: uint<8>, af2: uint<8>)
     addMappedAF(channel: uint<8>, mapped_channel: uint<8>)
     reportOtherNetworkSwitch(pi: uint<16>, ta: boolean)
-    reportRftByte(pipe: uint<4>, offset: uint<18>, value: uint<8>)
+    reportRftByte(pipe: uint<4>, offset: uint<18>, value: uint<8>, errors: uint<3>)
     updateRftPipe(pipe: uint<4>)
     reportRftCrc(pipe: uint<4>, mode: uint<3>, chunkAddr: uint<9>, crc: uint<16>)
     reportRftMetadata(pipe: uint<4>, fileSize: uint<18>, file_id: uint<6>, file_version: uint<3>, crc_present: bool)

@@ -17,10 +17,12 @@ export function parse_group(stream: number, group: Group, log: LogMessage, stati
     group.blocks[2].value,
     group.blocks[3].value]);
   const ok = group.blocks.map(b => b.ok);
+  // Raw corrected-bit counts, for fields that tolerate more errors than "ok".
+  const errors = group.blocks.map(b => b.errorCount);
   if (stream == 0) {
-    parse_group_ab(blocks, ok, log, station);
+    parse_group_ab(blocks, ok, errors, log, station);
   } else {
-    parse_group_c(blocks, ok, log, station);
+    parse_group_c(blocks, ok, errors, log, station);
   }
 }
 
@@ -518,21 +520,14 @@ export class StationImpl implements Station {
     }
   }
 
-  reportRftByte(pipe: number, offset: number, value: number) {
-    const p = this.getRftPipe(pipe);
+  reportRftByte(pipe: number, offset: number, value: number, errors: number) {
     // TODO: Handle file changes (e.g. changing station logos).
-    if (!p.delivered) {
-      p.addByte(offset, value);
-    }
+    this.getRftPipe(pipe).addByte(offset, value, errors);
   }
 
   // Called after the bytes of an RFT group have been reported.
   updateRftPipe(pipe: number) {
     const p = this.getRftPipe(pipe);
-    if (p.delivered) {
-      return;
-    }
-
     const complete = p.update();
 
     // An RFT pipe belongs to the ODA assigned to the channel with the same
@@ -545,8 +540,9 @@ export class StationImpl implements Station {
     if (aid == STATION_LOGO_AID) {
       this.stationLogoPipe = p;
     }
-    if (complete) {
-      p.delivered = true;
+    // Re-deliver whenever bytes are replaced by less corrected copies.
+    if (complete && p.modified) {
+      p.modified = false;
       this.rftFileHandlers.get(aid)?.(p);
     }
   }
@@ -554,6 +550,10 @@ export class StationImpl implements Station {
   private receiveStationLogo(p: RftPipe) {
     const blob = p.getData();
     if (blob != null) {
+      // The logo may be re-delivered many times: release the previous URL.
+      if (this.stationLogoUrl != null) {
+        URL.revokeObjectURL(this.stationLogoUrl);
+      }
       this.stationLogoUrl = URL.createObjectURL(blob);
     }
   }

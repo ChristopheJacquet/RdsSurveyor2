@@ -31,7 +31,12 @@ bitstruct: "bitstruct" ID ("("arg? ("," arg)*")")? "{" decl* "}" ("action" "{" a
 
 arg: ID ":" type
 
-decl: ID ":" type
+// A field is only available if all its blocks are "ok", i.e. within the
+// user's error tolerance. "tolerate N" also accepts blocks with up to N
+// corrected bits, for data whose errors can be detected or fixed later.
+decl: ID ":" type tolerance?
+
+tolerance: "tolerate" INT
 
 type: ID ("<" INT ">")?
 
@@ -115,6 +120,9 @@ class MapElementGuard:
 # Global variable counters
 elt_counter = 0
 log_counter = 0
+
+# Blocks spanned by each field of the bitstruct being compiled.
+field_blocks = {}
 
 class CodeGenerator:
     def __init__(self, of, indent=0, in_block=False):
@@ -286,27 +294,37 @@ def compile_field_parsing(codegen, st, pos):
     cc = st.children
     field = pick_child_token(cc, 'ID')
     typ = parse_type(subtree_of_type(cc, 'type'))
-    codegen.line(f'// Field {field}: {typ} at +{pos}, width {typ.width}.')
+    tolerance = subtree_of_type(cc, 'tolerance')
+    max_errors = int(tolerance.children[0]) if tolerance else None
+    codegen.line(f'// Field {field}: {typ} at +{pos}, width {typ.width}'
+        + (f', tolerating {max_errors} errors.' if tolerance else '.'))
     end_pos = pos + typ.width   # Need to store it here because we're going to touch pos.
     if typ.output and field != '_':
         for i in range(typ.num):
             (masks, shifts) = field_extent(pos, typ.elemwidth)
             ts_ok = []
             ts_ops = []
-            for b in range(4):
-                if masks[b] != 0:
+            blocks = [b for b in range(4) if masks[b] != 0]
+            if typ.num == 1:
+                field_blocks[field] = blocks
+            for b in blocks:
+                if not tolerance:
                     ts_ok.append(f'ok[{b}]')
-                    if shifts[b] < 0:
-                        shift = f' << {-shifts[b]}'
-                    elif shifts[b] > 0:
-                        shift = f' >> {shifts[b]}'
-                    else:
-                        shift = ''
-                    if masks[b] != 65535:
-                        mask = f' & {bin(masks[b])}'
-                    else:
-                        mask = ''
-                    ts_ops.append(f'((block[{b}]{mask}){shift})')
+                elif len(blocks) == 1:
+                    ts_ok.append(f'ok[{b}] || errors[{b}] <= {max_errors}')
+                else:
+                    ts_ok.append(f'(ok[{b}] || errors[{b}] <= {max_errors})')
+                if shifts[b] < 0:
+                    shift = f' << {-shifts[b]}'
+                elif shifts[b] > 0:
+                    shift = f' >> {shifts[b]}'
+                else:
+                    shift = ''
+                if masks[b] != 65535:
+                    mask = f' & {bin(masks[b])}'
+                else:
+                    mask = ''
+                ts_ops.append(f'((block[{b}]{mask}){shift})')
             codegen.line(f'let {field}{'__' + str(i) if typ.num>1 else ''} = ({" && ".join(ts_ok)}) ?')
             with codegen.non_block_indent() as cgn:
                 cgn.line(f'{typ.conv(" | ".join(ts_ops))}')
@@ -372,6 +390,18 @@ def compile_expr(st):
             (c_key, v_key) = compile_expr(key)
             (c_default, v_default) = compile_expr(default)
             return (f'{c_mapping}.get({c_key}) ?? {c_default}', v_key | v_default)
+        case lark.Tree(data='function_call', children=[
+            lark.Token(type='ID', value='errors'),
+            lark.Tree(data='expr', children=[
+                lark.Tree(data='lvalue', children=[lark.Token(type='ID', value=field)])])]):
+
+            # Number of bits corrected in the field (worst of its blocks).
+            if field not in field_blocks:
+                raise Exception(f'errors(): unknown field {field}')
+            c_errors = [f'errors[{b}]' for b in field_blocks[field]]
+            if len(c_errors) == 1:
+                return (c_errors[0], set())
+            return (f'Math.max({", ".join(c_errors)})', set())
         case lark.Tree(data='add' | 'mul' as op, children=[left, right]):
             (c_left, v_left) = compile_expr(left)
             (c_right, v_right) = compile_expr(right)
@@ -435,7 +465,7 @@ def compile_action(codegen, st, arguments):
             
             (c_rule, v_rule) = compile_expr(rule);
             with codegen.guarded_block(v_rule) as cgn:
-                cgn.line(f'get_parse_function({c_rule})(block, ok, log{build_argument_list(arguments, with_types=False)});')
+                cgn.line(f'get_parse_function({c_rule})(block, ok, errors, log{build_argument_list(arguments, with_types=False)});')
         case lark.Tree(data='invocation', children=[
             lark.Tree(data='lvalue') as obj,
             lark.Token(type='ID', value=method),
@@ -585,6 +615,7 @@ def compile_bitstruct(codegen, cc):
     i = pick_child_token(cc, 'ID')
     ts_func = f'parse_{i}'
     rules[i] = ts_func
+    field_blocks.clear()
 
     # Build map of arguments.
     arguments = {}
@@ -598,7 +629,7 @@ def compile_bitstruct(codegen, cc):
                 
                 arguments[arg_name] = arg_type
     
-    with codegen.block(f'export function {ts_func}(block: Uint16Array, ok: boolean[], log: LogMessage{build_argument_list(arguments, with_types=True)}) {{') as cgn:
+    with codegen.block(f'export function {ts_func}(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage{build_argument_list(arguments, with_types=True)}) {{') as cgn:
 
         pos = 0
         for st in subtrees_of_type(cc, 'decl'):

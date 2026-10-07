@@ -43,13 +43,13 @@ export interface Station {
 	addAfPair(af1: number, af2: number): void;
 	addMappedAF(channel: number, mapped_channel: number): void;
 	reportOtherNetworkSwitch(pi: number, ta: boolean): void;
-	reportRftByte(pipe: number, offset: number, value: number): void;
+	reportRftByte(pipe: number, offset: number, value: number, errors: number): void;
 	updateRftPipe(pipe: number): void;
 	reportRftCrc(pipe: number, mode: number, chunkAddr: number, crc: number): void;
 	reportRftMetadata(pipe: number, fileSize: number, file_id: number, file_version: number, crc_present: boolean): void;
 }
 
-export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_ab(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field pi: uint<16> at +0, width 16.
 	let pi = (ok[0]) ?
 		((block[0]))
@@ -63,10 +63,10 @@ export function parse_group_ab(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((pi != null)) {
 		station.pi = pi;
 	}
-	get_parse_function("group_ab_without_pi")(block, ok, log, station);
+	get_parse_function("group_ab_without_pi")(block, ok, errors, log, station);
 }
 
-export function parse_group_ab_without_pi(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_ab_without_pi(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field _: unparsed<16> at +0, width 16.
 	// Field type: uint<5> at +16, width 5.
 	let type = (ok[1]) ?
@@ -102,11 +102,11 @@ export function parse_group_ab_without_pi(block: Uint16Array, ok: boolean[], log
 		station.addToGroupStats(type);
 	}
 	if ((type != null)) {
-		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, log, station);
+		get_parse_function(station.app_mapping.get(type) ?? "group_unknown")(block, ok, errors, log, station);
 	}
 }
 
-export function parse_group_unknown(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_unknown(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field block_b_rest: uint<5> at +27, width 5.
 	let block_b_rest = (ok[1]) ?
@@ -124,7 +124,7 @@ export function parse_group_unknown(block: Uint16Array, ok: boolean[], log: LogM
 	// Actions.
 }
 
-export function parse_group_0A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_0A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field af1: uint<8> at +32, width 8.
@@ -144,10 +144,10 @@ export function parse_group_0A(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((af1 != null) && (af2 != null) && (station != null)) {
 		station.addAfPair(af1, af2);
 	}
-	get_parse_function("group_0B_0_common")(block, ok, log, station);
+	get_parse_function("group_0B_0_common")(block, ok, errors, log, station);
 }
 
-export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -226,7 +226,7 @@ export function parse_group_0B_0_common(block: Uint16Array, ok: boolean[], log: 
 	}
 }
 
-export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_1A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field linkage_actuator: bool at +32, width 1.
@@ -253,11 +253,11 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessag
 	if ((linkage_actuator != null)) {
 		station.linkage_actuator = linkage_actuator;
 	}
-	get_parse_function("group_1B_1_common")(block, ok, log, station);
+	get_parse_function("group_1B_1_common")(block, ok, errors, log, station);
 	if ((variant != null)) {
 		switch (variant) {
 			case 0:
-				get_parse_function("group_1A_ecc")(block, ok, log, station);
+				get_parse_function("group_1A_ecc")(block, ok, errors, log, station);
 				break;
 
 			case 3:
@@ -273,7 +273,7 @@ export function parse_group_1A(block: Uint16Array, ok: boolean[], log: LogMessag
 	}
 }
 
-export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field _: unparsed<32> at +0, width 32.
 	// Field linkage_actuator: unparsed<1> at +32, width 1.
 	// Field variant: unparsed<3> at +33, width 3.
@@ -293,7 +293,7 @@ export function parse_group_1A_ecc(block: Uint16Array, ok: boolean[], log: LogMe
 	}
 }
 
-export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: unparsed<5> at +27, width 5.
 	// Field _: unparsed<16> at +32, width 16.
@@ -325,7 +325,7 @@ export function parse_group_1B_1_common(block: Uint16Array, ok: boolean[], log: 
 	}
 }
 
-export function parse_group_2A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_2A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag: uint<1> at +27, width 1.
 	let flag = (ok[1]) ?
@@ -376,7 +376,7 @@ export function parse_group_2A(block: Uint16Array, ok: boolean[], log: LogMessag
 	}
 }
 
-export function parse_group_2B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_2B(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag: uint<1> at +27, width 1.
 	let flag = (ok[1]) ?
@@ -419,7 +419,7 @@ export function parse_group_2B(block: Uint16Array, ok: boolean[], log: LogMessag
 	}
 }
 
-export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_3A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field app_group_type: uint<5> at +27, width 5.
 	let app_group_type = (ok[1]) ?
@@ -457,11 +457,11 @@ export function parse_group_3A(block: Uint16Array, ok: boolean[], log: LogMessag
 		}
 	}
 	if ((aid != null)) {
-		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, log, station);
+		get_parse_function(station.oda_3A_mapping.get(aid) ?? "group_unknown")(block, ok, errors, log, station);
 	}
 }
 
-export function parse_group_4A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_4A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field _: uint<3> at +27, width 3.
 	// Field mjd: uint<17> at +30, width 17.
@@ -503,7 +503,7 @@ export function parse_group_4A(block: Uint16Array, ok: boolean[], log: LogMessag
 	}
 }
 
-export function parse_group_10A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_10A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -552,7 +552,7 @@ export function parse_group_10A(block: Uint16Array, ok: boolean[], log: LogMessa
 	}
 }
 
-export function parse_group_15A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_15A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -601,7 +601,7 @@ export function parse_group_15A(block: Uint16Array, ok: boolean[], log: LogMessa
 	}
 }
 
-export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_15B(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field ta: bool at +27, width 1.
 	let ta = (ok[1]) ?
@@ -668,7 +668,7 @@ export function parse_group_15B(block: Uint16Array, ok: boolean[], log: LogMessa
 	}
 }
 
-export function parse_group_c(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field fid: uint<2> at +0, width 2.
 	let fid = (ok[0]) ?
 		((block[0] & 0b1100000000000000) >> 14)
@@ -689,18 +689,18 @@ export function parse_group_c(block: Uint16Array, ok: boolean[], log: LogMessage
 	if ((fid != null)) {
 		switch (fid) {
 			case 0:
-				get_parse_function("group_c_fid_0")(block, ok, log, station);
+				get_parse_function("group_c_fid_0")(block, ok, errors, log, station);
 				break;
 
 			case 1:
-				get_parse_function("group_c_oda")(block, ok, log, station);
+				get_parse_function("group_c_oda")(block, ok, errors, log, station);
 				break;
 
 			case 2:
 				if ((fn != null)) {
 					switch (fn) {
 						case 0:
-							get_parse_function("group_c_oda_assignment")(block, ok, log, station);
+							get_parse_function("group_c_oda_assignment")(block, ok, errors, log, station);
 							break;
 
 					}
@@ -714,7 +714,7 @@ export function parse_group_c(block: Uint16Array, ok: boolean[], log: LogMessage
 	}
 }
 
-export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field fid: unparsed<2> at +0, width 2.
 	// Field type: uint<2> at +2, width 2.
 	let type = (ok[0]) ?
@@ -728,18 +728,18 @@ export function parse_group_c_fid_0(block: Uint16Array, ok: boolean[], log: LogM
 		switch (type) {
 			case 0:
 				log.add(`Tunnelled A/B group`);
-				get_parse_function("group_ab_without_pi")(block, ok, log, station);
+				get_parse_function("group_ab_without_pi")(block, ok, errors, log, station);
 				break;
 
 			case 2:
-				get_parse_function("group_c_rft")(block, ok, log, station);
+				get_parse_function("group_c_rft")(block, ok, errors, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_rft(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field fid: unparsed<2> at +0, width 2.
 	// Field type: unparsed<2> at +2, width 2.
 	// Field pipe: uint<4> at +4, width 4.
@@ -754,24 +754,24 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 	let addr = (ok[0] && ok[1]) ?
 		((block[0] & 0b1111111) << 8) | ((block[1] & 0b1111111100000000) >> 8)
 		: null;
-	// Field byte1: uint<8> at +24, width 8.
-	let byte1 = (ok[1]) ?
+	// Field byte1: uint<8> at +24, width 8, tolerating 5 errors.
+	let byte1 = (ok[1] || errors[1] <= 5) ?
 		((block[1] & 0b11111111))
 		: null;
-	// Field byte2: uint<8> at +32, width 8.
-	let byte2 = (ok[2]) ?
+	// Field byte2: uint<8> at +32, width 8, tolerating 5 errors.
+	let byte2 = (ok[2] || errors[2] <= 5) ?
 		((block[2] & 0b1111111100000000) >> 8)
 		: null;
-	// Field byte3: uint<8> at +40, width 8.
-	let byte3 = (ok[2]) ?
+	// Field byte3: uint<8> at +40, width 8, tolerating 5 errors.
+	let byte3 = (ok[2] || errors[2] <= 5) ?
 		((block[2] & 0b11111111))
 		: null;
-	// Field byte4: uint<8> at +48, width 8.
-	let byte4 = (ok[3]) ?
+	// Field byte4: uint<8> at +48, width 8, tolerating 5 errors.
+	let byte4 = (ok[3] || errors[3] <= 5) ?
 		((block[3] & 0b1111111100000000) >> 8)
 		: null;
-	// Field byte5: uint<8> at +56, width 8.
-	let byte5 = (ok[3]) ?
+	// Field byte5: uint<8> at +56, width 8, tolerating 5 errors.
+	let byte5 = (ok[3] || errors[3] <= 5) ?
 		((block[3] & 0b11111111))
 		: null;
 
@@ -789,26 +789,26 @@ export function parse_group_c_rft(block: Uint16Array, ok: boolean[], log: LogMes
 		station.addToPipeStats(pipe);
 	}
 	if ((addr != null) && (byte1 != null) && (pipe != null) && (station != null)) {
-		station.reportRftByte(pipe, 5 * addr, byte1);
+		station.reportRftByte(pipe, 5 * addr, byte1, errors[1]);
 	}
 	if ((addr != null) && (byte2 != null) && (pipe != null) && (station != null)) {
-		station.reportRftByte(pipe, 5 * addr + 1, byte2);
+		station.reportRftByte(pipe, 5 * addr + 1, byte2, errors[2]);
 	}
 	if ((addr != null) && (byte3 != null) && (pipe != null) && (station != null)) {
-		station.reportRftByte(pipe, 5 * addr + 2, byte3);
+		station.reportRftByte(pipe, 5 * addr + 2, byte3, errors[2]);
 	}
 	if ((addr != null) && (byte4 != null) && (pipe != null) && (station != null)) {
-		station.reportRftByte(pipe, 5 * addr + 3, byte4);
+		station.reportRftByte(pipe, 5 * addr + 3, byte4, errors[3]);
 	}
 	if ((addr != null) && (byte5 != null) && (pipe != null) && (station != null)) {
-		station.reportRftByte(pipe, 5 * addr + 4, byte5);
+		station.reportRftByte(pipe, 5 * addr + 4, byte5, errors[3]);
 	}
 	if ((pipe != null) && (station != null)) {
 		station.updateRftPipe(pipe);
 	}
 }
 
-export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_oda(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field fid: unparsed<2> at +0, width 2.
 	// Field channel: uint<6> at +2, width 6.
 	let channel = (ok[0]) ?
@@ -824,11 +824,11 @@ export function parse_group_c_oda(block: Uint16Array, ok: boolean[], log: LogMes
 		station.addToChannelStats(channel);
 	}
 	if ((channel != null)) {
-		get_parse_function(station.channel_app_mapping.get(channel) ?? "group_unknown")(block, ok, log, station);
+		get_parse_function(station.channel_app_mapping.get(channel) ?? "group_unknown")(block, ok, errors, log, station);
 	}
 }
 
-export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field variant: uint<2> at +8, width 2.
 	let variant = (ok[0]) ?
@@ -883,7 +883,7 @@ export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], 
 						case 13:
 						case 14:
 						case 15:
-							get_parse_function("group_c_oda_rft_assignment")(block, ok, log, station);
+							get_parse_function("group_c_oda_rft_assignment")(block, ok, errors, log, station);
 							break;
 
 					}
@@ -902,7 +902,7 @@ export function parse_group_c_oda_assignment(block: Uint16Array, ok: boolean[], 
 	}
 }
 
-export function parse_group_c_oda_rft_assignment(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_oda_rft_assignment(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field zero: unparsed<4> at +8, width 4.
 	// Field pipe: unparsed<4> at +12, width 4.
@@ -920,18 +920,18 @@ export function parse_group_c_oda_rft_assignment(block: Uint16Array, ok: boolean
 	if ((variant != null)) {
 		switch (variant) {
 			case 0:
-				get_parse_function("group_c_oda_rft_assignment_v0")(block, ok, log, station);
+				get_parse_function("group_c_oda_rft_assignment_v0")(block, ok, errors, log, station);
 				break;
 
 			case 1:
-				get_parse_function("group_c_oda_rft_assignment_v1")(block, ok, log, station);
+				get_parse_function("group_c_oda_rft_assignment_v1")(block, ok, errors, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field zero: unparsed<4> at +8, width 4.
 	// Field pipe: uint<4> at +12, width 4.
@@ -975,7 +975,7 @@ export function parse_group_c_oda_rft_assignment_v0(block: Uint16Array, ok: bool
 	}
 }
 
-export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_c_oda_rft_assignment_v1(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field zero: unparsed<4> at +8, width 4.
 	// Field pipe: uint<4> at +12, width 4.
@@ -1024,7 +1024,7 @@ export interface RpApp {
 	reportAlphaPart(flag_ab: boolean, addr: number, offset: number, c1: number, c2: number, last: boolean): void;
 }
 
-export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_7A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -1047,7 +1047,7 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 					station.rp_app.newBeepMessage(flag_ab);
 				}
 				log.add(`Beep`);
-				get_parse_function("group_7A_address")(block, ok, log, station);
+				get_parse_function("group_7A_address")(block, ok, errors, log, station);
 				if ((flag_ab != null) && (station != null)) {
 					station.rp_app.reportBeep(flag_ab);
 				}
@@ -1060,7 +1060,7 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 			case 2:
 			case 3:
 				log.add(`10-digit`);
-				get_parse_function("group_7A_numeric_10")(block, ok, log, station);
+				get_parse_function("group_7A_numeric_10")(block, ok, errors, log, station);
 				break;
 
 			case 4:
@@ -1068,7 +1068,7 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 			case 6:
 			case 7:
 				log.add(`18-digit`);
-				get_parse_function("group_7A_numeric_18")(block, ok, log, station);
+				get_parse_function("group_7A_numeric_18")(block, ok, errors, log, station);
 				break;
 
 			case 8:
@@ -1080,14 +1080,14 @@ export function parse_group_7A(block: Uint16Array, ok: boolean[], log: LogMessag
 			case 14:
 			case 15:
 				log.add(`Alphanumeric`);
-				get_parse_function("group_7A_alphanumeric")(block, ok, log, station);
+				get_parse_function("group_7A_alphanumeric")(block, ok, errors, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_7A_address(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_7A_address(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field rp_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -1129,7 +1129,7 @@ export function parse_group_7A_address(block: Uint16Array, ok: boolean[], log: L
 	}
 }
 
-export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field rp_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -1180,7 +1180,7 @@ export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log
 				if ((flag_ab != null) && (station != null)) {
 					station.rp_app.new10dMessage(flag_ab);
 				}
-				get_parse_function("group_7A_address")(block, ok, log, station);
+				get_parse_function("group_7A_address")(block, ok, errors, log, station);
 				if ((a7 != null) && (a8 != null)) {
 					log.add(`Part 1/2: ${formatBcd(a7)}${formatBcd(a8)}`);
 				}
@@ -1211,7 +1211,7 @@ export function parse_group_7A_numeric_10(block: Uint16Array, ok: boolean[], log
 	}
 }
 
-export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field rp_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -1262,7 +1262,7 @@ export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log
 				if ((flag_ab != null) && (station != null)) {
 					station.rp_app.new18dMessage(flag_ab);
 				}
-				get_parse_function("group_7A_address")(block, ok, log, station);
+				get_parse_function("group_7A_address")(block, ok, errors, log, station);
 				if ((a7 != null) && (a8 != null)) {
 					log.add(`Part 1/3: ${formatBcd(a7)}${formatBcd(a8)}`);
 				}
@@ -1311,7 +1311,7 @@ export function parse_group_7A_numeric_18(block: Uint16Array, ok: boolean[], log
 	}
 }
 
-export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field rp_common: unparsed<27> at +0, width 27.
 	// Field flag_ab: bool at +27, width 1.
 	let flag_ab = (ok[1]) ?
@@ -1346,7 +1346,7 @@ export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], l
 				if ((flag_ab != null) && (station != null)) {
 					station.rp_app.newAlphaMessage(flag_ab);
 				}
-				get_parse_function("group_7A_address")(block, ok, log, station);
+				get_parse_function("group_7A_address")(block, ok, errors, log, station);
 				break;
 
 			case 1:
@@ -1382,7 +1382,7 @@ export function parse_group_7A_alphanumeric(block: Uint16Array, ok: boolean[], l
 	}
 }
 
-export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
 	let tp_on = (ok[1]) ?
@@ -1455,18 +1455,18 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 			case 1:
 			case 2:
 			case 3:
-				get_parse_function("group_14A_ps")(block, ok, log, station);
+				get_parse_function("group_14A_ps")(block, ok, errors, log, station);
 				break;
 
 			case 4:
-				get_parse_function("group_14A_af_a")(block, ok, log, station);
+				get_parse_function("group_14A_af_a")(block, ok, errors, log, station);
 				break;
 
 			case 5:
 			case 6:
 			case 7:
 			case 8:
-				get_parse_function("group_14A_mapped_af")(block, ok, log, station);
+				get_parse_function("group_14A_mapped_af")(block, ok, errors, log, station);
 				break;
 
 			case 9:
@@ -1476,18 +1476,18 @@ export function parse_group_14A(block: Uint16Array, ok: boolean[], log: LogMessa
 				break;
 
 			case 13:
-				get_parse_function("group_14A_pty_ta")(block, ok, log, station);
+				get_parse_function("group_14A_pty_ta")(block, ok, errors, log, station);
 				break;
 
 			case 14:
-				get_parse_function("group_14A_pin")(block, ok, log, station);
+				get_parse_function("group_14A_pin")(block, ok, errors, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field common: unparsed<30> at +0, width 30.
 	// Field addr: uint<2> at +30, width 2.
 	let addr = (ok[1]) ?
@@ -1528,7 +1528,7 @@ export function parse_group_14A_ps(block: Uint16Array, ok: boolean[], log: LogMe
 	}
 }
 
-export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field af1: uint<8> at +32, width 8.
 	let af1 = (ok[2]) ?
@@ -1560,7 +1560,7 @@ export function parse_group_14A_af_a(block: Uint16Array, ok: boolean[], log: Log
 	}
 }
 
-export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field channel: uint<8> at +32, width 8.
 	let channel = (ok[2]) ?
@@ -1592,7 +1592,7 @@ export function parse_group_14A_mapped_af(block: Uint16Array, ok: boolean[], log
 	}
 }
 
-export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field pty_on: uint<5> at +32, width 5.
 	let pty_on = (ok[2]) ?
@@ -1639,7 +1639,7 @@ export function parse_group_14A_pty_ta(block: Uint16Array, ok: boolean[], log: L
 	}
 }
 
-export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field common: unparsed<32> at +0, width 32.
 	// Field pin_day_on: uint<5> at +32, width 5.
 	let pin_day_on = (ok[2]) ?
@@ -1697,7 +1697,7 @@ export function parse_group_14A_pin(block: Uint16Array, ok: boolean[], log: LogM
 	}
 }
 
-export function parse_group_14B(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_14B(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field tp_on: bool at +27, width 1.
 	let tp_on = (ok[1]) ?
@@ -1738,7 +1738,7 @@ export interface RtPlusApp {
 	setTag(content_type: number, start: number, length: number): void;
 }
 
-export function parse_group_rtplus(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_rtplus(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field item_toggle: bool at +27, width 1.
 	let item_toggle = (ok[1]) ?
@@ -1797,7 +1797,7 @@ export interface DabCrossRefApp {
 	addServiceLinkageInfo(linkageInfo: number, sid: number): void;
 }
 
-export function parse_group_dabxref(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_dabxref(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field es: uint<1> at +27, width 1.
 	let es = (ok[1]) ?
@@ -1809,18 +1809,18 @@ export function parse_group_dabxref(block: Uint16Array, ok: boolean[], log: LogM
 	if ((es != null)) {
 		switch (es) {
 			case 0:
-				get_parse_function("group_dabxref_ensemble")(block, ok, log, station);
+				get_parse_function("group_dabxref_ensemble")(block, ok, errors, log, station);
 				break;
 
 			case 1:
-				get_parse_function("group_dabxref_service")(block, ok, log, station);
+				get_parse_function("group_dabxref_service")(block, ok, errors, log, station);
 				break;
 
 		}
 	}
 }
 
-export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field _: unparsed<28> at +0, width 28.
 	// Field mode: uint<2> at +28, width 2.
 	let mode = (ok[1]) ?
@@ -1841,7 +1841,7 @@ export function parse_group_dabxref_ensemble(block: Uint16Array, ok: boolean[], 
 	}
 }
 
-export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_dabxref_service(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field _: unparsed<28> at +0, width 28.
 	// Field variant: uint<4> at +28, width 4.
 	let variant = (ok[1]) ?
@@ -1891,7 +1891,7 @@ export interface ERtApp {
 	enabled?: boolean;
 }
 
-export function parse_group_ert_declaration(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_ert_declaration(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_3A_common: unparsed<32> at +0, width 32.
 	// Field rfu: unparsed<15> at +32, width 15.
 	// Field utf8_encoding: bool at +47, width 1.
@@ -1912,7 +1912,7 @@ export function parse_group_ert_declaration(block: Uint16Array, ok: boolean[], l
 	}
 }
 
-export function parse_group_ert(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_ert(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field group_common: unparsed<27> at +0, width 27.
 	// Field addr: uint<5> at +27, width 5.
 	let addr = (ok[1]) ?
@@ -1958,7 +1958,7 @@ export interface InternetConnectionApp {
 	enabled?: boolean;
 }
 
-export function parse_group_internet_connection(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_internet_connection(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field type: uint<1> at +8, width 1.
 	let type = (ok[0]) ?
@@ -1972,7 +1972,7 @@ export function parse_group_internet_connection(block: Uint16Array, ok: boolean[
 		switch (type) {
 			case 0:
 			case 1:
-				get_parse_function("group_internet_connection_url")(block, ok, log, station);
+				get_parse_function("group_internet_connection_url")(block, ok, errors, log, station);
 				break;
 
 		}
@@ -1982,7 +1982,7 @@ export function parse_group_internet_connection(block: Uint16Array, ok: boolean[
 	}
 }
 
-export function parse_group_internet_connection_url(block: Uint16Array, ok: boolean[], log: LogMessage, station: Station) {
+export function parse_group_internet_connection_url(block: Uint16Array, ok: boolean[], errors: number[], log: LogMessage, station: Station) {
 	// Field header: unparsed<8> at +0, width 8.
 	// Field type: unparsed<1> at +8, width 1.
 	// Field addr: uint<7> at +9, width 7.
