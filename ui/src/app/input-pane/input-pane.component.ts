@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { Component, ElementRef, EventEmitter, HostListener, effect, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, effect, Output, QueryList, ViewChild, ViewChildren, inject, ChangeDetectionStrategy, signal, isDevMode } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatButtonModule} from '@angular/material/button';
 import {MatButtonToggleModule} from '@angular/material/button-toggle';
@@ -57,7 +57,11 @@ export class InputPaneComponent implements RdsPipeline  {
   fileSource = new FileSource(this);
   networkSource = new NetworkSource(this);
   rtlSdrSource = new RtlSdr(this);
-  sources: RdsSource[] = [this.fileSource, new Si470x(this), this.rtlSdrSource, this.audioSource, this.networkSource];
+  // The network source is only offered in development builds.
+  sources: RdsSource[] = [
+    this.fileSource, new Si470x(this), this.rtlSdrSource, this.audioSource,
+    ...(isDevMode() ? [this.networkSource] : []),
+  ];
   selectedSource: RdsSource = this.sources[0];
   audioDevices: MediaDeviceInfo[] = [];
   private lastSourceWasFile = false;
