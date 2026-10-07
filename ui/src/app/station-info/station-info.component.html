@@ -444,14 +444,14 @@
         </ul>
       }
       <table class="data-table png-chunks">
-        <tr><th>Chunk</th><th>Offset</th><th>Data length</th><th>Received</th><th>Status</th></tr>
+        <tr><th>Chunk</th><th>Offset</th><th>Data length</th><th>Received (error-free) / size</th><th>Status</th></tr>
         @for (c of png.chunks; track c.offset) {
           @let cs = pngChunkStatuses[c.status];
           <tr>
             <td class="png-chunk-type">{{ c.type }}</td>
             <td>{{ c.offset }}</td>
             <td>{{ c.length }}</td>
-            <td>{{ c.bytesPresent }} / {{ c.length + 12 }}</td>
+            <td>{{ c.bytesPresent }} ({{ c.bytesErrorFree }}) / {{ c.length + 12 }}</td>
             <td [class]="cs.cls">{{ cs.label }}</td>
           </tr>
         }

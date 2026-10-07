@@ -69,7 +69,10 @@ export class RftPipe {
    * @returns true if the file is complete.
    */
   update(): boolean {
-    this.png = analyzePng(this.data, (i) => this.dataState[i] != ByteState.ABSENT, this.size);
+    this.png = analyzePng(this.data,
+      (i) => this.dataState[i] != ByteState.ABSENT,
+      (i) => this.dataErrors[i] == 0,
+      this.size);
     return this.isComplete();
   }
 
@@ -118,6 +121,8 @@ export interface PngChunk {
   type: string;
   // Number of bytes of the chunk (including length, type and CRC) received.
   bytesPresent: number;
+  // Number of those bytes received without any corrected bits.
+  bytesErrorFree: number;
   status: PngChunkStatus;
 }
 
@@ -152,9 +157,12 @@ export interface PngAnalysis {
  *
  * @param data The file's bytes.
  * @param isPresent Tells whether the byte at the given offset has been received.
+ * @param isErrorFree Tells whether the byte at the given offset, if received,
+ *     was received without any corrected bits.
  * @param size The file size, or 0 if not known.
  */
-export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean, size: number): PngAnalysis | null {
+export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean,
+    isErrorFree: (i: number) => boolean, size: number): PngAnalysis | null {
   const limit = size > 0 ? Math.min(size, data.length) : data.length;
   const rangePresent = (start: number, len: number) => {
     for (let i = start; i < start + len; i++) {
@@ -187,14 +195,19 @@ export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean, 
     if (end > limit) {
       result.errors.push(`Chunk ${type} at offset ${offset} extends beyond the end of the file`);
       result.chunks.push({
-        offset, length, type, bytesPresent: 0, status: PngChunkStatus.INCOMPLETE,
+        offset, length, type, bytesPresent: 0, bytesErrorFree: 0,
+        status: PngChunkStatus.INCOMPLETE,
       });
       break;
     }
 
     let bytesPresent = 0;
+    let bytesErrorFree = 0;
     for (let i = offset; i < end; i++) {
-      if (isPresent(i)) bytesPresent++;
+      if (isPresent(i)) {
+        bytesPresent++;
+        if (isErrorFree(i)) bytesErrorFree++;
+      }
     }
 
     let status = PngChunkStatus.INCOMPLETE;
@@ -204,7 +217,7 @@ export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean, 
       status = crc == readUint32(data, offset + 8 + length) ?
         PngChunkStatus.CRC_OK : PngChunkStatus.CRC_ERROR;
     }
-    result.chunks.push({ offset, length, type, bytesPresent, status });
+    result.chunks.push({ offset, length, type, bytesPresent, bytesErrorFree, status });
 
     if (type == 'IHDR' && status == PngChunkStatus.CRC_OK && length >= 13) {
       const d = offset + 8;
