@@ -1,3 +1,5 @@
+@use '../mobile';
+
 :host {
   background-color: #FFF;
   margin: 10px;
@@ -364,5 +366,96 @@
 
   .png-chunk-type {
     font-family: "Roboto Mono", monospace;
+  }
+}
+
+@include mobile.narrow {
+  :host {
+    margin: 6px;
+    padding: 10px;
+  }
+
+  // Smaller icon; the Reset / RDS-RBDS controls wrap to a second line.
+  .station-options {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding-bottom: 5px;
+  }
+
+  .app-icon img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .app-title-box {
+    margin-left: 58px;
+  }
+
+  .top-controls {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+
+  // Wrap the fields of a row, about two per line.
+  .infogrid-row {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    margin: 8px 0;
+  }
+
+  .infogrid-cell {
+    flex: 1 1 140px;
+  }
+
+  // Dynamic PS and Long PS.
+  .ps-details-row {
+    display: none;
+  }
+
+  .infogrid-value {
+    font-size: 120%;
+  }
+
+  .infogrid-logo {
+    width: 90px;
+    margin-left: 10px;
+  }
+
+  // 16 columns of counters: shrink them so that the table fits.
+  // Counters are separated by 2px only: the border spacing alone, without
+  // cell padding or counter margins.
+  .group-stats {
+    font-size: 11px;
+    border-spacing: 2px;
+
+    td {
+      padding: 0;
+    }
+  }
+
+  .group-stats-number {
+    margin: 0;
+    padding: 1px 0;
+  }
+
+  // As on desktop, the tabs fill the rest of the screen and scroll
+  // internally. If the screen is too short for that, they keep a usable
+  // height and the whole pane scrolls instead.
+  .bottom-tabs {
+    min-height: 250px;
+  }
+}
+
+@include mobile.short {
+  :host {
+    margin: 4px 4px 4px 1px;
+    padding: 10px;
+  }
+
+  // Otherwise the tabs get squeezed to nothing below the info grid; instead,
+  // the pane scrolls to reveal them at nearly full viewport height.
+  .bottom-tabs {
+    flex: none;
+    height: calc(100svh - 28px);
   }
 }

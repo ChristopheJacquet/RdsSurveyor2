@@ -1,3 +1,5 @@
+@use '../mobile';
+
 :host {
   background-color: #FFF;
   margin: 10px;
@@ -280,4 +282,58 @@ table {
 
 table th {
   font-weight: normal;
+}
+
+@include mobile.narrow {
+  // A drawer sliding in from the left, over the station info, toggled by a
+  // button in the app component.
+  :host {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    // Leave a strip on the right for the toggle button and for tapping the
+    // backdrop to close. !important overrides the inline width set by
+    // dragging the divider.
+    width: min(calc(100vw - 88px), 400px) !important;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 10px;
+    border-radius: 0 10px 10px 0;
+    // Keep scrolling within the drawer, not the page underneath.
+    overscroll-behavior: contain;
+    transform: translateX(-100%);
+    // Hidden when closed (no focus, no screen reader), but only after the
+    // slide-out transition. The pane stays rendered, so decoding continues.
+    visibility: hidden;
+    transition: transform .2s ease-out, visibility 0s .2s;
+  }
+
+  :host(.open) {
+    transform: none;
+    visibility: visible;
+    box-shadow: 0 0 16px rgba(0, 0, 0, .5);
+    transition: transform .2s ease-out;
+  }
+}
+
+@include mobile.short {
+  :host {
+    min-width: 300px;
+    margin: 4px 1px 4px 4px;
+    padding: 10px;
+  }
+}
+
+@include mobile.small {
+  // Let rows of controls wrap instead of being clipped or overflowing.
+  .playback-control-container, .gain-control, .volume-control, .max-errors-container {
+    flex-wrap: wrap;
+  }
+
+  .source-settings {
+    padding: 0 12px 12px;
+  }
 }

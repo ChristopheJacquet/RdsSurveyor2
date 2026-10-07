@@ -1,7 +1,16 @@
 <main class="main">
-  <app-input-pane (groupReceived)="receiveGroup($event)" [style.width.px]="inputPaneWidth" />
+  <app-input-pane (groupReceived)="receiveGroup($event)" [style.width.px]="inputPaneWidth" [class.open]="inputPaneOpen" />
   <div class="divider" (mousedown)="onDividerMouseDown($event)"></div>
   <app-station-info [station]="station" />
 </main>
+
+<!-- Only displayed on narrow screens, where the input pane is an overlay. -->
+@if (inputPaneOpen) {
+  <div class="input-pane-backdrop" (click)="inputPaneOpen = false"></div>
+}
+<button mat-fab class="input-pane-toggle" (click)="inputPaneOpen = !inputPaneOpen"
+  [attr.aria-label]="inputPaneOpen ? 'Hide input pane' : 'Show input pane'">
+  <mat-icon>{{ inputPaneOpen ? 'close' : 'settings_input_antenna' }}</mat-icon>
+</button>
 
 <router-outlet />

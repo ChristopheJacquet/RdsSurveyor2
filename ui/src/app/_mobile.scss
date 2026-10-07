@@ -1,0 +1,26 @@
+// Breakpoints for small screens. Rules inside these mixins never apply on a
+// typical desktop window, so they can't affect the desktop rendering.
+
+// Phone in portrait (or any very narrow window): too narrow for the input
+// pane (at least 350px wide) next to the station info, so the station info
+// takes the whole screen and the input pane becomes a slide-in drawer.
+@mixin narrow {
+  @media (max-width: 700px) {
+    @content;
+  }
+}
+
+// Phone in landscape: panes stay side by side, but the viewport is too short
+// for the fixed-height, internally-scrolling desktop layout.
+@mixin short {
+  @media (max-height: 500px) and (pointer: coarse) {
+    @content;
+  }
+}
+
+// Either of the above.
+@mixin small {
+  @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+    @content;
+  }
+}

@@ -1,3 +1,5 @@
+@use 'mobile';
+
 * {
   font-family: var(--mat-sys-label-large-font);
   font-size: var(--mat-sys-label-large-size);
@@ -27,5 +29,39 @@ main {
 
   &:hover, &:active {
     background: #888;
+  }
+}
+
+.input-pane-toggle, .input-pane-backdrop {
+  display: none;
+}
+
+@include mobile.narrow {
+  // The station info takes the whole width; the input pane is an overlay
+  // (see input-pane.component.scss).
+  .divider {
+    display: none;
+  }
+
+  .input-pane-toggle {
+    display: flex;
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 30;
+
+    // Undo the "*" rule above, which would replace the icon font.
+    mat-icon {
+      font-family: 'Material Icons';
+      font-size: 24px;
+    }
+  }
+
+  .input-pane-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, .4);
   }
 }

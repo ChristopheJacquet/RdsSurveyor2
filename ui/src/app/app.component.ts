@@ -1,5 +1,7 @@
 import { Component, ChangeDetectionStrategy, HostListener, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { InputPaneComponent } from './input-pane/input-pane.component';
 import { StationInfoComponent } from './station-info/station-info.component';
 import { LogMessage, parse_group, RdsVariant, StationImpl } from '../../../core/protocol/rds_types';
@@ -8,7 +10,7 @@ import { prefs } from './prefs';
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, InputPaneComponent, StationInfoComponent],
+    imports: [RouterOutlet, MatButtonModule, MatIconModule, InputPaneComponent, StationInfoComponent],
     templateUrl: './app.component.html',
     changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './app.component.scss'
@@ -21,6 +23,9 @@ export class AppComponent {
   // Width the user has dragged the input pane to, in pixels; undefined until
   // the divider is dragged, so the pane keeps its CSS-defined default width.
   inputPaneWidth?: number;
+
+  // On narrow screens, the input pane is an overlay that slides in on demand.
+  inputPaneOpen = false;
 
   private draggingDivider = false;
   private dragStartX = 0;
