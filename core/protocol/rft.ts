@@ -164,14 +164,16 @@ export interface PngAnalysis {
 export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean,
     isErrorFree: (i: number) => boolean, size: number): PngAnalysis | null {
   const limit = size > 0 ? Math.min(size, data.length) : data.length;
-  const rangePresent = (start: number, len: number) => {
+  // Structural data (signature, chunk lengths and types) is only trusted if
+  // received without any corrected bits.
+  const rangeErrorFree = (start: number, len: number) => {
     for (let i = start; i < start + len; i++) {
-      if (!isPresent(i)) return false;
+      if (!isPresent(i) || !isErrorFree(i)) return false;
     }
     return true;
   };
 
-  if (limit < PNG_SIGNATURE.length || !rangePresent(0, PNG_SIGNATURE.length)) {
+  if (limit < PNG_SIGNATURE.length || !rangeErrorFree(0, PNG_SIGNATURE.length)) {
     return null;
   }
   for (let i = 0; i < PNG_SIGNATURE.length; i++) {
@@ -185,8 +187,8 @@ export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean,
   let offset = PNG_SIGNATURE.length;
   // Since each chunk's length is known as soon as its header is received,
   // parsing can continue past incomplete chunks, until reaching a chunk whose
-  // header (length and type) has not been received yet.
-  while (offset + 8 <= limit && rangePresent(offset, 8)) {
+  // header (length and type) has not been received yet without errors.
+  while (offset + 8 <= limit && rangeErrorFree(offset, 8)) {
     const length = readUint32(data, offset);
     const type = String.fromCharCode(...data.subarray(offset + 4, offset + 8));
     const totalLength = 12 + length;
