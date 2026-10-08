@@ -112,6 +112,7 @@ export class InputPaneComponent implements RdsPipeline  {
     effect(() => this.rtlSdrSource.setFrequencyCorrection(prefs.rtlSdrPpm.value || 0));
     effect(() => this.mpxAudioPlayer.setVolume(prefs.volume.value / 100));
     effect(() => this.mpxAudioPlayer.setDeemphasis(prefs.preemphasis.value));
+    effect(() => this.mpxAudioPlayer.setStereo(prefs.stereo.value));
     effect(async () => {
       const band = prefs.band.value;
       await Promise.all(this.sources.map(s => s.setBand?.(band)));

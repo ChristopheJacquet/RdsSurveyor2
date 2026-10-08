@@ -51,6 +51,7 @@ export const prefs = {
     'Auto-pause file playback on station change', { kind: 'boolean' }),
   volume: new Pref('pref.volume', 100, 'MPX audio volume',
     { kind: 'slider', min: 0, max: 100, unit: '%' }),
+  stereo: new Pref('pref.stereo', true, 'MPX audio stereo decoding', { kind: 'boolean' }),
   preemphasis: new Pref('pref.preemphasis', 50, 'MPX audio de-emphasis',
     choices<number>([50, '50 μs'], [75, '75 μs'])),
   rtlSdrAgc: new Pref('pref.rtlsdr_agc', true, 'RTL-SDR AGC', { kind: 'boolean' }),

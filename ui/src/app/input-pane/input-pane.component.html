@@ -186,6 +186,7 @@
         <input matSliderThumb [(ngModel)]="prefs.volume.value">
       </mat-slider>
       <span class="volume-value">{{ prefs.volume.value | number:'1.0-0':'en-US' }} %</span>
+      <mat-checkbox [(ngModel)]="prefs.stereo.value">Stereo</mat-checkbox>
     </div>
     <div>MPX spectrum</div>
     <app-spectrum-diagram #spectrumDiagram></app-spectrum-diagram>

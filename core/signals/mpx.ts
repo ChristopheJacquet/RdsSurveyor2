@@ -404,7 +404,7 @@ export class SpectrumAnalyzer {
 const AUDIO_BLOCK_DURATION = 0.1;
 
 /**
- * Plays an MPX signal as (stereo, de-emphasized) audio.
+ * Plays an MPX signal as (stereo or mono, de-emphasized) audio.
  */
 export class MpxAudioPlayer {
   // TODO: Make this a parameter.
@@ -412,6 +412,7 @@ export class MpxAudioPlayer {
 
   // Schedule audio a bit ahead, so a late buffer does not cause an audible gap.
   private player = new AudioPlayer({ timeBuffer: 0.2 });
+  private stereo = true;
   private stereoDecoder = this.createStereoDecoder(50);
 
   private block = new Float32Array(Math.round(this.sampleRate * AUDIO_BLOCK_DURATION));
@@ -432,9 +433,15 @@ export class MpxAudioPlayer {
     this.stereoDecoder = this.createStereoDecoder(timeConstant);
   }
 
+  // Enables or disables stereo decoding. When disabled, only the mono (L+R) signal is decoded.
+  setStereo(stereo: boolean) {
+    this.stereo = stereo;
+    this.stereoDecoder.setMode({ scheme: "WBFM", stereo });
+  }
+
   private createStereoDecoder(timeConstant: number) {
     return new DemodWBFMStage2(
-      this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: true },
+      this.sampleRate, this.player.sampleRate, { scheme: "WBFM", stereo: this.stereo },
       { deemphasizerTc: timeConstant });
   }
 
