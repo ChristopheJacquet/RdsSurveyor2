@@ -186,26 +186,11 @@
         <input matSliderThumb [(ngModel)]="prefs.volume.value">
       </mat-slider>
       <span class="volume-value">{{ prefs.volume.value | number:'1.0-0':'en-US' }} %</span>
-      <mat-button-toggle-group name="preemphasis" [(ngModel)]="prefs.preemphasis.value">
-        <mat-button-toggle [value]="50">50 μs</mat-button-toggle>
-        <mat-button-toggle [value]="75">75 μs</mat-button-toggle>
-      </mat-button-toggle-group>
     </div>
     <div>MPX spectrum</div>
     <app-spectrum-diagram #spectrumDiagram></app-spectrum-diagram>
     <div>Constellation diagram</div>
     <app-constellation-diagram #constellationDiagram></app-constellation-diagram>
-  </div>
-  <div class="max-errors-container">
-    <span>Max corrected bit<br> errors per block:</span>
-    <mat-button-toggle-group #maxErrors name="maxErrors" [(ngModel)]="prefs.maxErrors.value">
-      <mat-button-toggle [value]="0">0</mat-button-toggle>
-      <mat-button-toggle [value]="1">1</mat-button-toggle>
-      <mat-button-toggle [value]="2">2</mat-button-toggle>
-      <mat-button-toggle [value]="3">3</mat-button-toggle>
-      <mat-button-toggle [value]="4">4</mat-button-toggle>
-      <mat-button-toggle [value]="5">5</mat-button-toggle>
-    </mat-button-toggle-group>
   </div>
   <table>
     <tr><th></th><th>Demod.</th><th>Bitstream</th><th>Block errors</th><th>Errors</th><th>Corrected</th></tr>
