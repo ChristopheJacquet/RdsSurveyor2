@@ -39,7 +39,6 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 
 	@ViewChild('groupLog') groupLogEl?: ElementRef<HTMLDivElement>;
 	stickToBottom = true;
-	showRtInvisibleChars = false;
 	private groupLogObserver?: MutationObserver;
 
 	// Group log filters. Empty string means "no filter".
@@ -181,7 +180,7 @@ export class StationInfoComponent implements AfterViewInit, OnDestroy {
 	}
 
 	private formatRtMessage(m: RdsStringHistoryEntry): string {
-		return this.showRtInvisibleChars ? showInvisibleChars(m) : m.message;
+		return prefs.showRtInvisibleChars.value ? showInvisibleChars(m) : m.message;
 	}
 
 	private formatRtTransmission(m: RdsStringHistoryEntry): string {
