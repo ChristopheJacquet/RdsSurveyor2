@@ -25,8 +25,8 @@ const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
 
 // Costas loop gains, applied to the phase error normalized by the subcarrier power, so that the
 // loop bandwidth does not depend on the subcarrier injection level nor on the AGC.
-const PLL_KP = 1e-3;   // Proportional gain (rad per sample per unit error), ~40 Hz bandwidth.
-const PLL_KI = 0.01;   // Integral gain (Hz per sample per unit error), well-damped loop.
+const PLL_KP = 2e-3;   // Proportional gain (rad per sample per unit error), ~80 Hz bandwidth.
+const PLL_KI = 3e-3;   // Integral gain (Hz per sample per unit error), well-damped loop.
 
 // Number of biphase symbols (half-bits) over which the biphase reading frame is chosen, and
 // over which the presence of a biphase-coded signal is assessed.
@@ -190,8 +190,8 @@ export class Demodulator {
     const pll_iq = this.lpPllFilter.step(subcarr_bb_i * subcarr_bb_q);
     const pll_pow = this.lpPllPowFilter.step(
       subcarr_bb_i * subcarr_bb_i + subcarr_bb_q * subcarr_bb_q);
-    const d_phi_sc = pll_iq / (pll_pow + 1e-12);
-    const err = Math.max(-0.05, Math.min(0.05, d_phi_sc));   // Clamp error to prevent jumps.
+    // Both filters have the same positive impulse response, so |pll_iq| <= pll_pow / 2.
+    const err = pll_iq / (pll_pow + 1e-12);
     this.subcarr_phi -= PLL_KP * err;
     this.fsc -= PLL_KI * err;
 
