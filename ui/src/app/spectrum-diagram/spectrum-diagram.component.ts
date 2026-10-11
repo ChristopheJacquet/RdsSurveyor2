@@ -170,7 +170,8 @@ export class SpectrumDiagramComponent implements AfterViewInit {
     for (let p = 0; p < numPoints; p++) {
       const start = Math.floor(p * binsPerPoint);
       const end = Math.max(start + 1, Math.floor((p + 1) * binsPerPoint));
-      let mergedPoint = 0;
+      // Values are in dB, hence often negative: start from -Infinity, not 0.
+      let mergedPoint = -Infinity;
       for (let bin = start; bin < end; bin++) {
         if (spectrum[bin] > mergedPoint) {
           mergedPoint = spectrum[bin];
