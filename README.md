@@ -92,11 +92,15 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 * Audio output for all MPX-level sources.
 * Performance improvements.
 
+### Milestone 11 (Reached on 10 Oct 2026)
+
+* Initial set of 10+ best practice diagnoses and recommendations (for broadcasters).
+* Audio out support in playback mode.
+* Structural analysis of PNG station logos, with file integrity validation (checksums).
+* Adaptive error correction: accept to correct up to 5 bits per block for file data, but not for addressing.
+* User interface improvement, including mobile support (phone and tablet).
+
 ## Rough future plans
-
-### Milestone 11
-
-* Best practice diagnoses and recommendations (for broadcasters).
 
 ### Milestone 12
 
@@ -110,7 +114,6 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 
 * Display of groups sequence.
 * Variant support for historical features.
-* Audio out support in playback mode.
 
 ## Building and Running
 
