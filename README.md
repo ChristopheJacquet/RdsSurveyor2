@@ -119,9 +119,18 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 
 Required dependencies:
 
-* Node.js (comes with `corepack`)
-* pnpm: install it by running `corepack enable pnpm`
-* Bazel (build system)
+* Node.js
+* pnpm
+
+Recommendation: install both using `corepack`, e.g.
+
+```
+brew install corepack
+corepack enable pnpm
+```
+
+Optional dependency (only to run `bazel` commands):
+* Bazel (build system) -- Install it via Bazelisk, e.g. `sudo wget -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 && sudo chmod +x /usr/local/bin/bazel`
 
 Open a terminal at the root of the repository.
 
