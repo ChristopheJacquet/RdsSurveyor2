@@ -117,20 +117,29 @@ Project homepage for more details: [rds-surveyor.jacquet.xyz](https://rds-survey
 
 ## Building and Running
 
+### Install system-wide dependencies
+
 Required dependencies:
 
-* Node.js
 * pnpm
+* Node.js
 
-Recommendation: install both using `corepack`, e.g.
+Under Debian 13, you could be tempted to install the official Corepack package which provides both, however its Node.js version is too old...
+
+Recommendation for Debian (and others): start by installing pnpm, and then use pnpm to install Node.js as follows:
 
 ```
-brew install corepack
-corepack enable pnpm
+wget -qO- https://get.pnpm.io | sh
+exec $SHELL                 # Reload PATH.
+pnpm env use --global 24    # Install Node.js.
+exec $SHELL
 ```
 
-Optional dependency (only to run `bazel` commands):
+Optional dependency (only to run `bazel` commands, notably to run tests):
+
 * Bazel (build system) -- Install it via Bazelisk, e.g. `sudo wget -O /usr/local/bin/bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64 && sudo chmod +x /usr/local/bin/bazel`
+
+### Build, test, run
 
 Open a terminal at the root of the repository.
 
