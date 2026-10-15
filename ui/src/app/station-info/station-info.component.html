@@ -412,6 +412,17 @@
           <div class="infogrid-title">CRC</div>
           <div class="infogrid-value">{{ station.stationLogoPipe.crcPresent ? "Transmitted" : "Not transmitted" }} </div>
         </div>
+        @if (station.stationLogoPipe.checksums; as crcs) {
+          <div class="infogrid-cell">
+            <div class="infogrid-title">Checksums ({{ crcs.chunkCount }} chunks)</div>
+            <div class="infogrid-value">
+              <span class="crc-ok">{{ crcs.ok }} OK</span>,
+              <span [class.crc-bad]="crcs.bad > 0">{{ crcs.bad }} bad</span>@if (crcs.notComputed > 0) {,
+                <span class="crc-not-computed">{{ crcs.notComputed }} not computed</span>
+              }
+            </div>
+          </div>
+        }
       </div>
     </div>
     @if (station.stationLogoPipe.png; as png) {

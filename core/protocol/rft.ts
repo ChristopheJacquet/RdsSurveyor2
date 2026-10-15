@@ -20,6 +20,7 @@ export class RftPipe {
   dataErrors = new Uint8Array(MAX_SIZE);
   crc = new Uint16Array(MAX_CHUNKS);
   crcState = new Array<CrcState>(MAX_CHUNKS);
+  crcMode: number | undefined = undefined;
   size: number = 0;
   bytesPresent: number = 0;
   fileId: number = 0;
@@ -28,6 +29,9 @@ export class RftPipe {
   // Result of the PNG analysis, or null if the file is not (yet) identified
   // as a PNG file.
   png: PngAnalysis | null = null;
+  // Result of the verification of the RFT checksums, or null if no checksum
+  // can be verified (no checksum received, or file size unknown).
+  checksums: ChecksumAnalysis | null = null;
   // True if the data has changed since the file was last handed over to the
   // ODA that the pipe belongs to.
   modified: boolean = false;
@@ -35,11 +39,13 @@ export class RftPipe {
   reset() {
     this.dataState.fill(ByteState.ABSENT);
     this.crcState.fill(CrcState.ABSENT);
+    this.crcMode = undefined;
     this.size = 0;
     this.fileId = 0;
     this.fileVersion = 0;
     this.crcPresent = false;
     this.png = null;
+    this.checksums = null;
     this.modified = false;
   }
 
@@ -73,11 +79,23 @@ export class RftPipe {
       (i) => this.dataState[i] != ByteState.ABSENT,
       (i) => this.dataErrors[i] == 0,
       this.size);
+    // Some encoders send dummy CRCs even when announcing that they don't.
+    this.checksums = this.crcPresent ?
+      verifyChecksums(this.data,
+        (i) => this.dataState[i] != ByteState.ABSENT,
+        (a) => this.crcState[a] == CrcState.PRESENT ? this.crc[a] : null,
+        this.crcMode,
+        this.size) :
+      null;
     return this.isComplete();
   }
 
   addCrc(mode: number, chunkAddr: number, crc: number) {
-    // TODO: Handle mode.
+    // CRCs received with another mode cover other chunks.
+    if (mode != this.crcMode) {
+      this.crcState.fill(CrcState.ABSENT);
+      this.crcMode = mode;
+    }
     this.crc[chunkAddr] = crc;
     this.crcState[chunkAddr] = CrcState.PRESENT;
   }
@@ -256,6 +274,93 @@ export function analyzePng(data: Uint8Array, isPresent: (i: number) => boolean,
   result.ok = result.endReached && result.errors.length == 0 &&
     result.chunks.every(c => c.status == PngChunkStatus.CRC_OK);
   return result;
+}
+
+export interface ChecksumAnalysis {
+  // Number of chunks whose received CRC matches the received data.
+  ok: number;
+  // Number of chunks whose received CRC does not match the received data.
+  bad: number;
+  // Number of chunks whose CRC has been received but cannot be verified yet
+  // because not all of their bytes have been received.
+  notComputed: number;
+  // Total number of chunks in the file.
+  chunkCount: number;
+}
+
+/**
+ * Returns the length in bytes of the chunks covered by each RFT CRC, or null
+ * if the mode is reserved. Modes 1 to 5 use chunks of 16, 32, ..., 256 groups
+ * (of 5 bytes each); mode 7 picks the smallest of modes 1 to 3 that allows the
+ * file to be covered by at most 512 chunks.
+ */
+function getChunkLength(mode: number, size: number): number | null {
+  if (mode == 0) return size;
+  if (mode == 7) {
+    mode = size <= 40_960 ? 1 : size <= 81_920 ? 2 : 3;
+  }
+  if (mode >= 1 && mode <= 5) return 5 * (8 << mode);
+  return null;
+}
+
+/**
+ * Verifies the RFT checksums received so far. Returns null if checksums
+ * cannot be verified (unknown mode or file size).
+ *
+ * @param data The file's bytes.
+ * @param isPresent Tells whether the byte at the given offset has been received.
+ * @param getCrc Returns the CRC received for the given chunk address, or null
+ *     if not received.
+ * @param mode The CRC mode, or undefined if no CRC has been received.
+ * @param size The file size, or 0 if not known.
+ */
+export function verifyChecksums(data: Uint8Array, isPresent: (i: number) => boolean,
+    getCrc: (chunkAddr: number) => number | null, mode: number | undefined,
+    size: number): ChecksumAnalysis | null {
+  if (mode == undefined || size <= 0) return null;
+  const chunkLength = getChunkLength(mode, size);
+  if (chunkLength == null) return null;
+  const limit = Math.min(size, data.length);
+  const result: ChecksumAnalysis = {
+    ok: 0, bad: 0, notComputed: 0,
+    chunkCount: Math.ceil(limit / chunkLength),
+  };
+
+  for (let a = 0; a < result.chunkCount; a++) {
+    const crc = getCrc(a);
+    if (crc == null) continue;
+    const start = a * chunkLength;
+    // The last chunk may be shorter.
+    const end = Math.min(start + chunkLength, limit);
+    let complete = true;
+    for (let i = start; i < end; i++) {
+      if (!isPresent(i)) {
+        complete = false;
+        break;
+      }
+    }
+    if (!complete) {
+      result.notComputed++;
+    } else if (crc16(data.subarray(start, end)) == crc) {
+      result.ok++;
+    } else {
+      result.bad++;
+    }
+  }
+  return result;
+}
+
+// CRC-16/CCITT (polynomial 0x1021, initial value 0xFFFF, inverted output).
+function crc16(bytes: Uint8Array): number {
+  let c = 0xFFFF;
+  for (const b of bytes) {
+    c ^= b << 8;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1);
+    }
+    c &= 0xFFFF;
+  }
+  return c ^ 0xFFFF;
 }
 
 function readUint32(data: Uint8Array, offset: number): number {
