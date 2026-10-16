@@ -28,6 +28,17 @@ const LP_PLL_COEFFS_B = [0.026908946086248272, 0.026908946086248272];
 const PLL_KP = 2e-3;   // Proportional gain (rad per sample per unit error), ~80 Hz bandwidth.
 const PLL_KI = 3e-3;   // Integral gain (Hz per sample per unit error), well-damped loop.
 
+// Bit clock recovery loop gains, applied at each zero crossing of the baseband signal to the clock
+// phase error (in radians). The integral term lets the loop follow a bit rate that differs from
+// the subcarrier frequency divided by 48 without a static timing error. The integral gain is kept
+// low, so as not to add jitter on the (most common) stations whose bit rate is right.
+const CLOCK_KP = 0.005;
+const CLOCK_KI = 2e-6;
+
+// Maximum bit rate offset, in Hz, followed by the clock recovery loop (~400 ppm). Prevents the
+// loop from drifting away on noise.
+const CLOCK_MAX_FREQ_OFFSET = 0.5;
+
 // Number of biphase symbols (half-bits) over which the biphase reading frame is chosen, and
 // over which the presence of a biphase-coded signal is assessed.
 // The window slides: the score is updated at every symbol.
@@ -82,6 +93,10 @@ export class Demodulator {
   
   // Clock phase offset.
   clock_offset = 0;
+
+  // Clock frequency offset, in radians per decimated sample, relative to the subcarrier frequency
+  // divided by subcarrierBitrateRatio.
+  private clockFreq = 0;
   
   // Previous RDS clock.
   prevclock = 0;
@@ -101,6 +116,9 @@ export class Demodulator {
   // AGC smoothing coefficients (constant for a given sample rate).
   private agcAlphaAttack = Math.exp(-1.0 / (this.sampleRate * AGC_ATTACK_TIME));
   private agcAlphaRelease = Math.exp(-1.0 / (this.sampleRate * AGC_RELEASE_TIME));
+
+  // Bound of clockFreq, in radians per decimated sample.
+  private clockMaxFreq = 2 * Math.PI * CLOCK_MAX_FREQ_OFFSET * this.decimate / this.sampleRate;
 
   private decimPhase = 0;
 
@@ -161,6 +179,7 @@ export class Demodulator {
     this.signChangesCount = 0;
     this.biphaseScore = 0;
     this.biphaseDetected = false;
+    this.clockFreq = 0;
     this.updateSyncAllowed();
   }
 
@@ -198,6 +217,7 @@ export class Demodulator {
     // Decimate band-limited signal.
     if (this.decimPhase >= this.decimate) {
       this.decimPhase -= this.decimate;
+      this.clock_offset += this.clockFreq;
       // Reset subcarrier frequency if it is outside tolerance range.
       if ((this.fsc > this.fSub + FC_TOLERANCE) || (this.fsc < this.fSub - FC_TOLERANCE)) {
         this.fsc = this.fSub;
@@ -212,7 +232,9 @@ export class Demodulator {
       if (sign(this.prev_bb) != sign(subcarr_bb_i)) {
         let d_cphi = clock_phi % Math.PI;   // Clock phase error.
         if (d_cphi >= (Math.PI / 2)) d_cphi -= Math.PI;
-        this.clock_offset -= 0.005 * d_cphi;
+        this.clock_offset -= CLOCK_KP * d_cphi;
+        this.clockFreq = Math.max(-this.clockMaxFreq,
+          Math.min(this.clockMaxFreq, this.clockFreq - CLOCK_KI * d_cphi));
       }
 
       // Biphase symbol integrate & dump. Uses the I value directly (soft decision): normalizing it
