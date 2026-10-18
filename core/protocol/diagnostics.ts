@@ -1,4 +1,4 @@
-import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, RdsVariant, STATION_LOGO_AID, StationImpl, showInvisibleChars } from "./rds_types";
+import { GROUP_0A, GROUP_0B, GROUP_10A, GROUP_14A, GROUP_15A, GROUP_2A, GROUP_2B, RdsStringHistoryEntry, RdsVariant, STATION_LOGO_AID, StationImpl, showInvisibleChars } from "./rds_types";
 
 export class Diagnostics {
   readonly findings = new Map<Finding, number>();
@@ -73,6 +73,7 @@ const diagnostics = [
   ptynIsEmpty,
   rtHasTrailingSpaces,
   rtIsEmpty,
+  lpsHasTrailingSpaces,
   stationLogoHasExtraPngChunks,
 ];
 
@@ -345,6 +346,45 @@ function rtIsEmpty(station: StationImpl): Finding | null {
       FindingType.ADVICE);
   }
   return null;
+}
+
+function lpsHasTrailingSpaces(station: StationImpl): Finding | null {
+  // Only the current message is checked, as bytes after 0x0D are not kept in
+  // history. Wait until it is fully received.
+  const text = station.lps.currentText;
+  const end = text.indexOf(0x0D);
+  if (station.lps.empty ||
+      text.subarray(0, end >= 0 ? end : text.length).includes(0)) {
+    return null;
+  }
+
+  const hasSpaces = (from: number, count: number) =>
+    text.subarray(from, from + count).filter(c => c == 0x20).length == count;
+  // Either unterminated, so padded to 32 bytes: with 5 trailing spaces or
+  // more, a 0x0D would save at least one 4-byte segment...
+  const padded = end < 0
+    ? hasSpaces(text.length - 5, 5)
+    // ... or terminated, but followed by 4 spaces or more, so at least one
+    // extra segment was transmitted.
+    : hasSpaces(end + 1, 4);
+  if (!padded) {
+    return null;
+  }
+
+  // Show spaces after 0x0D too, as they are not part of the message.
+  const spacesAfterEnd =
+    end < 0 ? 0 : text.subarray(end + 1).filter(c => c == 0x20).length;
+  const example = showInvisibleChars(station.lps.getPastMessages(true)[0]) +
+    '\u2423'.repeat(spacesAfterEnd);
+  return new Finding(
+    "Long PS padded with spaces",
+    GROUP_15A,
+    "Long PS is padded with trailing spaces. Messages shorter than the " +
+    "maximum length (32 bytes) should be terminated by a carriage return " +
+    "(code 0x0D), and the segments after the one holding it need not be " +
+    "transmitted. Padding wastes transmission capacity. " +
+    `Example: "${example}".`,
+    FindingType.ADVICE);
 }
 
 // PNG chunks needed to render a station logo. All others waste transmission capacity.
