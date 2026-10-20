@@ -65,6 +65,7 @@ export function performAllDiagnostics(station: StationImpl) {
 const diagnostics = [
   badPiCode,
   usesDynamicPS,
+  psSegmentNeverTransmitted,
   mixes2Aand2Bgroups,
   rtUses2BWith0A,
   rtFlagNotToggled,
@@ -163,6 +164,41 @@ function usesDynamicPS(station: StationImpl): Finding | null {
       FindingType.ERROR);
   }
   return null;
+}
+
+function psSegmentNeverTransmitted(station: StationImpl): Finding | null {
+  // Unreceived bytes stay at 0, as 0 is never written to the buffer. Wait
+  // until 32 segments (2 bytes each) have been received for the current text:
+  // if all 4 addresses were transmitted, each would have been received.
+  if (station.ps.empty || station.ps.currentTicks < 2 * 32) {
+    return null;
+  }
+
+  const text = station.ps.currentText;
+  const missing = [0, 1, 2, 3].filter(
+    addr => text[2*addr] == 0 && text[2*addr + 1] == 0);
+  if (missing.length == 0) {
+    return null;
+  }
+
+  const group =
+    station.group_stats[GROUP_0A] > station.group_stats[GROUP_0B]
+      ? GROUP_0A
+      : GROUP_0B;
+  const plural = missing.length > 1;
+  return new Finding(
+    `PS segment${plural ? 's' : ''} ${missing.join(', ')} never transmitted`,
+    group,
+    "The Programme Service name (PS) is made of 4 segments of 2 " +
+    "characters, at addresses 0 to 3, which must all be transmitted in " +
+    "turn. Here, the segment" + (plural ? "s" : "") + " at address" +
+    (plural ? "es " : " ") + missing.join(', ') + (plural ? " were" : " was") +
+    " never received, although the other segments were received many " +
+    "times. Receivers may wait for the whole PS before displaying it, so " +
+    "they may display nothing, or show spaces or stale characters in " +
+    "place of the missing segment" + (plural ? "s" : "") + ". " +
+    `Partial PS: "${station.ps.toString()}".`,
+    FindingType.ERROR);
 }
 
 function mixes2Aand2Bgroups(station: StationImpl): Finding | null {
